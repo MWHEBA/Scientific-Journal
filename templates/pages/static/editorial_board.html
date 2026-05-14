@@ -1,0 +1,160 @@
+{% extends 'base_public.html' %}
+
+{% block title %}هيئة التحرير{% endblock %}
+
+{% block content %}
+<div class="page-header">
+    <h1 class="page-header__title">هيئة التحرير</h1>
+</div>
+
+{% if board_members %}
+    {# ─── بيانات ديناميكية من قاعدة البيانات ─── #}
+
+    {% with chiefs=board_members|dictsort:"order" %}
+
+    {# رئاسة التحرير #}
+    {% with leadership_roles="editor_in_chief,deputy_editor,regional_editor" %}
+    {% regroup board_members by get_role_display as role_groups %}
+
+    {% for group in role_groups %}
+        {% if group.grouper == 'رئيس التحرير' or group.grouper == 'نائب رئيس التحرير' or group.grouper == 'رئيس تحرير إقليمي' %}
+        {% if forloop.first or group.grouper == 'رئيس التحرير' %}
+        <div class="card mb-4">
+            <h3 class="mb-4" style="color:var(--color-primary);">رئاسة التحرير</h3>
+            <div style="display:flex;flex-direction:column;gap:var(--space-3);">
+        {% endif %}
+                {% for member in group.list %}
+                <div style="display:flex;align-items:center;gap:var(--space-5);padding:var(--space-5);background:var(--color-surface-alt);border-right:4px solid var(--color-primary);">
+                    <div>
+                        <p style="font-weight:700;font-size:var(--text-lg);margin-bottom:var(--space-1);">{{ member.name }}</p>
+                        <p class="text-muted text-sm mb-0">
+                            {{ member.get_role_display }}
+                            {% if member.institution %} — {{ member.institution }}{% endif %}
+                            {% if member.country %} ({{ member.country }}){% endif %}
+                        </p>
+                    </div>
+                </div>
+                {% endfor %}
+        {% if group.grouper == 'رئيس تحرير إقليمي' or forloop.last %}
+            </div>
+        </div>
+        {% endif %}
+        {% endif %}
+    {% endfor %}
+
+    {# اللجنة الإشرافية #}
+    {% for group in role_groups %}
+        {% if group.grouper == 'عضو اللجنة الإشرافية' %}
+        <div class="card mb-4">
+            <h3 class="mb-4" style="color:var(--color-primary);">اللجنة الإشرافية</h3>
+            <div style="display:grid;grid-template-columns:repeat(auto-fill,minmax(240px,1fr));gap:var(--space-3);">
+                {% for member in group.list %}
+                <div style="padding:var(--space-4) var(--space-5);border:1px solid var(--color-border);">
+                    <p style="font-weight:700;font-size:var(--text-base);margin-bottom:2px;">{{ member.name }}</p>
+                    <p class="text-muted text-xs mb-0">
+                        {{ member.get_role_display }}
+                        {% if member.institution %} — {{ member.institution }}{% endif %}
+                    </p>
+                </div>
+                {% endfor %}
+            </div>
+        </div>
+        {% endif %}
+    {% endfor %}
+
+    {# أعضاء هيئة التحرير #}
+    {% for group in role_groups %}
+        {% if group.grouper == 'عضو هيئة التحرير' %}
+        <div class="card mb-4">
+            <h3 class="mb-4" style="color:var(--color-primary);">أعضاء هيئة التحرير</h3>
+            <div style="display:grid;grid-template-columns:repeat(auto-fill,minmax(240px,1fr));gap:var(--space-3);">
+                {% for member in group.list %}
+                <div style="padding:var(--space-4) var(--space-5);border:1px solid var(--color-border);">
+                    <p style="font-weight:700;font-size:var(--text-base);margin-bottom:2px;">{{ member.name }}</p>
+                    <p class="text-muted text-xs mb-0">
+                        {% if member.institution %}{{ member.institution }}{% endif %}
+                        {% if member.country %} — {{ member.country }}{% endif %}
+                    </p>
+                </div>
+                {% endfor %}
+            </div>
+        </div>
+        {% endif %}
+    {% endfor %}
+
+    {% endwith %}
+    {% endwith %}
+
+{% else %}
+    {# ─── Fallback: بيانات ثابتة لحين إضافة الأعضاء من لوحة الإدارة ─── #}
+
+    <!-- رئاسة التحرير -->
+    <div class="card mb-4">
+        <h3 class="mb-4" style="color:var(--color-primary);">رئاسة التحرير</h3>
+        <div style="display:flex;flex-direction:column;gap:var(--space-3);">
+            <div style="display:flex;align-items:center;gap:var(--space-5);padding:var(--space-5);background:var(--color-surface-alt);border-right:4px solid var(--color-primary);">
+                <div>
+                    <p style="font-weight:700;font-size:var(--text-lg);margin-bottom:var(--space-1);">د. سعد الأعرج</p>
+                    <p class="text-muted text-sm mb-0">رئيس التحرير</p>
+                </div>
+            </div>
+            <div style="display:flex;align-items:center;gap:var(--space-5);padding:var(--space-5);background:var(--color-surface-alt);border-right:4px solid var(--color-primary-light);">
+                <div>
+                    <p style="font-weight:700;font-size:var(--text-lg);margin-bottom:var(--space-1);">د. محمد كيالي</p>
+                    <p class="text-muted text-sm mb-0">نائب رئيس التحرير</p>
+                </div>
+            </div>
+            <div style="display:flex;align-items:center;gap:var(--space-5);padding:var(--space-5);background:var(--color-surface-alt);border-right:4px solid var(--color-neutral);">
+                <div>
+                    <p style="font-weight:700;font-size:var(--text-lg);margin-bottom:var(--space-1);">د. مراد الزقيبة</p>
+                    <p class="text-muted text-sm mb-0">رئيس تحرير إقليمي — الشرق الأوسط</p>
+                </div>
+            </div>
+        </div>
+    </div>
+
+    <!-- اللجنة الإشرافية -->
+    <div class="card mb-4">
+        <h3 class="mb-4" style="color:var(--color-primary);">اللجنة الإشرافية</h3>
+        <div style="display:grid;grid-template-columns:repeat(auto-fill,minmax(240px,1fr));gap:var(--space-3);">
+            <div style="padding:var(--space-4) var(--space-5);border:1px solid var(--color-border);">
+                <p style="font-weight:700;font-size:var(--text-base);margin-bottom:2px;">أ.د. نورالدين حزام</p>
+                <p class="text-muted text-xs mb-0">رئيس اللجنة الإشرافية</p>
+            </div>
+            <div style="padding:var(--space-4) var(--space-5);border:1px solid var(--color-border);">
+                <p style="font-weight:700;font-size:var(--text-base);margin-bottom:2px;">د. محمد عوادات</p>
+                <p class="text-muted text-xs mb-0">عضو</p>
+            </div>
+            <div style="padding:var(--space-4) var(--space-5);border:1px solid var(--color-border);">
+                <p style="font-weight:700;font-size:var(--text-base);margin-bottom:2px;">د. باسل علي</p>
+                <p class="text-muted text-xs mb-0">عضو</p>
+            </div>
+            <div style="padding:var(--space-4) var(--space-5);border:1px solid var(--color-border);">
+                <p style="font-weight:700;font-size:var(--text-base);margin-bottom:2px;">د. محي الدين موسى</p>
+                <p class="text-muted text-xs mb-0">عضو</p>
+            </div>
+            <div style="padding:var(--space-4) var(--space-5);border:1px solid var(--color-border);">
+                <p style="font-weight:700;font-size:var(--text-base);margin-bottom:2px;">د. سالم عطا الله</p>
+                <p class="text-muted text-xs mb-0">عضو</p>
+            </div>
+            <div style="padding:var(--space-4) var(--space-5);border:1px solid var(--color-border);">
+                <p style="font-weight:700;font-size:var(--text-base);margin-bottom:2px;">د. منذر الداية</p>
+                <p class="text-muted text-xs mb-0">عضو</p>
+            </div>
+        </div>
+    </div>
+
+{% endif %}
+
+<!-- الانضمام -->
+<div class="card">
+    <p class="text-muted text-sm mb-0">
+        للانضمام إلى هيئة التحكيم أو للاستفسار، يرجى التواصل معنا على
+        {% if settings.contact_email %}
+            <a href="mailto:{{ settings.contact_email }}">{{ settings.contact_email }}</a>
+        {% else %}
+            البريد الإلكتروني للمجلة.
+        {% endif %}
+    </p>
+</div>
+{% endblock %}

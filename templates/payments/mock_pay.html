@@ -1,0 +1,41 @@
+{% extends 'base_dashboard.html' %}
+
+{% block title %}بوابة الدفع التجريبية{% endblock %}
+{% block nav_author_home %}active{% endblock %}
+{% block breadcrumb %}
+    <span class="dash-breadcrumb__sep">/</span>
+    <span class="dash-breadcrumb__current">بوابة الدفع التجريبية</span>
+{% endblock %}
+
+{% block content %}
+<div style="max-width: 500px; margin: 0 auto;">
+    <div class="card">
+        <div style="text-align: center; margin-bottom: var(--space-6);">
+            <div style="font-size: 3rem; margin-bottom: var(--space-3);"><svg class="icon icon-xl icon-muted"><use href="#icon-payment"/></svg></div>
+            <h2 class="mb-2" style="color: var(--color-primary);">بوابة الدفع التجريبية</h2>
+            <p class="text-muted text-sm mb-0">رقم الطلب: <strong>{{ order_id }}</strong></p>
+        </div>
+
+        <div class="inline-alert inline-alert--warning mb-6">
+            <span class="inline-alert__icon"><svg class="icon icon-md" style="color:var(--color-warning)"><use href="#icon-warning"/></svg></span>
+            <div class="inline-alert__content">
+                <p class="inline-alert__title">بيئة تطوير فقط</p>
+                <p class="inline-alert__message">هذه بوابة تجريبية للتطوير — لا تُستخدم في الإنتاج.</p>
+            </div>
+        </div>
+
+        <div style="display: flex; gap: var(--space-4); justify-content: center;">
+            <form method="post">
+                {% csrf_token %}
+                <input type="hidden" name="action" value="success">
+                <button type="submit" class="btn btn-success"><svg class="icon icon-sm icon-inverse"><use href="#icon-publish"/></svg> محاكاة نجاح الدفع</button>
+            </form>
+            <form method="post">
+                {% csrf_token %}
+                <input type="hidden" name="action" value="failure">
+                <button type="submit" class="btn btn-danger"><svg class="icon icon-sm icon-inverse"><use href="#icon-reject"/></svg> محاكاة فشل الدفع</button>
+            </form>
+        </div>
+    </div>
+</div>
+{% endblock %}

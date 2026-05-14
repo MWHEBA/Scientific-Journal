@@ -1,0 +1,121 @@
+{% extends 'base_public.html' %}
+
+{% block title %}الأهداف والنطاق{% endblock %}
+
+{% block content %}
+<div class="page-header">
+    <h1 class="page-header__title">الأهداف والنطاق</h1>
+</div>
+
+<!-- أهداف المجلة -->
+<div class="card mb-4">
+    <h3 class="mb-4" style="color:var(--color-primary);">أهداف المجلة</h3>
+    <p class="text-secondary mb-4">
+        يشمل نطاق مجلة مارسيل للعلوم الاجتماعية على سبيل المثال لا الحصر المواضيع التالية:
+    </p>
+    <ul style="line-height:var(--leading-loose);padding-right:var(--space-6);">
+        <li>نشر مقالات عالية الجودة في مختلف التخصصات العلمية</li>
+        <li>إتاحة المعرفة العلمية للمجتمع الأكاديمي والعام عبر الوصول المفتوح</li>
+        <li>تعزيز التعاون البحثي بين الباحثين من مختلف التخصصات والجنسيات</li>
+        <li>دعم الباحثين ونشر مقالاتهم بسرعة وكفاءة</li>
+        <li>الحفاظ على معايير أكاديمية رفيعة من خلال نظام التحكيم المتخصص</li>
+    </ul>
+</div>
+
+<!-- نطاق المجلة -->
+<div class="card mb-4">
+    <h3 class="mb-5" style="color:var(--color-primary);">نطاق المجلة</h3>
+
+    <!-- الإدارة وإدارة الأعمال -->
+    <div class="scope-category">
+        <h4 class="scope-category__title">الإدارة وإدارة الأعمال</h4>
+        <div class="scope-tags">
+            <span class="scope-tag">الإدارة</span>
+            <span class="scope-tag">الإدارة الاستراتيجية</span>
+            <span class="scope-tag">إدارة المعرفة</span>
+            <span class="scope-tag">إدارة الموارد البشرية</span>
+            <span class="scope-tag">إدارة الموارد البشرية الإلكترونية</span>
+            <span class="scope-tag">تسويق</span>
+            <span class="scope-tag">نظام إدارة المعلومات</span>
+        </div>
+    </div>
+
+    <!-- المحاسبة والحوكمة -->
+    <div class="scope-category">
+        <h4 class="scope-category__title">المحاسبة والحوكمة</h4>
+        <div class="scope-tags">
+            <span class="scope-tag">المحاسبة</span>
+            <span class="scope-tag">نظم المعلومات المحاسبية</span>
+            <span class="scope-tag">الحوكمة</span>
+            <span class="scope-tag">حوكمة الشركات</span>
+            <span class="scope-tag">حوكمة الشركات الإسلامية</span>
+        </div>
+    </div>
+
+    <!-- تكنولوجيا المعلومات -->
+    <div class="scope-category">
+        <h4 class="scope-category__title">تكنولوجيا المعلومات</h4>
+        <div class="scope-tags">
+            <span class="scope-tag">تكنولوجيا المعلومات الإدارية</span>
+            <span class="scope-tag">الحكومة الإلكترونية</span>
+            <span class="scope-tag">التجارة الإلكترونية</span>
+            <span class="scope-tag">التجارة الاجتماعية</span>
+            <span class="scope-tag">اعتماد التكنولوجيا</span>
+        </div>
+    </div>
+
+    <!-- الحوسبة السحابية -->
+    <div class="scope-category">
+        <h4 class="scope-category__title">الحوسبة السحابية</h4>
+        <div class="scope-tags">
+            <span class="scope-tag">حوسبة سحابية</span>
+            <span class="scope-tag">اعتماد الحوسبة السحابية</span>
+            <span class="scope-tag">التعلم الإلكتروني القائم على السحابة</span>
+            <span class="scope-tag">الحكومة الإلكترونية القائمة على السحابة</span>
+            <span class="scope-tag">التجارة الإلكترونية القائمة على السحابة</span>
+        </div>
+    </div>
+
+    <!-- التعلم الإلكتروني -->
+    <div class="scope-category">
+        <h4 class="scope-category__title">التعلم الإلكتروني</h4>
+        <div class="scope-tags">
+            <span class="scope-tag">التعلم الإلكتروني</span>
+            <span class="scope-tag">نظام التعلم اللَّاعِب</span>
+            <span class="scope-tag">التعلم بواسطة السحابة الإلكترونية</span>
+            <span class="scope-tag">اعتماد إنترنت الأشياء</span>
+        </div>
+    </div>
+
+    <!-- تخصصات أخرى -->
+    <div class="scope-category">
+        <h4 class="scope-category__title">تخصصات أخرى</h4>
+        <div class="scope-tags">
+            <span class="scope-tag">علوم القانون</span>
+            <span class="scope-tag">العلوم الاجتماعية</span>
+            <span class="scope-tag">العلوم الصحية</span>
+            <span class="scope-tag">العلوم الهندسية</span>
+        </div>
+    </div>
+
+</div>
+
+<!-- الأقسام المسجلة في النظام -->
+{% if sections %}
+<div class="card mb-4">
+    <h3 class="mb-4" style="color:var(--color-primary);">تصفح حسب القسم</h3>
+    <div style="display:grid;grid-template-columns:repeat(auto-fill,minmax(200px,1fr));gap:var(--space-3);">
+        {% for section in sections %}
+        <a href="{% url 'pages:section_articles' section.slug %}"
+           style="display:flex;align-items:center;gap:var(--space-2);padding:var(--space-3) var(--space-4);border:1px solid var(--color-border);text-decoration:none;color:var(--color-text);transition:all var(--transition);"
+           onmouseover="this.style.borderColor='var(--color-primary)';this.style.background='var(--color-surface-alt)'"
+           onmouseout="this.style.borderColor='var(--color-border)';this.style.background='transparent'">
+            <span style="width:8px;height:8px;border-radius:50%;background:var(--color-primary);flex-shrink:0;"></span>
+            {{ section.name }}
+        </a>
+        {% endfor %}
+    </div>
+</div>
+{% endif %}
+
+{% endblock %}

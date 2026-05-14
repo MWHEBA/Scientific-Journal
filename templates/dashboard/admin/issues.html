@@ -1,0 +1,279 @@
+{% extends 'base_dashboard.html' %}
+
+{% block title %}إدارة الأعداد{% endblock %}
+{% block nav_admin_issues %}active{% endblock %}
+
+{% block breadcrumb %}
+<span class="dash-breadcrumb__sep">/</span>
+<span class="dash-breadcrumb__current">الأعداد والمجلدات</span>
+{% endblock %}
+
+{% block extra_css %}
+<style>
+  .issues-layout { display: grid; gap: var(--space-6); }
+  .issue-create-grid {
+    --filter-cols: minmax(220px, 1.2fr) minmax(120px, .6fr) minmax(160px, .8fr) auto auto;
+  }
+  .issue-create-current {
+    display: inline-flex;
+    align-items: center;
+    gap: var(--space-2);
+    height: 42px;
+    margin: 0;
+    white-space: nowrap;
+    font-size: var(--text-sm);
+  }
+  .issue-create-current input[type="checkbox"] {
+    width: 16px;
+    height: 16px;
+    margin: 0;
+  }
+  .issue-card {
+    border: 1px solid var(--color-border);
+    background: var(--color-surface);
+    padding: var(--space-5);
+  }
+  .issue-head {
+    display: flex;
+    justify-content: space-between;
+    align-items: center;
+    gap: var(--space-4);
+  }
+  .issue-title {
+    font-size: var(--text-lg);
+    font-weight: 700;
+    margin: 0;
+    color: var(--color-primary);
+  }
+  .issue-meta {
+    font-size: var(--text-sm);
+    color: var(--color-text-muted);
+  }
+  .issue-actions { display:flex; align-items:center; gap:var(--space-2); }
+
+  .modal-backdrop {
+    position: fixed; inset: 0; background: rgba(15,23,42,.45); z-index: 200;
+    display: none; align-items: center; justify-content: center; padding: var(--space-4);
+  }
+  .modal-backdrop.show { display: flex; }
+  .modal-card {
+    width: min(840px, 96vw);
+    background: var(--color-surface);
+    border: 1px solid var(--color-border);
+    box-shadow: var(--shadow-md);
+  }
+  .modal-head {
+    display:flex; justify-content:space-between; align-items:center;
+    padding: var(--space-4) var(--space-5); border-bottom:1px solid var(--color-border);
+  }
+  .modal-title { margin:0; font-size:var(--text-lg); font-weight:700; color:var(--color-primary); }
+  .modal-close { border:0; background:none; font-size:20px; cursor:pointer; color:var(--color-text-muted); }
+  .modal-body { padding: var(--space-5); }
+  .issue-edit-grid {
+    display:grid; gap:var(--space-3);
+    grid-template-columns: 1.2fr .6fr .8fr auto auto; align-items:end;
+  }
+
+  .articles-list {
+    margin-top: var(--space-3);
+    border-top: 1px solid var(--color-border);
+    padding-top: var(--space-3);
+  }
+  .article-row {
+    display: flex;
+    justify-content: space-between;
+    align-items: center;
+    gap: var(--space-4);
+    padding: var(--space-2) 0;
+    border-bottom: 1px solid var(--color-border-light);
+  }
+  .article-row:last-child { border-bottom: 0; }
+
+  @media (max-width: 1024px) {
+    .issue-edit-grid { grid-template-columns: 1fr 1fr; }
+  }
+  @media (max-width: 768px) {
+    .issue-edit-grid { grid-template-columns: 1fr; }
+  }
+</style>
+{% endblock %}
+
+{% block content %}
+<div class="page-header">
+  <h1 class="page-header__title">الأعداد والمجلدات</h1>
+  <div class="page-header__actions">
+    <a href="{% url 'dashboard:volumes' %}" class="btn btn-ghost btn-sm">إدارة المجلدات</a>
+  </div>
+</div>
+
+<section class="card mb-6">
+  <h2 class="mb-4" style="font-size:var(--text-lg);">إنشاء عدد جديد</h2>
+  <form method="post" action="{% url 'dashboard:issue_create' %}" class="filter-bar issue-create-grid" novalidate>
+    {% csrf_token %}
+    <div class="form-group mb-0">
+      <label class="form-label" for="create_volume">المجلد</label>
+      <select id="create_volume" name="volume_id" class="form-select" required>
+        <option value="">اختر مجلدًا</option>
+        {% for vol in volumes %}
+          <option value="{{ vol.pk }}">المجلد {{ vol.number }} ({{ vol.year }})</option>
+        {% endfor %}
+      </select>
+    </div>
+    <div class="form-group mb-0">
+      <label class="form-label" for="create_number">رقم العدد</label>
+      <input id="create_number" type="number" name="number" class="form-input" min="1" required>
+    </div>
+    <div class="form-group mb-0">
+      <label class="form-label" for="create_quarter">الفصل</label>
+      <select id="create_quarter" name="quarter" class="form-select" required>
+        <option value="1">يناير–مارس</option>
+        <option value="2">أبريل–يونيو</option>
+        <option value="3">يوليو–سبتمبر</option>
+        <option value="4">أكتوبر–ديسمبر</option>
+      </select>
+    </div>
+    <label class="issue-create-current">
+      <input type="checkbox" name="is_current">
+      العدد الحالي
+    </label>
+    <div class="form-group mb-0 filter-bar__actions-wrap">
+      <label class="form-label">إجراءات</label>
+      <div class="filter-bar__actions">
+        <button type="submit" class="btn btn-primary">إنشاء</button>
+      </div>
+    </div>
+  </form>
+</section>
+
+<section class="issues-layout">
+  {% for volume in volumes %}
+    <article class="card">
+      <h2 class="mb-4" style="font-size:var(--text-lg);color:var(--color-primary);">المجلد {{ volume.number }} — {{ volume.year }}</h2>
+
+      {% if volume.issues.all %}
+        {% for issue in volume.issues.all %}
+          <div class="issue-card mb-4">
+            <div class="issue-head">
+              <div>
+                <p class="issue-title">العدد {{ issue.number }}{% if issue.is_current %} <span class="badge badge-published">حالي</span>{% endif %}</p>
+                <p class="issue-meta">{{ issue.get_quarter_display }} • {{ issue.articles.count }} مقال</p>
+              </div>
+              <div class="issue-actions">
+                <button type="button"
+                        class="btn btn-ghost btn-sm js-open-issue-modal"
+                        data-action="{% url 'dashboard:issue_update' issue.pk %}"
+                        data-volume="{{ issue.volume_id }}"
+                        data-number="{{ issue.number }}"
+                        data-quarter="{{ issue.quarter }}"
+                        data-current="{% if issue.is_current %}1{% else %}0{% endif %}">
+                  تعديل هذا العدد
+                </button>
+              </div>
+            </div>
+
+            {% if issue.articles.all %}
+              <div class="articles-list">
+                {% for article in issue.articles.all %}
+                  <div class="article-row">
+                    <span class="text-sm">{{ article.title|truncatechars:70 }}</span>
+                    <form method="post" action="{% url 'dashboard:assign_article' article.pk %}">
+                      {% csrf_token %}
+                      <input type="hidden" name="issue_id" value="">
+                      <button type="submit" class="btn btn-ghost btn-sm">إلغاء التعيين</button>
+                    </form>
+                  </div>
+                {% endfor %}
+              </div>
+            {% endif %}
+          </div>
+        {% endfor %}
+      {% else %}
+        <p class="text-muted text-sm mb-0">لا توجد أعداد في هذا المجلد بعد.</p>
+      {% endif %}
+    </article>
+  {% empty %}
+    <div class="card">
+      <div class="empty-state">
+        <h3 class="empty-state__title">لا توجد مجلدات</h3>
+        <p class="empty-state__message mb-0">أنشئ مجلدًا أولًا من صفحة المجلدات.</p>
+      </div>
+    </div>
+  {% endfor %}
+</section>
+
+<div id="issue-edit-modal" class="modal-backdrop" aria-hidden="true">
+  <div class="modal-card" role="dialog" aria-modal="true" aria-labelledby="issue-modal-title">
+    <div class="modal-head">
+      <h3 id="issue-modal-title" class="modal-title">تعديل العدد</h3>
+      <button type="button" class="modal-close js-close-issue-modal" aria-label="إغلاق">×</button>
+    </div>
+    <div class="modal-body">
+      <form id="issue-edit-form" method="post" class="issue-edit-grid" novalidate>
+        {% csrf_token %}
+        <div class="form-group mb-0">
+          <label class="form-label">المجلد</label>
+          <select id="issue_modal_volume" name="volume_id" class="form-select" required>
+            {% for vol in volumes %}
+              <option value="{{ vol.pk }}">المجلد {{ vol.number }} ({{ vol.year }})</option>
+            {% endfor %}
+          </select>
+        </div>
+        <div class="form-group mb-0">
+          <label class="form-label">رقم العدد</label>
+          <input id="issue_modal_number" type="number" name="number" class="form-input" min="1" required>
+        </div>
+        <div class="form-group mb-0">
+          <label class="form-label">الفصل</label>
+          <select id="issue_modal_quarter" name="quarter" class="form-select" required>
+            <option value="1">يناير–مارس</option>
+            <option value="2">أبريل–يونيو</option>
+            <option value="3">يوليو–سبتمبر</option>
+            <option value="4">أكتوبر–ديسمبر</option>
+          </select>
+        </div>
+        <label style="display:flex;align-items:center;gap:var(--space-2);font-size:var(--text-sm);">
+          <input id="issue_modal_current" type="checkbox" name="is_current">
+          العدد الحالي
+        </label>
+        <button type="submit" class="btn btn-primary">حفظ التعديلات</button>
+      </form>
+    </div>
+  </div>
+</div>
+{% endblock %}
+
+{% block extra_js %}
+<script>
+(() => {
+  const modal = document.getElementById('issue-edit-modal');
+  const form = document.getElementById('issue-edit-form');
+  if (!modal || !form) return;
+
+  const openBtns = document.querySelectorAll('.js-open-issue-modal');
+  const closeBtns = document.querySelectorAll('.js-close-issue-modal');
+  const volume = document.getElementById('issue_modal_volume');
+  const number = document.getElementById('issue_modal_number');
+  const quarter = document.getElementById('issue_modal_quarter');
+  const current = document.getElementById('issue_modal_current');
+
+  const open = (btn) => {
+    form.action = btn.dataset.action;
+    volume.value = btn.dataset.volume;
+    number.value = btn.dataset.number;
+    quarter.value = btn.dataset.quarter;
+    current.checked = btn.dataset.current === '1';
+    modal.classList.add('show');
+    modal.setAttribute('aria-hidden', 'false');
+  };
+  const close = () => {
+    modal.classList.remove('show');
+    modal.setAttribute('aria-hidden', 'true');
+  };
+
+  openBtns.forEach((btn) => btn.addEventListener('click', () => open(btn)));
+  closeBtns.forEach((btn) => btn.addEventListener('click', close));
+  modal.addEventListener('click', (e) => { if (e.target === modal) close(); });
+  document.addEventListener('keydown', (e) => { if (e.key === 'Escape') close(); });
+})();
+</script>
+{% endblock %}

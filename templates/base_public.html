@@ -1,0 +1,292 @@
+{% load static dashboard_extras %}
+<!DOCTYPE html>
+<html lang="ar" dir="rtl">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>{% block title %}المجلة العلمية{% endblock %} — Marcil</title>
+    <link rel="preconnect" href="https://fonts.googleapis.com">
+    <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+    <link href="https://fonts.googleapis.com/css2?family=Cairo:wght@400;500;600;700&display=swap" rel="stylesheet">
+    <link rel="stylesheet" href="{% static 'css/tokens.css' %}">
+    <link rel="stylesheet" href="{% static 'css/base.css' %}">
+    <link rel="stylesheet" href="{% static 'css/components.css' %}">
+    <link rel="stylesheet" href="{% static 'css/layout-public.css' %}">
+    {% block extra_css %}{% endblock %}
+</head>
+<body>
+{% include "icons.svg" %}
+
+<div class="pub-topbar">
+    <div class="pub-topbar__inner">
+        <div class="pub-topbar__info">
+            <a href="{% url 'pages:author_guidelines' %}" class="pub-topbar__info-item pub-topbar__info-link">شروط النشر</a>
+            <a href="{% url 'pages:ethics' %}" class="pub-topbar__info-item pub-topbar__info-link">أخلاقيات النشر</a>
+            <a href="{% url 'pages:apc' %}" class="pub-topbar__info-item pub-topbar__info-link">رسوم النشر</a>
+        </div>
+        <form method="get" action="{% url 'pages:search' %}" class="pub-topbar__search">
+            <svg class="pub-topbar__search-icon icon icon-xs"><use href="#icon-search"/></svg>
+            <input type="text" name="q" placeholder="ابحث في المقالات..." class="pub-topbar__search-input" autocomplete="off">
+            <button type="submit" class="pub-topbar__search-btn">بحث</button>
+        </form>
+    </div>
+</div>
+
+<nav class="pub-navbar">
+    <div class="pub-navbar__inner">
+        <a href="/" class="pub-navbar__logo">
+            <img src="{% static 'img/Logo.png' %}" alt="Marcil" style="height:50px;">
+        </a>
+        <ul class="pub-navbar__links">
+            <li><a href="/" class="pub-navbar__link {% block nav_home %}{% endblock %}">الرئيسية</a></li>
+            <li><a href="{% url 'pages:about' %}" class="pub-navbar__link {% block nav_about %}{% endblock %}">عن المجلة</a></li>
+            <li><a href="{% url 'pages:topics' %}" class="pub-navbar__link {% block nav_topics %}{% endblock %}">مواضيع المجلة</a></li>
+            <li><a href="{% url 'pages:blog' %}" class="pub-navbar__link {% block nav_blog %}{% endblock %}">المدونة</a></li>
+            <li><a href="{% url 'pages:conferences' %}" class="pub-navbar__link {% block nav_conferences %}{% endblock %}">المؤتمرات العلمية</a></li>
+            <li><a href="{% url 'pages:archive' %}" class="pub-navbar__link {% block nav_archive %}{% endblock %}">الأرشيف</a></li>
+            <li><a href="{% url 'pages:contact' %}" class="pub-navbar__link {% block nav_contact %}{% endblock %}">اتصل بنا</a></li>
+        </ul>
+        <div class="pub-navbar__user">
+            {% if user.is_authenticated %}
+                <a href="{% url 'dashboard:home' %}" class="pub-navbar__dash-btn">
+                    <svg class="icon icon-sm"><use href="#icon-dashboard"/></svg>
+                    لوحة التحكم
+                </a>
+                <div class="pub-navbar__notif" id="notif-menu-wrap" data-unread-count="{{ unread_notifications_count }}">
+                    <button type="button" class="pub-navbar__notif-btn" id="notif-menu-toggle" title="الإشعارات"
+                            aria-label="الإشعارات" aria-haspopup="true" aria-expanded="false" aria-controls="notif-menu-panel">
+                        <svg class="icon icon-md"><use href="#icon-bell"/></svg>
+                        <span class="pub-navbar__notif-badge" id="notif-badge" {% if unread_notifications_count == 0 %}hidden{% endif %}>{{ unread_notifications_count }}</span>
+                    </button>
+                    <div class="pub-navbar__notif-menu" id="notif-menu-panel" role="menu" aria-label="قائمة الإشعارات" hidden>
+                        <div class="pub-navbar__notif-menu-head">
+                            <strong>الإشعارات</strong>
+                            <span class="pub-navbar__notif-menu-count" id="notif-menu-count" {% if unread_notifications_count == 0 %}hidden{% endif %}>{{ unread_notifications_count }} جديدة</span>
+                        </div>
+                        <div class="pub-navbar__notif-menu-list">
+                            {% for notif in latest_notifications %}
+                                <div class="pub-navbar__notif-item {% if not notif.is_read %}is-unread{% endif %}" data-notif-item data-notif-id="{{ notif.pk }}" role="menuitem">
+                                    <a href="{% if notif.target_url %}{{ notif.target_url }}{% else %}{% url 'notifications:list' %}{% endif %}" class="pub-navbar__notif-item-link">
+                                        <div class="pub-navbar__notif-item-head">
+                                            <span class="pub-navbar__notif-item-icon">
+                                                {% if notif.type == 'submission_confirmed' %}<svg class="icon icon-sm"><use href="#icon-submit"/></svg>
+                                                {% elif notif.type == 'initial_check_result' %}<svg class="icon icon-sm"><use href="#icon-review"/></svg>
+                                                {% elif notif.type == 'review_decision' %}<svg class="icon icon-sm"><use href="#icon-review"/></svg>
+                                                {% elif notif.type == 'payment_required' %}<svg class="icon icon-sm"><use href="#icon-payment"/></svg>
+                                                {% elif notif.type == 'payment_reminder' %}<svg class="icon icon-sm"><use href="#icon-payment"/></svg>
+                                                {% elif notif.type == 'article_published' %}<svg class="icon icon-sm"><use href="#icon-publish"/></svg>
+                                                {% elif notif.type == 'reviewer_assigned' %}<svg class="icon icon-sm"><use href="#icon-review"/></svg>
+                                                {% elif notif.type == 'new_submission' %}<svg class="icon icon-sm"><use href="#icon-submit"/></svg>
+                                                {% elif notif.type == 'review_completed' %}<svg class="icon icon-sm"><use href="#icon-review"/></svg>
+                                                {% else %}<svg class="icon icon-sm"><use href="#icon-bell"/></svg>{% endif %}
+                                            </span>
+                                            <p class="pub-navbar__notif-item-title">{{ notif.title }}</p>
+                                        </div>
+                                        <p class="pub-navbar__notif-item-time">{{ notif.created_at|ar_datetime12 }}</p>
+                                    </a>
+                                    {% if not notif.is_read %}
+                                        <button type="button" class="pub-navbar__notif-mark-read" data-mark-read-url="{% url 'notifications:mark_read' notif.pk %}">
+                                            تحديد كمقروء
+                                        </button>
+                                    {% endif %}
+                                </div>
+                            {% empty %}
+                                <p class="pub-navbar__notif-empty">لا توجد إشعارات حالياً.</p>
+                            {% endfor %}
+                        </div>
+                        <a href="{% url 'notifications:list' %}" class="pub-navbar__notif-menu-footer" role="menuitem">عرض كل الإشعارات</a>
+                    </div>
+                </div>
+            {% else %}
+                <a href="{% url 'submissions:create' %}" class="btn btn-accent btn-navbar-cta">
+                    <svg class="icon icon-sm"><use href="#icon-guidelines"/></svg>
+                    نشر مقالة
+                </a>
+            {% endif %}
+        </div>
+        <button class="pub-navbar__hamburger" id="nav-toggle" aria-label="القائمة">☰</button>
+    </div>
+    <div class="pub-navbar__mobile-menu" id="mobile-menu">
+        <a href="/" class="pub-navbar__mobile-link">الرئيسية</a>
+        <a href="{% url 'pages:about' %}" class="pub-navbar__mobile-link">عن المجلة</a>
+        <a href="{% url 'pages:topics' %}" class="pub-navbar__mobile-link">مواضيع المجلة</a>
+        <a href="{% url 'pages:blog' %}" class="pub-navbar__mobile-link">المدونة</a>
+        <a href="{% url 'pages:conferences' %}" class="pub-navbar__mobile-link">المؤتمرات العلمية</a>
+        <a href="{% url 'pages:archive' %}" class="pub-navbar__mobile-link">الأرشيف</a>
+        <a href="{% url 'pages:contact' %}" class="pub-navbar__mobile-link">اتصل بنا</a>
+        {% if not user.is_authenticated %}
+            <a href="{% url 'accounts:login' %}" class="pub-navbar__mobile-link">تسجيل الدخول</a>
+            <a href="{% url 'accounts:register' %}" class="pub-navbar__mobile-link">إنشاء حساب</a>
+        {% endif %}
+    </div>
+</nav>
+
+{% block above_layout %}{% endblock %}
+
+<div class="pub-layout {% block layout_class %}{% endblock %}">
+    <aside class="pub-sidebar-right">
+        {% block sidebar_right %}
+        <div class="pub-widget">
+            <div class="pub-widget__header"><svg class="icon icon-sm icon-inverse"><use href="#icon-search"/></svg> بحث</div>
+            <div class="pub-widget__body">
+                <form method="get" action="{% url 'pages:search' %}">
+                    <div class="search-row">
+                        <input type="text" name="q" placeholder="ابحث..." class="form-input form-input--sm">
+                        <button type="submit" class="btn btn-primary btn-sm">بحث</button>
+                    </div>
+                </form>
+            </div>
+        </div>
+
+        {% if not user.is_authenticated %}
+        <div class="pub-widget">
+            <div class="pub-widget__header"><svg class="icon icon-sm icon-inverse"><use href="#icon-submit"/></svg> نشر مقالة</div>
+            <div class="pub-widget__body pub-widget__body--center">
+                <p class="text-secondary text-sm mb-4">انضم إلى مجتمع المجلة وابدأ نشر مقالاتك الأكاديمية.</p>
+                <a href="{% url 'accounts:register' %}" class="btn btn-accent btn-full btn-sm">تقديم مقالة</a>
+            </div>
+        </div>
+        {% else %}
+        <div class="pub-widget">
+            <div class="pub-widget__header"><svg class="icon icon-sm icon-inverse"><use href="#icon-user"/></svg> حسابي</div>
+            <div class="pub-widget__body">
+                <p class="text-sm mb-3"><strong>{{ user.get_full_name|default:user.username }}</strong></p>
+                <a href="{% url 'dashboard:home' %}" class="btn btn-primary btn-full btn-sm">لوحة التحكم</a>
+            </div>
+        </div>
+        {% endif %}
+
+        <div class="pub-widget">
+            <div class="pub-widget__header"><svg class="icon icon-sm icon-inverse"><use href="#icon-folder"/></svg> الأقسام</div>
+            <div class="pub-widget__body pub-widget__body--flush">
+                <ul class="pub-widget__list">
+                    {% for section in sections %}
+                    <li class="pub-widget__list-item"><a href="{% url 'pages:section_articles' section.slug %}">{{ section.name }}</a></li>
+                    {% endfor %}
+                </ul>
+            </div>
+        </div>
+        {% endblock %}
+    </aside>
+
+    <main class="pub-layout__main">
+        {% if messages %}
+            {% for message in messages %}
+                <div class="inline-alert inline-alert--{% if message.tags == 'error' %}danger{% elif message.tags == 'success' %}success{% elif message.tags == 'warning' %}warning{% else %}info{% endif %} mb-6">
+                    <span class="inline-alert__icon">
+                        {% if message.tags == 'error' %}
+                            <svg class="icon icon-md" style="color:var(--color-danger)"><use href="#icon-warning"/></svg>
+                        {% elif message.tags == 'success' %}
+                            <svg class="icon icon-md" style="color:var(--color-success)"><use href="#icon-check"/></svg>
+                        {% elif message.tags == 'warning' %}
+                            <svg class="icon icon-md" style="color:var(--color-warning)"><use href="#icon-warning"/></svg>
+                        {% else %}
+                            <svg class="icon icon-md" style="color:var(--color-info)"><use href="#icon-info"/></svg>
+                        {% endif %}
+                    </span>
+                    <div class="inline-alert__content"><p class="inline-alert__message">{{ message }}</p></div>
+                </div>
+            {% endfor %}
+        {% endif %}
+        {% block content %}{% endblock %}
+    </main>
+
+    <aside class="pub-sidebar-left">
+        {% block sidebar_left %}
+        <div class="pub-widget">
+            <div class="pub-widget__header"><svg class="icon icon-sm icon-inverse"><use href="#icon-issues"/></svg> أحدث الأعداد</div>
+            <div class="pub-widget__body pub-widget__body--flush">
+                <ul class="pub-widget__list">
+                    {% for issue in latest_issues %}
+                    <li class="pub-widget__list-item">
+                        <a href="{% url 'pages:article_list' %}?issue={{ issue.pk }}">
+                            {{ issue }}
+                            {% if issue.is_current %}<span class="badge badge-published" style="font-size:9px;margin-right:var(--space-1);">حالي</span>{% endif %}
+                        </a>
+                        <div class="text-muted text-xs">{{ issue.articles.count }} مقال</div>
+                    </li>
+                    {% empty %}
+                    <li class="pub-widget__list-item"><span class="text-muted text-sm">لا يوجد أعداد بعد</span></li>
+                    {% endfor %}
+                </ul>
+            </div>
+        </div>
+        {% endblock %}
+    </aside>
+</div>
+
+{% block stats_bar %}{% endblock %}
+
+<footer class="pub-footer">
+    <div class="pub-footer__main">
+        <div>
+            <img src="{% static 'img/Logo.png' %}" alt="Marcil" style="height:60px;filter:brightness(0) invert(1);opacity:.65;margin-bottom:var(--space-3);display:block;">
+            <p class="pub-footer__desc">مجلة Marcil هي مجلة علمية متخصصة في نشر الأبحاث المحكمة مع عملية مراجعة واضحة وجودة تحريرية عالية.</p>
+            <span class="pub-footer__issn">E-ISSN: 2785-8294</span>
+            <div class="pub-footer__social">
+                <a href="#" class="pub-footer__social-link" title="Instagram">ig</a>
+                <a href="#" class="pub-footer__social-link" title="LinkedIn">in</a>
+                <a href="#" class="pub-footer__social-link" title="Twitter">x</a>
+                <a href="#" class="pub-footer__social-link" title="Facebook">f</a>
+            </div>
+        </div>
+        <div>
+            <h4 class="pub-footer__col-title">روابط</h4>
+            <ul class="pub-footer__col-links">
+                <li><a href="/">الرئيسية</a></li>
+                <li><a href="{% url 'pages:about' %}">عن المجلة</a></li>
+                <li><a href="{% url 'pages:archive' %}">الأرشيف</a></li>
+                <li><a href="{% url 'pages:topics' %}">مواضيع المجلة</a></li>
+                <li><a href="{% url 'pages:blog' %}">المدونة</a></li>
+                <li><a href="{% url 'pages:conferences' %}">المؤتمرات العلمية</a></li>
+                <li><a href="{% url 'pages:contact' %}">اتصل بنا</a></li>
+            </ul>
+        </div>
+        <div>
+            <h4 class="pub-footer__col-title">للباحثين</h4>
+            <ul class="pub-footer__col-links">
+                <li><a href="{% url 'submissions:create' %}">نشر مقالة</a></li>
+                <li><a href="{% url 'pages:author_guidelines' %}">شروط النشر</a></li>
+                <li><a href="{% url 'pages:apc' %}">رسوم النشر</a></li>
+                <li><a href="{% url 'pages:review_process' %}">عملية المراجعة</a></li>
+                <li><a href="{% url 'pages:ethics' %}">أخلاقيات النشر</a></li>
+                <li><a href="{% url 'accounts:register' %}">إنشاء حساب</a></li>
+            </ul>
+        </div>
+        <div>
+            <h4 class="pub-footer__col-title">تواصل معنا</h4>
+            <ul class="pub-footer__col-links">
+                <li><a href="{% url 'pages:contact' %}">اتصل بنا</a></li>
+                <li><a href="#" dir="ltr">+601128195437</a></li>
+                <li><a href="#">ماليزيا — سلانجور</a></li>
+            </ul>
+            <div class="pub-footer__license" style="margin-top:var(--space-4);">
+                <a href="http://creativecommons.org/licenses/by-nc/4.0/" rel="license" target="_blank">
+                    <img src="https://i.creativecommons.org/l/by-nc/4.0/88x31.png" alt="Creative Commons Licence" style="border:0;margin:0 0 var(--space-2);display:block;">
+                </a>
+                <em>Licensed Under CC BY-NC 4.0</em>
+            </div>
+        </div>
+    </div>
+    <div class="pub-footer__bottom">
+        <p class="pub-footer__copy">جميع الحقوق محفوظة &copy; {% now "Y" %} — Marcil المجلة العلمية</p>
+    </div>
+</footer>
+
+{% block extra_js %}{% endblock %}
+<script src="{% static 'js/public.js' %}"></script>
+<link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/toastr.js/latest/toastr.min.css">
+<script src="https://cdnjs.cloudflare.com/ajax/libs/toastr.js/latest/toastr.min.js"></script>
+<script>
+  toastr.options = { positionClass: 'toast-top-left', timeOut: 2500, rtl: true };
+</script>
+
+<a href="https://wa.me/601128195437?text=مرحباً،%20أرغب%20في%20التواصل%20مع%20إدارة%20المجلة"
+   class="wa-float" target="_blank" rel="noopener" aria-label="تواصل معنا عبر واتساب">
+    <span class="wa-float__tooltip">تواصل معنا</span>
+    <svg class="wa-float__icon" viewBox="0 0 24 24" xmlns="http://www.w3.org/2000/svg">
+        <path d="M17.472 14.382c-.297-.149-1.758-.867-2.03-.967-.273-.099-.471-.148-.67.15-.197.297-.767.966-.94 1.164-.173.199-.347.223-.644.075-.297-.15-1.255-.463-2.39-1.475-.883-.788-1.48-1.761-1.653-2.059-.173-.297-.018-.458.13-.606.134-.133.298-.347.446-.52.149-.174.198-.298.298-.497.099-.198.05-.371-.025-.52-.075-.149-.669-1.612-.916-2.207-.242-.579-.487-.5-.669-.51-.173-.008-.371-.01-.57-.01-.198 0-.52.074-.792.372-.272.297-1.04 1.016-1.04 2.479 0 1.462 1.065 2.875 1.213 3.074.149.198 2.096 3.2 5.077 4.487.709.306 1.262.489 1.694.625.712.227 1.36.195 1.871.118.571-.085 1.758-.719 2.006-1.413.248-.694.248-1.289.173-1.413-.074-.124-.272-.198-.57-.347m-5.421 7.403h-.004a9.87 9.87 0 01-5.031-1.378l-.361-.214-3.741.982.998-3.648-.235-.374a9.86 9.86 0 01-1.51-5.26c.001-5.45 4.436-9.884 9.888-9.884 2.64 0 5.122 1.03 6.988 2.898a9.825 9.825 0 012.893 6.994c-.003 5.45-4.437 9.884-9.885 9.884m8.413-18.297A11.815 11.815 0 0012.05 0C5.495 0 .16 5.335.157 11.892c0 2.096.547 4.142 1.588 5.945L.057 24l6.305-1.654a11.882 11.882 0 005.683 1.448h.005c6.554 0 11.89-5.335 11.893-11.893a11.821 11.821 0 00-3.48-8.413z"/>
+    </svg>
+</a>
+</body>
+</html>

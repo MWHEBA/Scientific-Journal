@@ -1,0 +1,233 @@
+{% extends 'base_dashboard.html' %}
+
+{% block title %}إدارة المجلدات{% endblock %}
+{% block nav_admin_issues %}active{% endblock %}
+
+{% block breadcrumb %}
+<span class="dash-breadcrumb__sep">/</span>
+<a href="{% url 'dashboard:issues' %}">الأعداد</a>
+<span class="dash-breadcrumb__sep">/</span>
+<span class="dash-breadcrumb__current">المجلدات</span>
+{% endblock %}
+
+{% block extra_css %}
+<style>
+  .vol-grid {
+    display: grid;
+    gap: var(--space-6);
+    grid-template-columns: 1.2fr 1.8fr;
+    align-items: start;
+  }
+  .vol-kpis {
+    display: grid;
+    gap: var(--space-4);
+    grid-template-columns: repeat(3, minmax(0, 1fr));
+    margin-bottom: var(--space-6);
+  }
+  .vol-kpi {
+    border: 1px solid var(--color-border);
+    background: var(--color-surface);
+    padding: var(--space-4);
+  }
+  .vol-kpi__label { font-size: var(--text-xs); color: var(--color-text-muted); margin-bottom: var(--space-2); }
+  .vol-kpi__value { font-size: var(--text-2xl); font-weight: 700; color: var(--color-primary); line-height: 1.2; }
+  .vol-form-row { --filter-cols: 1fr 1fr auto; }
+  .vol-note { font-size: var(--text-xs); color: var(--color-text-muted); margin-top: var(--space-3); }
+  .vol-table-wrap {
+    overflow: hidden;
+    border: 1px solid var(--color-border);
+    background: var(--color-surface);
+  }
+  .vol-table-wrap .data-table { box-shadow: none; border: 0; }
+  .vol-table-meta {
+    display: flex;
+    justify-content: space-between;
+    align-items: center;
+    padding: var(--space-4) var(--space-5);
+    border-bottom: 1px solid var(--color-border);
+    background: var(--color-surface-alt);
+  }
+  .vol-table-title { font-weight: 700; font-size: var(--text-sm); margin: 0; }
+  .vol-table-caption { color: var(--color-text-muted); font-size: var(--text-xs); margin: 0; }
+  .modal-backdrop {
+    position: fixed; inset: 0; background: rgba(15,23,42,.45); z-index: 200;
+    display: none; align-items: center; justify-content: center; padding: var(--space-4);
+  }
+  .modal-backdrop.show { display: flex; }
+  .modal-card {
+    width: min(680px, 96vw);
+    background: var(--color-surface);
+    border: 1px solid var(--color-border);
+    box-shadow: var(--shadow-md);
+  }
+  .modal-head {
+    display:flex; justify-content:space-between; align-items:center;
+    padding: var(--space-4) var(--space-5); border-bottom:1px solid var(--color-border);
+  }
+  .modal-title { margin:0; font-size:var(--text-lg); font-weight:700; color:var(--color-primary); }
+  .modal-close { border:0; background:none; font-size:20px; cursor:pointer; color:var(--color-text-muted); }
+  .modal-body { padding: var(--space-5); }
+  .vol-edit-grid {
+    display:grid; gap:var(--space-3); grid-template-columns: 1fr 1fr auto; align-items:end;
+  }
+  @media (max-width: 1024px) {
+    .vol-grid { grid-template-columns: 1fr; }
+  }
+  @media (max-width: 768px) {
+    .vol-kpis { grid-template-columns: 1fr; }
+    .vol-edit-grid { grid-template-columns: 1fr; }
+  }
+</style>
+{% endblock %}
+
+{% block content %}
+<div class="page-header">
+  <h1 class="page-header__title">إدارة المجلدات</h1>
+  <div class="page-header__actions">
+    <a href="{% url 'dashboard:issues' %}" class="btn btn-ghost btn-sm">العودة إلى الأعداد</a>
+  </div>
+</div>
+
+<section class="vol-kpis" aria-label="إحصائيات المجلدات">
+  <article class="vol-kpi">
+    <p class="vol-kpi__label">إجمالي المجلدات</p>
+    <p class="vol-kpi__value">{{ stats.total_volumes }}</p>
+  </article>
+  <article class="vol-kpi">
+    <p class="vol-kpi__label">إجمالي الأعداد</p>
+    <p class="vol-kpi__value">{{ stats.total_issues }}</p>
+  </article>
+  <article class="vol-kpi">
+    <p class="vol-kpi__label">أحدث مجلد</p>
+    <p class="vol-kpi__value">{% if stats.latest_volume %}{{ stats.latest_volume.number }}{% else %}—{% endif %}</p>
+  </article>
+</section>
+
+<section class="vol-grid">
+  <article class="card">
+    <h2 class="mb-4" style="font-size:var(--text-lg);">إضافة مجلد جديد</h2>
+    <form method="post" class="filter-bar vol-form-row" novalidate>
+      {% csrf_token %}
+      <div class="form-group mb-0">
+        <label class="form-label" for="id_number">رقم المجلد</label>
+        <input id="id_number" type="number" name="number" class="form-input" min="1" value="{{ defaults.number }}" required>
+      </div>
+      <div class="form-group mb-0">
+        <label class="form-label" for="id_year">السنة</label>
+        <input id="id_year" type="number" name="year" class="form-input" min="1900" max="2100" value="{{ defaults.year }}" required>
+      </div>
+      <div class="form-group mb-0 filter-bar__actions-wrap">
+        <label class="form-label">إجراءات</label>
+        <div class="filter-bar__actions">
+          <button type="submit" class="btn btn-primary">إنشاء</button>
+        </div>
+      </div>
+      <p class="vol-note">يتم منع تكرار رقم المجلد تلقائياً.</p>
+    </form>
+  </article>
+
+  <article class="vol-table-wrap">
+    <header class="vol-table-meta">
+      <div>
+        <p class="vol-table-title">قائمة المجلدات</p>
+        <p class="vol-table-caption">مرتبة تنازلياً حسب رقم المجلد</p>
+      </div>
+    </header>
+
+    <table class="data-table">
+      <thead>
+        <tr>
+          <th style="width:110px;">رقم</th>
+          <th style="width:120px;">السنة</th>
+          <th style="width:120px;">الأعداد</th>
+          <th>تاريخ الإنشاء</th>
+          <th style="width:240px;">تعديل</th>
+        </tr>
+      </thead>
+      <tbody>
+        {% for vol in volumes %}
+        <tr>
+          <td><strong>Vol. {{ vol.number }}</strong></td>
+          <td>{{ vol.year }}</td>
+          <td>{% if vol.issue_count %}<span class="badge badge-under-review">{{ vol.issue_count }}</span>{% else %}<span class="badge badge-draft">0</span>{% endif %}</td>
+          <td class="text-muted text-sm">{{ vol.created_at|date:"Y/m/d" }}</td>
+          <td>
+            <button type="button"
+                    class="btn btn-ghost btn-sm js-open-volume-modal"
+                    data-action="{% url 'dashboard:volume_update' vol.pk %}"
+                    data-number="{{ vol.number }}"
+                    data-year="{{ vol.year }}">
+              تعديل هذا المجلد
+            </button>
+          </td>
+        </tr>
+        {% empty %}
+        <tr>
+          <td colspan="5">
+            <div class="empty-state" style="padding:var(--space-8);">
+              <h3 class="empty-state__title">لا توجد مجلدات حتى الآن</h3>
+              <p class="empty-state__message mb-0">أضف أول مجلد لبدء تنظيم الأعداد.</p>
+            </div>
+          </td>
+        </tr>
+        {% endfor %}
+      </tbody>
+    </table>
+  </article>
+</section>
+
+<div id="volume-edit-modal" class="modal-backdrop" aria-hidden="true">
+  <div class="modal-card" role="dialog" aria-modal="true" aria-labelledby="volume-modal-title">
+    <div class="modal-head">
+      <h3 id="volume-modal-title" class="modal-title">تعديل المجلد</h3>
+      <button type="button" class="modal-close js-close-volume-modal" aria-label="إغلاق">×</button>
+    </div>
+    <div class="modal-body">
+      <form id="volume-edit-form" method="post" class="vol-edit-grid" novalidate>
+        {% csrf_token %}
+        <div class="form-group mb-0">
+          <label class="form-label">رقم المجلد</label>
+          <input id="volume_modal_number" type="number" name="number" class="form-input" min="1" required>
+        </div>
+        <div class="form-group mb-0">
+          <label class="form-label">السنة</label>
+          <input id="volume_modal_year" type="number" name="year" class="form-input" min="1900" max="2100" required>
+        </div>
+        <button type="submit" class="btn btn-primary">حفظ التعديلات</button>
+      </form>
+    </div>
+  </div>
+</div>
+{% endblock %}
+
+{% block extra_js %}
+<script>
+(() => {
+  const modal = document.getElementById('volume-edit-modal');
+  const form = document.getElementById('volume-edit-form');
+  if (!modal || !form) return;
+
+  const openBtns = document.querySelectorAll('.js-open-volume-modal');
+  const closeBtns = document.querySelectorAll('.js-close-volume-modal');
+  const number = document.getElementById('volume_modal_number');
+  const year = document.getElementById('volume_modal_year');
+
+  const open = (btn) => {
+    form.action = btn.dataset.action;
+    number.value = btn.dataset.number;
+    year.value = btn.dataset.year;
+    modal.classList.add('show');
+    modal.setAttribute('aria-hidden', 'false');
+  };
+  const close = () => {
+    modal.classList.remove('show');
+    modal.setAttribute('aria-hidden', 'true');
+  };
+
+  openBtns.forEach((btn) => btn.addEventListener('click', () => open(btn)));
+  closeBtns.forEach((btn) => btn.addEventListener('click', close));
+  modal.addEventListener('click', (e) => { if (e.target === modal) close(); });
+  document.addEventListener('keydown', (e) => { if (e.key === 'Escape') close(); });
+})();
+</script>
+{% endblock %}

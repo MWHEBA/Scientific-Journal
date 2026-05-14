@@ -1,0 +1,34 @@
+{% extends 'base_public.html' %}
+
+{% block title %}عملية المراجعة{% endblock %}
+
+{% block content %}
+<div class="page-header">
+    <h1 class="page-header__title">عملية المراجعة</h1>
+</div>
+
+<div class="card mb-4">
+    <p class="mb-6">
+        تعتمد المجلة نظام <strong>المراجعة العلمية المزدوجة المجهولة</strong> لضمان موضوعية التقييم.
+    </p>
+
+    <h3 class="mb-4" style="font-size: var(--text-md); color: var(--color-primary);">مراحل المراجعة</h3>
+    <ol style="line-height: var(--leading-loose); padding-right: var(--space-6);">
+        <li><strong>تقديم المقالة:</strong> يرفع المؤلف مقالته عبر المنصة</li>
+        <li><strong>الفحص الأولي:</strong> يتحقق المشرف من استيفاء متطلبات التقديم</li>
+        <li><strong>المراجعة الأكاديمية:</strong> يُعيَّن مراجع متخصص لتقييم المقالة (5-10 أيام)</li>
+        <li><strong>قرار المراجعة:</strong> قبول، رفض، أو طلب تعديل (بحد أقصى دورتين)</li>
+        <li><strong>القبول والدفع:</strong> عند القبول، يُطلب من المؤلف سداد رسوم النشر</li>
+        <li><strong>النشر:</strong> تُنشر المقالة تلقائياً فور تأكيد الدفع</li>
+    </ol>
+
+    <div class="inline-alert inline-alert--info mt-6">
+        <span class="inline-alert__icon"><svg class="icon icon-md" style="color:var(--color-info)"><use href="#icon-open-access"/></svg></span>
+        <div class="inline-alert__content">
+            <p class="inline-alert__message">
+                يُحافظ على سرية هوية المراجعين والمؤلفين طوال عملية المراجعة.
+            </p>
+        </div>
+    </div>
+</div>
+{% endblock %}

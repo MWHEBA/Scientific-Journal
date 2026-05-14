@@ -1,0 +1,180 @@
+{% extends 'base_public.html' %}
+{% load static %}
+
+{% block title %}اتصل بنا{% endblock %}
+
+{% block layout_class %}pub-layout--single-sidebar{% endblock %}
+
+{# إخفاء الـ sidebar الأيسر فقط #}
+{% block sidebar_left %}{% endblock %}
+
+{% block content %}
+<div class="page-header">
+    <h1 class="page-header__title">اتصل بنا</h1>
+    <p class="page-header__subtitle">نحن هنا للإجابة على استفساراتك ومساعدتك</p>
+</div>
+
+<div class="contact-container">
+    <!-- Contact Info — عمودين -->
+    <div class="contact-info-block">
+
+        <div class="contact-info-row">
+            <div class="contact-info-row__icon">
+                <svg class="icon icon-md"><use href="#icon-contact"/></svg>
+            </div>
+            <div class="contact-info-row__body">
+                <span class="contact-info-row__label">البريد الإلكتروني</span>
+                {% if settings.contact_email %}
+                <a href="mailto:{{ settings.contact_email }}" class="contact-info-row__value">{{ settings.contact_email }}</a>
+                {% else %}
+                <span class="contact-info-row__value">info@marciljournal.com</span>
+                {% endif %}
+            </div>
+        </div>
+
+        <div class="contact-info-row">
+            <div class="contact-info-row__icon">
+                <svg class="icon icon-md"><use href="#icon-phone"/></svg>
+            </div>
+            <div class="contact-info-row__body">
+                <span class="contact-info-row__label">الهاتف وواتساب</span>
+                <a href="tel:+601128195437" class="contact-info-row__value" dir="ltr">+601128195437</a>
+            </div>
+        </div>
+
+        <div class="contact-info-row">
+            <div class="contact-info-row__icon">
+                <svg class="icon icon-md"><use href="#icon-location"/></svg>
+            </div>
+            <div class="contact-info-row__body">
+                <span class="contact-info-row__label">العنوان</span>
+                {% if settings.contact_address %}
+                <span class="contact-info-row__value">{{ settings.contact_address }}</span>
+                {% else %}
+                <span class="contact-info-row__value">ماليزيا — سلنجور — كاجنغ — كاجنغ أوتاما — بناء شيمار — البلوك باء — رقم ٤٠٨</span>
+                {% endif %}
+            </div>
+        </div>
+
+        <div class="contact-info-row">
+            <div class="contact-info-row__icon">
+                <svg class="icon icon-md"><use href="#icon-about"/></svg>
+            </div>
+            <div class="contact-info-row__body">
+                <span class="contact-info-row__label">تابعنا</span>
+                <div class="contact-social-links">
+                    <a href="#" class="pub-footer__social-link" title="Instagram">ig</a>
+                    <a href="#" class="pub-footer__social-link" title="LinkedIn">in</a>
+                    <a href="#" class="pub-footer__social-link" title="Twitter">𝕏</a>
+                    <a href="#" class="pub-footer__social-link" title="Facebook">f</a>
+                </div>
+            </div>
+        </div>
+
+    </div>
+
+    <!-- Contact Form -->
+    <div class="contact-form-section">
+        <div class="contact-form-header">
+            <h2 class="contact-form-header__title">أرسل لنا رسالة</h2>
+            <p class="contact-form-header__subtitle">املأ النموذج أدناه وسنرد عليك في أقرب وقت ممكن</p>
+        </div>
+
+        <form id="contactForm" class="contact-form" method="post">
+            {% csrf_token %}
+            
+            <div class="contact-form__row">
+                <div class="contact-form__group">
+                    <label for="name" class="contact-form__label">الاسم الكامل <span class="required">*</span></label>
+                    <input type="text" id="name" name="name" class="contact-form__input" required>
+                </div>
+
+                <div class="contact-form__group">
+                    <label for="email" class="contact-form__label">البريد الإلكتروني <span class="required">*</span></label>
+                    <input type="email" id="email" name="email" class="contact-form__input" required>
+                </div>
+            </div>
+
+            <div class="contact-form__group">
+                <label for="subject" class="contact-form__label">الموضوع <span class="required">*</span></label>
+                <input type="text" id="subject" name="subject" class="contact-form__input" required>
+            </div>
+
+            <div class="contact-form__group">
+                <label for="message" class="contact-form__label">الرسالة <span class="required">*</span></label>
+                <textarea id="message" name="message" class="contact-form__textarea" rows="6" required></textarea>
+            </div>
+
+            <button type="submit" class="btn btn--primary btn--lg">
+                <i class="fas fa-paper-plane"></i>
+                إرسال الرسالة
+            </button>
+        </form>
+    </div>
+
+
+</div>
+
+<script>
+document.getElementById('contactForm').addEventListener('submit', function(e) {
+    e.preventDefault();
+    
+    const formData = new FormData(this);
+    const submitBtn = this.querySelector('button[type="submit"]');
+    const originalBtnText = submitBtn.innerHTML;
+    
+    // تعطيل الزر أثناء الإرسال
+    submitBtn.disabled = true;
+    submitBtn.innerHTML = '<i class="fas fa-spinner fa-spin"></i> جاري الإرسال...';
+    
+    fetch('{% url "pages:contact" %}', {
+        method: 'POST',
+        body: formData,
+        headers: {
+            'X-Requested-With': 'XMLHttpRequest'
+        }
+    })
+    .then(response => response.json())
+    .then(data => {
+        if (data.success) {
+            Swal.fire({
+                title: 'شكراً لتواصلك معنا!',
+                text: data.message || 'تم إرسال رسالتك بنجاح. سنرد عليك في أقرب وقت ممكن.',
+                icon: 'success',
+                confirmButtonText: 'حسناً'
+            }).then(() => {
+                this.reset();
+            });
+        } else {
+            let errorMsg = 'حدث خطأ أثناء إرسال الرسالة. يرجى المحاولة مرة أخرى.';
+            if (data.errors) {
+                errorMsg = Object.values(data.errors).flat().join('\n');
+            } else if (data.message) {
+                errorMsg = data.message;
+            }
+            
+            Swal.fire({
+                title: 'خطأ!',
+                text: errorMsg,
+                icon: 'error',
+                confirmButtonText: 'حسناً'
+            });
+        }
+    })
+    .catch(error => {
+        console.error('Error:', error);
+        Swal.fire({
+            title: 'خطأ!',
+            text: 'حدث خطأ في الاتصال. يرجى المحاولة مرة أخرى لاحقاً.',
+            icon: 'error',
+            confirmButtonText: 'حسناً'
+        });
+    })
+    .finally(() => {
+        // إعادة تفعيل الزر
+        submitBtn.disabled = false;
+        submitBtn.innerHTML = originalBtnText;
+    });
+});
+</script>
+{% endblock %}

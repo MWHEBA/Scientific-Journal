@@ -1,0 +1,153 @@
+{% extends 'base_dashboard.html' %}
+{% load dashboard_extras %}
+
+{% block title %}إدارة الدفعات{% endblock %}
+{% block nav_admin_submissions %}active{% endblock %}
+{% block breadcrumb %}
+    <span class="dash-breadcrumb__sep">/</span>
+    <span class="dash-breadcrumb__current">الدفعات</span>
+{% endblock %}
+
+{% block content %}
+<div class="page-header">
+    <h1 class="page-header__title">إدارة الدفعات</h1>
+</div>
+
+<!-- إحصائيات -->
+<div style="display: grid; grid-template-columns: repeat(auto-fit, minmax(140px, 1fr)); gap: var(--space-4); margin-bottom: var(--space-8);">
+    <div class="card card-stat">
+        <span class="card-stat__number">{{ stats.total }}</span>
+        <span class="card-stat__label">إجمالي الدفعات</span>
+    </div>
+    <div class="card card-stat">
+        <span class="card-stat__number" style="color: var(--color-warning);">{{ stats.pending }}</span>
+        <span class="card-stat__label">معلّقة</span>
+    </div>
+    <div class="card card-stat">
+        <span class="card-stat__number" style="color: var(--color-info);">{{ stats.processing }}</span>
+        <span class="card-stat__label">قيد المعالجة</span>
+    </div>
+    <div class="card card-stat">
+        <span class="card-stat__number" style="color: var(--color-success);">{{ stats.completed }}</span>
+        <span class="card-stat__label">مكتملة</span>
+    </div>
+    <div class="card card-stat">
+        <span class="card-stat__number" style="color: var(--color-danger);">{{ stats.failed }}</span>
+        <span class="card-stat__label">فاشلة</span>
+    </div>
+    <div class="card card-stat">
+        <span class="card-stat__number" style="color: var(--color-success);">{{ stats.total_revenue }}</span>
+        <span class="card-stat__label">إجمالي الإيرادات ($)</span>
+    </div>
+</div>
+
+<!-- فلترة -->
+<div class="card mb-6">
+    <form method="get" class="filter-bar" style="--filter-cols:minmax(220px,1fr) auto;">
+        <div class="form-group mb-0">
+            <label class="form-label">حالة الدفع</label>
+            <select name="status" class="form-select">
+                <option value="">جميع الحالات</option>
+                {% for val, label in status_choices %}
+                    <option value="{{ val }}" {% if current_status == val %}selected{% endif %}>{{ label }}</option>
+                {% endfor %}
+            </select>
+        </div>
+        <div class="form-group mb-0 filter-bar__actions-wrap">
+            <label class="form-label">إجراءات</label>
+            <div class="filter-bar__actions">
+                <button type="submit" class="btn btn-primary">تصفية</button>
+                <a href="{% url 'dashboard:admin_payments' %}" class="btn btn-ghost">إعادة تعيين</a>
+            </div>
+        </div>
+    </form>
+</div>
+
+<!-- جدول الدفعات -->
+<div class="card" style="padding: 0; overflow: hidden;">
+    <table class="data-table">
+        <thead>
+            <tr>
+                <th>#</th>
+                <th>المقالة</th>
+                <th>المؤلف</th>
+                <th>المبلغ</th>
+                <th>حالة الدفع</th>
+                <th>البوابة</th>
+                <th>رقم الطلب</th>
+                <th>تاريخ الدفع</th>
+                <th>تاريخ الإنشاء</th>
+                <th>إجراء</th>
+            </tr>
+        </thead>
+        <tbody>
+            {% for payment in payments %}
+            <tr>
+                <td class="text-muted text-sm">{{ payment.pk }}</td>
+                <td>
+                    <a href="{% url 'dashboard:submission_detail' payment.submission.pk %}"
+                       style="color: var(--color-text); font-weight: 500;">
+                        {{ payment.submission.title|truncatechars:45 }}
+                    </a>
+                </td>
+                <td class="text-sm">
+                    {{ payment.submission.author.get_full_name|default:payment.submission.author.username }}
+                </td>
+                <td class="text-sm"><strong>{{ payment.amount }} {{ payment.currency }}</strong></td>
+                <td>
+                    <span class="badge
+                        {% if payment.status == 'pending' %}badge-draft
+                        {% elif payment.status == 'processing' %}badge-payment-processing
+                        {% elif payment.status == 'completed' %}badge-published
+                        {% elif payment.status == 'failed' %}badge-rejected
+                        {% elif payment.status == 'expired' %}badge-expired
+                        {% endif %}">
+                        {{ payment.get_status_display }}
+                    </span>
+                </td>
+                <td class="text-sm text-muted">{{ payment.gateway_name|default:"—" }}</td>
+                <td class="text-sm text-muted" style="font-family: monospace; font-size: 11px;">
+                    {{ payment.gateway_order_id|default:"—"|truncatechars:20 }}
+                </td>
+                <td class="text-sm text-muted">
+                    {% if payment.paid_at %}{{ payment.paid_at|ar_datetime12 }}{% else %}—{% endif %}
+                </td>
+                <td class="text-sm text-muted">{{ payment.created_at|date:"Y/m/d" }}</td>
+                <td>
+                    <a href="{% url 'dashboard:submission_detail' payment.submission.pk %}"
+                       class="btn btn-sm btn-ghost">عرض المقالة</a>
+                </td>
+            </tr>
+            {% empty %}
+            <tr>
+                <td colspan="10" style="padding: var(--space-8);">
+                    <div class="empty-state" style="padding: var(--space-6);">
+                        <div class="empty-state__icon">
+                            <svg class="icon icon-xl icon-muted"><use href="#icon-articles"/></svg>
+                        </div>
+                        <p class="empty-state__message mb-0">لا توجد دفعات تطابق الفلتر.</p>
+                    </div>
+                </td>
+            </tr>
+            {% endfor %}
+        </tbody>
+    </table>
+</div>
+
+<!-- Pagination -->
+{% if is_paginated %}
+<div style="display: flex; gap: var(--space-2); justify-content: center; margin-top: var(--space-6);">
+    {% if page_obj.has_previous %}
+        <a href="?page={{ page_obj.previous_page_number }}&status={{ current_status }}"
+           class="btn btn-sm btn-ghost">السابق</a>
+    {% endif %}
+    <span style="padding: var(--space-2) var(--space-4); color: var(--color-text-muted); font-size: var(--text-sm);">
+        {{ page_obj.number }} / {{ paginator.num_pages }}
+    </span>
+    {% if page_obj.has_next %}
+        <a href="?page={{ page_obj.next_page_number }}&status={{ current_status }}"
+           class="btn btn-sm btn-ghost">التالي</a>
+    {% endif %}
+</div>
+{% endif %}
+{% endblock %}

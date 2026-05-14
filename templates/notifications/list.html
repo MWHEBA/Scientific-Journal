@@ -1,0 +1,89 @@
+{% extends 'base_dashboard.html' %}
+{% load dashboard_extras %}
+
+{% block title %}الإشعارات{% endblock %}
+{% block nav_notifications %}active{% endblock %}
+{% block breadcrumb %}
+    <span class="dash-breadcrumb__sep">/</span>
+    <span class="dash-breadcrumb__current">الإشعارات</span>
+{% endblock %}
+
+{% block content %}
+<div class="page-header">
+    <div class="notif-header">
+        <h1 class="page-header__title">الإشعارات</h1>
+        {% if unread_count > 0 %}
+            <span class="badge badge-rejected">{{ unread_count }} جديد</span>
+        {% endif %}
+    </div>
+    {% if unread_count > 0 %}
+        <button class="btn btn-ghost btn-sm"
+                id="btn-mark-all"
+                data-mark-all-url="{% url 'notifications:mark_all_read' %}">
+            تحديد الكل كمقروء
+        </button>
+    {% endif %}
+</div>
+
+{% if notifications %}
+    <div id="notifications-list">
+        {% for notif in notifications %}
+        <div class="card mb-3 {% if not notif.is_read %}notification--unread{% else %}notification--read{% endif %}"
+             data-notif-id="{{ notif.pk }}">
+            <div class="notif-row">
+                <div class="notif-row__inner">
+                    <span class="notif-row__icon">
+                        {% if notif.type == 'submission_confirmed' %}<svg class="icon icon-md"><use href="#icon-submit"/></svg>
+                        {% elif notif.type == 'initial_check_result' %}<svg class="icon icon-md"><use href="#icon-review"/></svg>
+                        {% elif notif.type == 'review_decision' %}<svg class="icon icon-md"><use href="#icon-review"/></svg>
+                        {% elif notif.type == 'payment_required' %}<svg class="icon icon-md"><use href="#icon-payment"/></svg>
+                        {% elif notif.type == 'payment_reminder' %}<svg class="icon icon-md"><use href="#icon-payment"/></svg>
+                        {% elif notif.type == 'article_published' %}<svg class="icon icon-md"><use href="#icon-publish"/></svg>
+                        {% elif notif.type == 'reviewer_assigned' %}<svg class="icon icon-md"><use href="#icon-review"/></svg>
+                        {% elif notif.type == 'new_submission' %}<svg class="icon icon-md"><use href="#icon-submit"/></svg>
+                        {% elif notif.type == 'review_completed' %}<svg class="icon icon-md"><use href="#icon-review"/></svg>
+                        {% else %}<svg class="icon icon-md"><use href="#icon-bell"/></svg>{% endif %}
+                    </span>
+                    <div class="notif-row__body">
+                        <a href="{% if notif.target_url %}{{ notif.target_url }}{% else %}{% url 'notifications:list' %}{% endif %}" style="text-decoration:none;color:inherit;display:block;">
+                            <p class="mb-1 {% if not notif.is_read %}notif-title--unread{% endif %}">
+                                {{ notif.title }}
+                            </p>
+                            <p class="text-secondary text-sm mb-2">{{ notif.message }}</p>
+                            <p class="text-muted text-xs mb-0">{{ notif.created_at|ar_datetime12 }}</p>
+                        </a>
+                    </div>
+                </div>
+                {% if not notif.is_read %}
+                    <button class="btn btn-sm btn-ghost btn-mark-read"
+                            data-mark-read-url="{% url 'notifications:mark_read' notif.pk %}"
+                            data-notif-id="{{ notif.pk }}">
+                        تحديد كمقروء
+                    </button>
+                {% endif %}
+            </div>
+        </div>
+        {% endfor %}
+    </div>
+
+    {% if is_paginated %}
+    <div class="pagination">
+        {% if page_obj.has_previous %}
+            <a href="?page={{ page_obj.previous_page_number }}" class="btn btn-sm btn-ghost">السابق</a>
+        {% endif %}
+        <span class="pagination__info">{{ page_obj.number }} / {{ paginator.num_pages }}</span>
+        {% if page_obj.has_next %}
+            <a href="?page={{ page_obj.next_page_number }}" class="btn btn-sm btn-ghost">التالي</a>
+        {% endif %}
+    </div>
+    {% endif %}
+{% else %}
+    <div class="card">
+        <div class="empty-state">
+            <div class="empty-state__icon"><svg class="icon icon-xl icon-muted"><use href="#icon-bell"/></svg></div>
+            <h3 class="empty-state__title">أنت على اطلاع بكل شيء ✓</h3>
+            <p class="empty-state__message">لا توجد إشعارات جديدة.</p>
+        </div>
+    </div>
+{% endif %}
+{% endblock %}

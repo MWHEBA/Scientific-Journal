@@ -1,0 +1,53 @@
+{% extends 'base_public.html' %}
+
+{% block title %}إرشادات المؤلفين{% endblock %}
+
+{% block content %}
+<div class="page-header">
+    <h1 class="page-header__title">إرشادات المؤلفين</h1>
+</div>
+
+<div class="card mb-4">
+    <h3 class="mb-3" style="font-size:var(--text-md);color:var(--color-primary);">طريقة الإرسال</h3>
+    <p class="mb-3">
+        إرسال المقالات سهل ومباشر — يمكن الإرسال من خلال إنشاء حساب على موقع المجلة
+        أو عبر البريد الإلكتروني على
+        {% if settings.contact_email %}
+            <a href="mailto:{{ settings.contact_email }}">{{ settings.contact_email }}</a>.
+        {% else %}
+            البريد الإلكتروني للمجلة.
+        {% endif %}
+    </p>
+    <ul style="line-height:var(--leading-loose);padding-right:var(--space-6);margin-bottom:var(--space-4);">
+        <li>يتم إبلاغ الباحث عن مقالته خلال <strong>٢٤ ساعة</strong></li>
+        <li>يصدر قرار القبول أو الرفض خلال <strong>٣ أيام عمل</strong></li>
+        <li>يمكن تتبع حالة المقالة من لوحة التحكم الخاصة بالباحث</li>
+    </ul>
+</div>
+
+<div class="card mb-4">
+    <h3 class="mb-3" style="font-size:var(--text-md);color:var(--color-primary);">متطلبات التقديم</h3>
+    <ul style="line-height:var(--leading-loose);padding-right:var(--space-6);margin-bottom:var(--space-4);">
+        <li>يجب أن يكون الملف بصيغة <strong>PDF</strong> بحجم أقصاه <strong>20 ميغابايت</strong></li>
+        <li>يجب أن يتضمن التقديم: العنوان، الملخص، الكلمات المفتاحية، والقسم العلمي</li>
+        <li>الملخص: 150–300 كلمة</li>
+        <li>الكلمات المفتاحية: 4–8 كلمات مفصولة بفاصلة</li>
+    </ul>
+</div>
+
+<div class="card mb-4">
+    <h3 class="mb-3" style="font-size:var(--text-md);color:var(--color-primary);">تنسيق المقالة</h3>
+    <ul style="line-height:var(--leading-loose);padding-right:var(--space-6);margin-bottom:var(--space-4);">
+        <li>حجم الخط: 12 نقطة، مزدوج التباعد</li>
+        <li>الهوامش: 2.5 سم من جميع الجهات</li>
+        <li>المراجع: وفق نظام APA أو IEEE</li>
+    </ul>
+</div>
+
+<div class="card">
+    <h3 class="mb-3" style="font-size:var(--text-md);color:var(--color-primary);">دورة التعديل</h3>
+    <p class="mb-0">
+        يُسمح بدورتَي تعديل كحد أقصى. بعد الدورة الثانية، يجب على المحكّم إصدار قرار نهائي.
+    </p>
+</div>
+{% endblock %}

@@ -1,0 +1,208 @@
+{% load static dashboard_extras %}
+<!DOCTYPE html>
+<html lang="ar" dir="rtl">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>{% block title %}لوحة التحكم{% endblock %} — Marcil</title>
+    <link rel="preconnect" href="https://fonts.googleapis.com">
+    <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+    <link href="https://fonts.googleapis.com/css2?family=Cairo:wght@400;500;600;700&display=swap" rel="stylesheet">
+    <link rel="stylesheet" href="{% static 'css/tokens.css' %}">
+    <link rel="stylesheet" href="{% static 'css/base.css' %}">
+    <link rel="stylesheet" href="{% static 'css/components.css' %}">
+    <link rel="stylesheet" href="{% static 'css/layout-dash.css' %}">
+    <link rel="stylesheet" href="https://cdn.jsdelivr.net/npm/sweetalert2@11/dist/sweetalert2.min.css">
+    {% block extra_css %}{% endblock %}
+</head>
+<body>
+
+{% include "icons.svg" %}
+
+<div class="dash-shell">
+
+    <aside class="dash-sidebar" id="dash-sidebar">
+        <a href="/" class="dash-sidebar__brand">
+            <img src="{% static 'img/Logo.png' %}" alt="Marcil"
+                 style="height:48px;width:auto;filter:brightness(0) invert(1);">
+        </a>
+
+        <nav class="dash-sidebar__nav">
+            {% if user.role == 'admin' %}
+            <span class="dash-sidebar__section-label">لوحة العمل</span>
+            <a href="{% url 'dashboard:admin' %}" class="dash-nav-item {% block nav_admin_home %}{% endblock %}">
+                <svg class="icon icon-sm dash-nav-item__icon"><use href="#icon-dashboard"/></svg>
+                لوحة التحكم
+            </a>
+
+            <span class="dash-sidebar__section-label">المحتوى</span>
+            <a href="{% url 'dashboard:admin_submissions' %}" class="dash-nav-item {% block nav_admin_submissions %}{% endblock %}">
+                <svg class="icon icon-sm dash-nav-item__icon"><use href="#icon-archive"/></svg>
+                التقديمات
+            </a>
+            <a href="{% url 'dashboard:admin_articles' %}" class="dash-nav-item {% block nav_admin_articles %}{% endblock %}">
+                <svg class="icon icon-sm dash-nav-item__icon"><use href="#icon-articles"/></svg>
+                المقالات
+            </a>
+            <a href="{% url 'dashboard:issues' %}" class="dash-nav-item {% block nav_admin_issues %}{% endblock %}">
+                <svg class="icon icon-sm dash-nav-item__icon"><use href="#icon-issues"/></svg>
+                الأعداد والمجلدات
+            </a>
+
+            <span class="dash-sidebar__section-label">التشغيل</span>
+            <a href="{% url 'dashboard:admin_payments' %}" class="dash-nav-item {% block nav_admin_payments %}{% endblock %}">
+                <svg class="icon icon-sm dash-nav-item__icon"><use href="#icon-payment"/></svg>
+                الدفعات
+            </a>
+            <a href="{% url 'dashboard:reviewers' %}" class="dash-nav-item {% block nav_admin_reviewers %}{% endblock %}">
+                <svg class="icon icon-sm dash-nav-item__icon"><use href="#icon-reviewers"/></svg>
+                المراجعون
+            </a>
+
+            <span class="dash-sidebar__section-label">الإدارة</span>
+            <a href="{% url 'dashboard:users' %}" class="dash-nav-item {% block nav_admin_users %}{% endblock %}">
+                <svg class="icon icon-sm dash-nav-item__icon"><use href="#icon-user"/></svg>
+                المستخدمون
+            </a>
+            <a href="{% url 'dashboard:settings' %}" class="dash-nav-item {% block nav_admin_settings %}{% endblock %}">
+                <svg class="icon icon-sm dash-nav-item__icon"><use href="#icon-settings"/></svg>
+                الإعدادات
+            </a>
+
+            {% elif user.role == 'author' %}
+            <span class="dash-sidebar__section-label">المؤلف</span>
+            <a href="{% url 'dashboard:author' %}" class="dash-nav-item {% block nav_author_home %}{% endblock %}">
+                <svg class="icon icon-sm dash-nav-item__icon"><use href="#icon-dashboard"/></svg>
+                لوحة التحكم
+            </a>
+            <a href="{% url 'submissions:create' %}" class="dash-nav-item {% block nav_author_create %}{% endblock %}">
+                <svg class="icon icon-sm dash-nav-item__icon"><use href="#icon-guidelines"/></svg>
+                تقديم مقالة جديدة
+            </a>
+
+            {% elif user.role == 'reviewer' %}
+            <span class="dash-sidebar__section-label">المراجع</span>
+            <a href="{% url 'dashboard:reviewer' %}" class="dash-nav-item {% block nav_reviewer_home %}{% endblock %}">
+                <svg class="icon icon-sm dash-nav-item__icon"><use href="#icon-dashboard"/></svg>
+                لوحة التحكم
+            </a>
+            {% endif %}
+        </nav>
+
+        <div class="dash-sidebar__footer">
+            <div class="dash-sidebar__user">
+                <div class="dash-sidebar__avatar">
+                    {{ user.get_full_name|default:user.username|first|upper }}
+                </div>
+                <div class="dash-sidebar__user-info">
+                    <div class="dash-sidebar__user-name">{{ user.get_full_name|default:user.username }}</div>
+                    <div class="dash-sidebar__user-role">
+                        {% if user.role == 'admin' %}مشرف
+                        {% elif user.role == 'author' %}مؤلف
+                        {% elif user.role == 'reviewer' %}مراجع{% endif %}
+                    </div>
+                </div>
+            </div>
+            <form method="post" action="{% url 'accounts:logout' %}">
+                {% csrf_token %}
+                <button type="submit" class="dash-sidebar__logout">
+                    <svg class="icon icon-sm"><use href="#icon-logout"/></svg>
+                    تسجيل الخروج
+                </button>
+            </form>
+        </div>
+    </aside>
+
+    <div class="dash-main">
+        <header class="dash-topbar">
+            <div class="dash-topbar__right">
+                <button class="dash-topbar__hamburger" id="sidebar-toggle" aria-label="القائمة">
+                    <svg class="icon icon-md"><use href="#icon-dashboard"/></svg>
+                </button>
+                <nav class="dash-breadcrumb">
+                    <a href="{% url 'dashboard:home' %}">
+                        لوحة التحكم
+                    </a>
+                    {% block breadcrumb %}{% endblock %}
+                </nav>
+            </div>
+            <div class="dash-topbar__left">
+                {% if is_impersonating %}
+                <form method="post" action="{% url 'dashboard:impersonate_stop' %}" style="display:flex;align-items:center;gap:8px;">
+                    {% csrf_token %}
+                    <span class="badge badge-under-review">أنت في وضع Login as user</span>
+                    <button type="submit" class="btn btn-sm btn-primary">الرجوع لحساب المشرف</button>
+                </form>
+                {% endif %}
+                <a href="/" class="dash-topbar__notif" title="الموقع العام" aria-label="الموقع العام">
+                    <svg class="icon icon-md"><use href="#icon-publish"/></svg>
+                </a>
+                <div class="dash-topbar__notif-wrap" id="dash-notif-wrap" data-unread-count="{{ unread_notifications_count }}">
+                    <button type="button" class="dash-topbar__notif" id="dash-notif-toggle" title="الإشعارات" aria-label="الإشعارات" aria-haspopup="true" aria-expanded="false" aria-controls="dash-notif-menu">
+                        <svg class="icon icon-md"><use href="#icon-bell"/></svg>
+                        <span class="dash-topbar__notif-badge" id="dash-notif-badge" {% if unread_notifications_count == 0 %}hidden{% endif %}>{{ unread_notifications_count }}</span>
+                    </button>
+
+                    <div class="dash-topbar__notif-menu" id="dash-notif-menu" role="menu" aria-label="قائمة الإشعارات" hidden>
+                        <div class="dash-topbar__notif-head">
+                            <strong>الإشعارات</strong>
+                            <span class="dash-topbar__notif-count" id="dash-notif-count" {% if unread_notifications_count == 0 %}hidden{% endif %}>{{ unread_notifications_count }} جديدة</span>
+                        </div>
+                        <div class="dash-topbar__notif-list">
+                            {% for notif in latest_notifications %}
+                                <div class="dash-topbar__notif-item {% if not notif.is_read %}is-unread{% endif %}" data-dash-notif-item data-notif-id="{{ notif.pk }}" role="menuitem">
+                                    <a href="{% if notif.target_url %}{{ notif.target_url }}{% else %}{% url 'notifications:list' %}{% endif %}" class="dash-topbar__notif-link">
+                                        <p class="dash-topbar__notif-title">{{ notif.title }}</p>
+                                        <p class="dash-topbar__notif-time">{{ notif.created_at|ar_datetime12 }}</p>
+                                    </a>
+                                    {% if not notif.is_read %}
+                                        <button type="button" class="dash-topbar__notif-read" data-mark-read-url="{% url 'notifications:mark_read' notif.pk %}">تحديد كمقروء</button>
+                                    {% endif %}
+                                </div>
+                            {% empty %}
+                                <p class="dash-topbar__notif-empty">لا توجد إشعارات حالياً.</p>
+                            {% endfor %}
+                        </div>
+                        <a href="{% url 'notifications:list' %}" class="dash-topbar__notif-footer" role="menuitem">عرض كل الإشعارات</a>
+                    </div>
+                </div>
+            </div>
+        </header>
+
+        <main class="dash-content">
+            {% if messages %}
+                {% for message in messages %}
+                    <div class="inline-alert inline-alert--{% if message.tags == 'error' %}danger{% elif message.tags == 'success' %}success{% elif message.tags == 'warning' %}warning{% else %}info{% endif %} mb-6">
+                        <span class="inline-alert__icon">
+                            {% if message.tags == 'error' %}
+                                <svg class="icon icon-md" style="color:var(--color-danger)"><use href="#icon-warning"/></svg>
+                            {% elif message.tags == 'success' %}
+                                <svg class="icon icon-md" style="color:var(--color-success)"><use href="#icon-check"/></svg>
+                            {% elif message.tags == 'warning' %}
+                                <svg class="icon icon-md" style="color:var(--color-warning)"><use href="#icon-warning"/></svg>
+                            {% else %}
+                                <svg class="icon icon-md" style="color:var(--color-info)"><use href="#icon-info"/></svg>
+                            {% endif %}
+                        </span>
+                        <div class="inline-alert__content">
+                            <p class="inline-alert__message">{{ message }}</p>
+                        </div>
+                    </div>
+                {% endfor %}
+            {% endif %}
+
+            {% block content %}{% endblock %}
+        </main>
+    </div>
+</div>
+
+<div class="dash-overlay" id="dash-overlay"></div>
+
+<script>
+  window.APP = { csrfToken: '{{ csrf_token }}' };
+</script>
+<script src="https://cdn.jsdelivr.net/npm/sweetalert2@11"></script>
+<script src="{% static 'js/dashboard.js' %}"></script>
+{% block extra_js %}{% endblock %}
+</body>
+</html>

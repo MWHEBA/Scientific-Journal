@@ -1,0 +1,103 @@
+{% extends 'base_dashboard.html' %}
+{% load dashboard_extras %}
+
+{% block title %}إدارة المقالات المنشورة{% endblock %}
+{% block nav_admin_articles %}active{% endblock %}
+{% block breadcrumb %}
+  <span class="dash-breadcrumb__sep">/</span>
+  <span class="dash-breadcrumb__current">المقالات المنشورة</span>
+{% endblock %}
+
+{% block content %}
+<div class="page-header">
+  <h1 class="page-header__title">المقالات المنشورة</h1>
+</div>
+
+<div class="card mb-6">
+  <form method="get" class="filter-bar" style="--filter-cols:minmax(240px,1.6fr) minmax(180px,1fr) minmax(220px,1fr) auto;">
+    <div class="form-group mb-0">
+      <label class="form-label">بحث</label>
+      <input type="text" name="q" class="form-input" value="{{ current_filters.q }}" placeholder="عنوان / مؤلف">
+    </div>
+    <div class="form-group mb-0">
+      <label class="form-label">القسم</label>
+      <select name="section" class="form-select">
+        <option value="">كل الأقسام</option>
+        {% for sec in sections %}
+          <option value="{{ sec.pk }}" {% if current_filters.section == sec.pk|stringformat:"s" %}selected{% endif %}>{{ sec.name }}</option>
+        {% endfor %}
+      </select>
+    </div>
+    <div class="form-group mb-0">
+      <label class="form-label">العدد</label>
+      <select name="issue" class="form-select">
+        <option value="">كل الأعداد</option>
+        {% for issue_item in issues %}
+          <option value="{{ issue_item.pk }}" {% if current_filters.issue == issue_item.pk|stringformat:"s" %}selected{% endif %}>
+            {{ issue_item }}
+          </option>
+        {% endfor %}
+      </select>
+    </div>
+    <div class="form-group mb-0 filter-bar__actions-wrap">
+      <label class="form-label">إجراءات</label>
+      <div class="filter-bar__actions">
+        <button type="submit" class="btn btn-primary">تطبيق</button>
+        <a href="{% url 'dashboard:admin_articles' %}" class="btn btn-ghost">مسح</a>
+      </div>
+    </div>
+  </form>
+</div>
+
+<div class="card" style="padding:0;overflow:hidden;">
+  <table class="data-table">
+    <thead>
+      <tr>
+        <th>#</th>
+        <th>العنوان</th>
+        <th>المؤلف</th>
+        <th>القسم</th>
+        <th>العدد</th>
+        <th>تاريخ النشر</th>
+        <th>PDF</th>
+      </tr>
+    </thead>
+    <tbody>
+      {% for article in articles %}
+      <tr>
+        <td class="text-muted text-sm">{{ article.pk }}</td>
+        <td style="font-weight:600;">{{ article.title|truncatechars:70 }}</td>
+        <td class="text-sm">{{ article.submission.author.get_full_name|default:article.submission.author.username }}</td>
+        <td class="text-sm">{{ article.section.name }}</td>
+        <td class="text-sm">{% if article.issue %}{{ article.issue }}{% else %}<span class="text-muted">غير معيّن</span>{% endif %}</td>
+        <td class="text-sm text-muted">{{ article.published_at|ar_datetime12 }}</td>
+        <td>
+          <a href="{{ article.pdf_file.url }}" target="_blank" class="btn btn-ghost btn-sm">تحميل</a>
+        </td>
+      </tr>
+      {% empty %}
+      <tr>
+        <td colspan="7" style="padding:var(--space-8);">
+          <div class="empty-state" style="padding:var(--space-4);">
+            <h3 class="empty-state__title">لا توجد مقالات منشورة</h3>
+            <p class="empty-state__message mb-0">لا توجد نتائج مطابقة للفلاتر الحالية.</p>
+          </div>
+        </td>
+      </tr>
+      {% endfor %}
+    </tbody>
+  </table>
+</div>
+
+{% if is_paginated %}
+<div class="pagination" style="margin-top:var(--space-6);">
+  {% if page_obj.has_previous %}
+    <a href="?page={{ page_obj.previous_page_number }}{% if page_query %}&{{ page_query }}{% endif %}" class="btn btn-sm btn-ghost">السابق</a>
+  {% endif %}
+  <span class="pagination__info">{{ page_obj.number }} / {{ paginator.num_pages }}</span>
+  {% if page_obj.has_next %}
+    <a href="?page={{ page_obj.next_page_number }}{% if page_query %}&{{ page_query }}{% endif %}" class="btn btn-sm btn-ghost">التالي</a>
+  {% endif %}
+</div>
+{% endif %}
+{% endblock %}

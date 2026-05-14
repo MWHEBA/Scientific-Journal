@@ -1,0 +1,113 @@
+{% extends 'base_dashboard.html' %}
+{% load dashboard_extras %}
+
+{% block title %}إدارة المراجعين{% endblock %}
+{% block nav_admin_reviewers %}active{% endblock %}
+{% block breadcrumb %}
+    <span class="dash-breadcrumb__sep">/</span>
+    <span class="dash-breadcrumb__current">المراجعون</span>
+{% endblock %}
+
+{% block content %}
+<div class="page-header">
+    <h1 class="page-header__title">إدارة المراجعين</h1>
+</div>
+
+{% if reviewers %}
+    {% for reviewer in reviewers %}
+    <div class="card mb-4">
+        <div style="display: flex; justify-content: space-between; align-items: flex-start; gap: var(--space-4);">
+            <div style="flex: 1;">
+                <div style="display: flex; align-items: center; gap: var(--space-3); margin-bottom: var(--space-2);">
+                    <h3 class="mb-0" style="font-size: var(--text-md);">
+                        {{ reviewer.get_full_name|default:reviewer.username }}
+                    </h3>
+                    {% if reviewer.reviewer_profile.is_available %}
+                        <span class="badge badge-published" style="font-size: 10px;">متاح</span>
+                    {% else %}
+                        <span class="badge badge-rejected" style="font-size: 10px;">غير متاح</span>
+                    {% endif %}
+                </div>
+                <p class="text-muted text-sm mb-3">
+                    {{ reviewer.email }}
+                    {% if reviewer.reviewer_profile.institution %}
+                        — {{ reviewer.reviewer_profile.institution }}
+                    {% endif %}
+                </p>
+                <div style="display: flex; gap: var(--space-6); font-size: var(--text-sm); margin-bottom: var(--space-3);">
+                    <span>مراجعات نشطة:
+                        <strong style="color: var(--color-warning);">
+                            {{ reviewer_stats|get_item:reviewer.pk|get_item:'active'|default:0 }}
+                        </strong>
+                    </span>
+                    <span>مراجعات مكتملة:
+                        <strong style="color: var(--color-success);">
+                            {{ reviewer_stats|get_item:reviewer.pk|get_item:'completed'|default:0 }}
+                        </strong>
+                    </span>
+                </div>
+                <div>
+                    {% for spec in reviewer.reviewer_profile.specialties.all %}
+                        <span class="badge badge-under-review" style="margin-left: var(--space-1); margin-bottom: var(--space-1);">
+                            {{ spec.name }}
+                        </span>
+                    {% empty %}
+                        <span class="text-muted text-sm">لا توجد تخصصات</span>
+                    {% endfor %}
+                </div>
+            </div>
+            <button class="btn btn-sm btn-ghost" onclick="toggleEdit({{ reviewer.pk }})">تعديل</button>
+        </div>
+
+        <!-- نموذج التعديل -->
+        <div id="edit-{{ reviewer.pk }}" style="display: none; margin-top: var(--space-4);
+             border-top: 1px solid var(--color-border); padding-top: var(--space-4);">
+            <form method="post">
+                {% csrf_token %}
+                <input type="hidden" name="reviewer_id" value="{{ reviewer.pk }}">
+                <div class="form-group">
+                    <label class="form-label">التخصصات</label>
+                    <div style="display: flex; flex-wrap: wrap; gap: var(--space-3);">
+                        {% for section in sections %}
+                        <label style="display: flex; align-items: center; gap: var(--space-2); font-size: var(--text-sm); cursor: pointer;">
+                            <input type="checkbox" name="sections" value="{{ section.pk }}"
+                                {% if section in reviewer.reviewer_profile.specialties.all %}checked{% endif %}>
+                            {{ section.name }}
+                        </label>
+                        {% endfor %}
+                    </div>
+                </div>
+                <div class="form-group">
+                    <label style="display: flex; align-items: center; gap: var(--space-2); font-size: var(--text-sm); cursor: pointer;">
+                        <input type="checkbox" name="is_available" id="avail-{{ reviewer.pk }}"
+                               {% if reviewer.reviewer_profile.is_available %}checked{% endif %}>
+                        متاح للمراجعة
+                    </label>
+                </div>
+                <div style="display: flex; gap: var(--space-2);">
+                    <button type="submit" class="btn btn-primary btn-sm">حفظ</button>
+                    <button type="button" class="btn btn-ghost btn-sm" onclick="toggleEdit({{ reviewer.pk }})">إلغاء</button>
+                </div>
+            </form>
+        </div>
+    </div>
+    {% endfor %}
+{% else %}
+    <div class="card">
+        <div class="empty-state">
+            <div class="empty-state__icon"><svg class="icon icon-xl icon-muted"><use href="#icon-user"/></svg></div>
+            <h3 class="empty-state__title">لا يوجد مراجعون مسجّلون بعد</h3>
+            <p class="empty-state__message">سيظهر هنا المراجعون المسجّلون في النظام.</p>
+        </div>
+    </div>
+{% endif %}
+{% endblock %}
+
+{% block extra_js %}
+<script>
+function toggleEdit(pk) {
+    const el = document.getElementById('edit-' + pk);
+    el.style.display = el.style.display === 'none' ? 'block' : 'none';
+}
+</script>
+{% endblock %}

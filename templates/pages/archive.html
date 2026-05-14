@@ -1,0 +1,48 @@
+{% extends 'base_public.html' %}
+
+{% block title %}أرشيف المجلة{% endblock %}
+{% block nav_archive %}active{% endblock %}
+
+{% block content %}
+<div class="page-header">
+    <h1 class="page-header__title">أرشيف المجلة</h1>
+</div>
+
+{% if volumes %}
+    {% for volume in volumes %}
+    <div class="card mb-6">
+        <h2 class="mb-4" style="font-size: var(--text-2xl); color: var(--color-primary);">
+            المجلد {{ volume.number }} — {{ volume.year }}
+        </h2>
+        {% if volume.issues.all %}
+            <div style="display: grid; grid-template-columns: repeat(auto-fill, minmax(200px, 1fr)); gap: var(--space-3);">
+                {% for issue in volume.issues.all %}
+                <div class="card" style="background: var(--color-surface-alt); box-shadow: none;">
+                    <div style="font-weight: 600; margin-bottom: var(--space-1); font-size: var(--text-sm);">
+                        العدد {{ issue.number }} — {{ issue.get_quarter_display }}
+                        {% if issue.is_current %}
+                            <span class="badge badge-published" style="font-size: 9px; margin-right: var(--space-1);">حالي</span>
+                        {% endif %}
+                    </div>
+                    <div class="text-muted text-sm mb-3">{{ issue.articles.count }} مقال</div>
+                    <a href="{% url 'pages:article_list' %}?issue={{ issue.pk }}"
+                       style="color: var(--color-accent); font-size: var(--text-sm);">
+                        عرض المقالات ←
+                    </a>
+                </div>
+                {% endfor %}
+            </div>
+        {% else %}
+            <p class="text-muted text-sm mb-0">لا توجد أعداد في هذا المجلد بعد.</p>
+        {% endif %}
+    </div>
+    {% endfor %}
+{% else %}
+    <div class="card">
+        <div class="empty-state">
+            <div class="empty-state__icon"><svg class="icon icon-xl icon-muted"><use href="#icon-issues"/></svg></div>
+            <h3 class="empty-state__title">لا توجد مجلدات بعد</h3>
+        </div>
+    </div>
+{% endif %}
+{% endblock %}

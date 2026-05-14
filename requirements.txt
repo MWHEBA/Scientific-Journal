@@ -1,0 +1,7 @@
+Django==4.2.*
+Pillow
+django-crispy-forms
+crispy-bootstrap5
+django-environ
+hypothesis
+pytest-django

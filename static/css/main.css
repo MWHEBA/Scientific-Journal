@@ -1,0 +1,119 @@
+/**
+ * main.css — Marcil
+ *
+ * هذا الملف موجود للتوافق مع الكود القديم فقط.
+ * الـ base templates الجديدة تربط الـ CSS مباشرة بـ <link> tags منفصلة:
+ *
+ * base_public.html    → tokens.css + base.css + components.css + layout-public.css
+ * base_dashboard.html → tokens.css + base.css + components.css + layout-dash.css
+ * accounts/login.html → tokens.css + base.css + components.css
+ * accounts/register.html → tokens.css + base.css + components.css
+ *
+ * لا تضف rules هنا — استخدم الملفات المناسبة.
+ */
+
+/* backward compat — btn-secondary = btn-ghost */
+.btn-secondary {
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  gap: var(--space-2);
+  padding: var(--space-3) var(--space-6);
+  font-size: var(--text-base);
+  font-weight: 500;
+  line-height: 1;
+  border: 1px solid var(--color-border);
+  border-radius: var(--radius-sm);
+  cursor: pointer;
+  transition: all var(--transition);
+  text-decoration: none;
+  white-space: nowrap;
+  background-color: transparent;
+  color: var(--color-text);
+}
+
+.btn-secondary:hover {
+  background-color: var(--color-surface-alt);
+  border-color: var(--color-text-muted);
+}
+
+/* backward compat — form-control = form-input */
+.form-control {
+  width: 100%;
+  padding: var(--space-3) var(--space-4);
+  font-size: var(--text-base);
+  color: var(--color-text);
+  background-color: var(--color-surface);
+  border: 1px solid var(--color-border);
+  border-radius: var(--radius-sm);
+  transition: all var(--transition);
+}
+
+.form-control:focus {
+  outline: none;
+  border-color: var(--color-primary);
+  box-shadow: 0 0 0 3px rgba(30, 45, 74, 0.1);
+}
+
+/* backward compat — alert classes */
+.alert {
+  padding: var(--space-4) var(--space-5);
+  border-radius: var(--radius-sm);
+  margin-bottom: var(--space-4);
+  border: 1px solid transparent;
+}
+
+.alert-success { background: #f0fdf4; border-color: #bbf7d0; color: #065f46; }
+.alert-danger  { background: #fef2f2; border-color: #fecaca; color: #991b1b; }
+.alert-warning { background: #fffbeb; border-color: #fde68a; color: #92400e; }
+.alert-info    { background: #eff6ff; border-color: #bfdbfe; color: #1e40af; }
+
+/* backward compat — table */
+.table { width: 100%; border-collapse: collapse; }
+.table th, .table td {
+  padding: var(--space-4) var(--space-5);
+  border-bottom: 1px solid var(--color-border);
+  text-align: right;
+}
+.table th {
+  background: var(--color-surface-alt);
+  font-weight: 600;
+  font-size: var(--text-sm);
+  color: var(--color-text-secondary);
+}
+
+/* backward compat — status-badge (القديم) */
+.status-badge {
+  display: inline-flex;
+  align-items: center;
+  padding: var(--space-1) var(--space-3);
+  font-size: var(--text-xs);
+  font-weight: 600;
+  border-radius: var(--radius-full);
+  white-space: nowrap;
+}
+.status-draft              { background: #e2e6ea; color: #4a5568; }
+.status-under_initial_check { background: #fef3c7; color: #92400e; }
+.status-under_review       { background: #dbeafe; color: #1e40af; }
+.status-revision_required  { background: #fed7aa; color: #9a3412; }
+.status-accepted_awaiting_payment { background: #d1fae5; color: #065f46; }
+.status-payment_processing { background: #bfdbfe; color: #1e3a8a; }
+.status-paid               { background: #a7f3d0; color: #064e3b; }
+.status-published          { background: #6ee7b7; color: #064e3b; }
+.status-rejected           { background: #fecaca; color: #991b1b; }
+.status-expired            { background: #d1d5db; color: #374151; }
+
+/* backward compat — badge-notification */
+.badge-notification {
+  background-color: var(--color-danger);
+  color: var(--color-text-inverse);
+  border-radius: 50%;
+  padding: 2px 6px;
+  font-size: var(--text-xs);
+  font-weight: 700;
+  vertical-align: top;
+}
+
+/* backward compat — alert-success/warning inside cards */
+.alert-success { background: #f0fdf4; }
+.alert-warning { background: #fffbeb; }

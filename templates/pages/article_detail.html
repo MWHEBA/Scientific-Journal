@@ -1,0 +1,249 @@
+{% extends 'base_public.html' %}
+{% load static %}
+
+{% block title %}{{ object.title }}{% endblock %}
+{% block nav_articles %}active{% endblock %}
+
+{% block extra_css %}
+<link rel="stylesheet" href="{% static 'css/pages.css' %}">
+{% endblock %}
+
+{% block sidebar_right %}{% endblock %}
+{% block sidebar_left %}{% endblock %}
+{% block content %}{% endblock %}
+
+{% block above_layout %}
+<div class="article-page-wrap">
+
+    <!-- Breadcrumb -->
+    <nav class="dash-breadcrumb mb-6">
+        <a href="/">الرئيسية</a>
+        <span class="dash-breadcrumb__sep">/</span>
+        <a href="{% url 'pages:article_list' %}">المقالات</a>
+        <span class="dash-breadcrumb__sep">/</span>
+        <a href="{% url 'pages:section_articles' object.section.slug %}">{{ object.section.name }}</a>
+        <span class="dash-breadcrumb__sep">/</span>
+        <span class="dash-breadcrumb__current">{{ object.title|truncatechars:50 }}</span>
+    </nav>
+
+    <div class="article-layout">
+
+        <!-- ===== MAIN CONTENT ===== -->
+        <div class="article-layout__main">
+
+            <!-- القسم -->
+            <span class="article-header__section" style="color:{{ object.section.color }};">
+                <span class="article-header__section-dot" style="background:{{ object.section.color }};"></span>
+                {{ object.section.name }}
+            </span>
+
+            <!-- العنوان -->
+            <h1 class="article-detail__title">{{ object.title }}</h1>
+
+            <!-- المؤلفون -->
+            <div class="article-detail__authors">
+                <span class="article-detail__author-main">
+                    {{ object.submission.author.get_full_name|default:object.submission.author.username }}
+                </span>
+                {% for co in co_authors %}
+                    <span class="article-detail__author-sep">·</span>
+                    <span class="article-detail__author-co">
+                        {{ co.full_name }}
+                        {% if co.institution %}
+                            <em class="article-detail__author-inst">({{ co.institution }})</em>
+                        {% endif %}
+                    </span>
+                {% endfor %}
+            </div>
+
+            <!-- Meta row -->
+            <div class="article-header__meta">
+            </div>
+
+            <div class="article-header__divider"></div>
+
+            <!-- الملخص -->
+            <div class="article-detail__abstract">
+                <h2 class="article-detail__section-title">الملخص</h2>
+                <p>{{ object.abstract }}</p>
+            </div>
+
+            <!-- الكلمات المفتاحية -->
+            {% if object.keywords %}
+            <div class="article-detail__keywords">
+                <span class="article-detail__keywords-label">الكلمات المفتاحية:</span>
+                {% for kw in object.keywords.split %}
+                    <span class="article-detail__kw-tag">{{ kw|cut:"," }}</span>
+                {% endfor %}
+            </div>
+            {% endif %}
+
+            <!-- أزرار -->
+            <div class="article-detail__actions">
+                <button class="btn btn-ghost" id="btn-share">
+                    <svg class="icon icon-sm" style="margin-left:var(--space-2)"><use href="#icon-partners"/></svg>
+                    مشاركة المقالة
+                </button>
+                <a href="{% url 'pages:article_list' %}" class="btn btn-ghost">← رجوع للقائمة</a>
+            </div>
+
+            <!-- مقالات ذات صلة -->
+            {% if related_articles %}
+            <div class="article-related" style="margin-top:var(--space-12);">
+                <div class="section-header">
+                    <span class="section-header__label">مقالات ذات صلة</span>
+                    <a href="{% url 'pages:section_articles' object.section.slug %}" class="section-header__link">عرض كل مقالات {{ object.section.name }} ←</a>
+                </div>
+                {% for art in related_articles %}
+                <a href="{% url 'pages:article_detail' art.pk %}" class="article-related__card">
+                    <div class="article-related__body">
+                        <span class="article-related__section" style="color:{{ art.section.color }};">{{ art.section.name }}</span>
+                        <h4 class="article-related__title">{{ art.title|truncatechars:100 }}</h4>
+                        <span class="article-related__author">{{ art.submission.author.get_full_name|default:art.submission.author.username }}</span>
+                    </div>
+                    <svg class="icon icon-md article-related__arrow"><use href="#icon-submit"/></svg>
+                </a>
+                {% endfor %}
+            </div>
+            {% endif %}
+
+        </div>
+
+        <!-- ===== ARTICLE SIDEBAR ===== -->
+        <aside class="article-layout__sidebar">
+
+            <!-- تحميل PDF -->
+            <div class="pub-widget">
+                <div class="pub-widget__body" style="padding:var(--space-5);">
+                    <a href="{{ object.pdf_file.url }}" target="_blank" class="btn btn-accent btn-full" style="padding:var(--space-4);font-size:var(--text-base);">
+                        <svg class="icon icon-md icon-inverse" style="margin-left:var(--space-2)"><use href="#icon-pdf"/></svg>
+                        تحميل PDF
+                    </a>
+                    <p class="text-muted text-xs" style="margin-top:var(--space-2);text-align:center;">وصول مفتوح — مجاني للجميع</p>
+                </div>
+            </div>
+
+            <!-- معلومات المقال -->
+            <div class="pub-widget">
+                <div class="pub-widget__header"><svg class="icon icon-sm"><use href="#icon-guidelines"/></svg> معلومات المقال</div>
+                <div class="pub-widget__body pub-widget__body--flush">
+                    <ul class="article-info-list">
+                        <li class="article-info-list__item">
+                            <span class="article-info-list__label">تاريخ النشر</span>
+                            <span class="article-info-list__value">{{ object.published_at|date:"Y/m/d" }}</span>
+                        </li>
+                        {% if object.issue %}
+                        <li class="article-info-list__item">
+                            <span class="article-info-list__label">العدد</span>
+                            <a href="{% url 'pages:article_list' %}?issue={{ object.issue.pk }}" class="article-info-list__value article-info-list__link">{{ object.issue }}</a>
+                        </li>
+                        {% endif %}
+                        <li class="article-info-list__item">
+                            <span class="article-info-list__label">القسم</span>
+                            <span class="article-info-list__value">{{ object.section.name }}</span>
+                        </li>
+                        <li class="article-info-list__item">
+                            <span class="article-info-list__label">المشاهدات</span>
+                            <span class="article-info-list__value article-views-count" id="views-count" data-url="{% url 'pages:article_views' object.pk %}">
+                                <span class="article-views-num">{{ object.views_count }}</span>
+                                <svg class="icon icon-xs icon-muted" style="margin-right:2px"><use href="#icon-review"/></svg>
+                            </span>
+                        </li>
+                        <li class="article-info-list__item">
+                            <span class="article-info-list__label">الوصول</span>
+                            <span class="article-info-list__value" style="color:var(--color-oa-text);font-weight:600;">وصول مجاني</span>
+                        </li>
+                    </ul>
+                </div>
+            </div>
+
+            <!-- المؤلف -->
+            <div class="pub-widget">
+                <div class="pub-widget__header"><svg class="icon icon-sm"><use href="#icon-user"/></svg> المؤلف الرئيسي</div>
+                <div class="pub-widget__body">
+                    <p style="font-weight:600;font-size:var(--text-sm);margin-bottom:var(--space-1);">
+                        <a href="{% url 'pages:article_list' %}?author={{ object.submission.author.pk }}" class="article-info-list__link" style="font-weight:600;">
+                            {{ object.submission.author.get_full_name|default:object.submission.author.username }}
+                        </a>
+                    </p>
+                    {% if object.submission.author.author_profile.institution %}
+                    <p class="text-muted text-xs">{{ object.submission.author.author_profile.institution }}</p>
+                    {% endif %}
+                    {% if co_authors %}
+                    <div style="margin-top:var(--space-3);padding-top:var(--space-3);border-top:1px solid var(--color-border-light);">
+                        <p class="text-muted text-xs" style="margin-bottom:var(--space-2);">المؤلفون المشاركون:</p>
+                        {% for co in co_authors %}
+                        <p style="font-size:var(--text-xs);color:var(--color-text-secondary);margin-bottom:var(--space-1);">{{ co.full_name }}</p>
+                        {% endfor %}
+                    </div>
+                    {% endif %}
+                </div>
+            </div>
+
+            {% if not user.is_authenticated %}
+            <div class="pub-widget" style="overflow:hidden;">
+                <div class="sidebar-cta">
+                    <p class="sidebar-cta__text">هل لديك مقالة للنشر؟</p>
+                    <a href="{% url 'submissions:create' %}" class="sidebar-cta__btn">← نشر مقالة</a>
+                </div>
+            </div>
+            {% endif %}
+
+        </aside>
+
+    </div>
+</div>
+{% endblock %}
+
+{% block extra_js %}
+<script>
+// مشاركة المقالة
+document.getElementById('btn-share')?.addEventListener('click', function() {
+    const url = window.location.href;
+    if (navigator.share) {
+        navigator.share({ title: document.title, url: url });
+    } else {
+        navigator.clipboard.writeText(url).then(() => {
+            toastr.success('تم نسخ رابط المقالة');
+        });
+    }
+});
+
+// عداد المشاهدات — animation + live count
+(function() {
+    const el = document.getElementById('views-count');
+    if (!el) return;
+
+    const numEl = el.querySelector('.article-views-num');
+    const url   = el.dataset.url;
+    const start = parseInt(numEl.textContent) || 0;
+
+    // animation من 0 للرقم الحالي
+    function animateCount(from, to, duration) {
+        const startTime = performance.now();
+        function update(now) {
+            const elapsed = now - startTime;
+            const progress = Math.min(elapsed / duration, 1);
+            const eased = 1 - Math.pow(1 - progress, 3); // ease-out cubic
+            numEl.textContent = Math.round(from + (to - from) * eased);
+            if (progress < 1) requestAnimationFrame(update);
+        }
+        requestAnimationFrame(update);
+    }
+
+    animateCount(0, start, 1200);
+
+    // fetch الرقم الحقيقي بعد ثانية
+    setTimeout(() => {
+        fetch(url)
+            .then(r => r.json())
+            .then(data => {
+                if (data.views !== start) {
+                    animateCount(start, data.views, 600);
+                }
+            })
+            .catch(() => {});
+    }, 1500);
+})();
+</script>
+{% endblock %}

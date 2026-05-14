@@ -1,0 +1,122 @@
+{% extends 'base_dashboard.html' %}
+
+{% block title %}لوحة تحكم المؤلف{% endblock %}
+{% block nav_author_home %}active{% endblock %}
+
+{% block content %}
+<div class="page-header">
+    <h1 class="page-header__title">لوحة التحكم</h1>
+    <div class="page-header__actions">
+        <a href="{% url 'submissions:create' %}" class="btn btn-accent">+ تقديم مقالة جديدة</a>
+    </div>
+</div>
+
+<!-- إحصائيات -->
+<div style="display: grid; grid-template-columns: repeat(auto-fit, minmax(160px, 1fr)); gap: var(--space-4); margin-bottom: var(--space-8);">
+    <div class="card card-stat">
+        <span class="card-stat__number">{{ total }}</span>
+        <span class="card-stat__label">إجمالي التقديمات</span>
+    </div>
+    <div class="card card-stat">
+        <span class="card-stat__number" style="color: var(--color-text-muted);">{{ drafts }}</span>
+        <span class="card-stat__label">مسودات</span>
+    </div>
+    <div class="card card-stat">
+        <span class="card-stat__number" style="color: var(--color-warning);">{{ active }}</span>
+        <span class="card-stat__label">قيد المعالجة</span>
+    </div>
+    <div class="card card-stat">
+        <span class="card-stat__number" style="color: var(--color-success);">{{ published }}</span>
+        <span class="card-stat__label">منشور</span>
+    </div>
+</div>
+
+<!-- قائمة التقديمات -->
+{% if submissions %}
+    {% for sub in submissions %}
+    <div class="card mb-4">
+        <div style="display: flex; justify-content: space-between; align-items: flex-start; flex-wrap: wrap; gap: var(--space-3);">
+            <div style="flex: 1; min-width: 250px;">
+                <h3 class="mb-2" style="font-size: var(--text-md);">{{ sub.title|truncatechars:80 }}</h3>
+                <p class="text-muted text-sm mb-0">
+                    {{ sub.section.name }} &nbsp;·&nbsp; {{ sub.created_at|date:"Y/m/d" }}
+                </p>
+            </div>
+            <span class="badge
+                {% if sub.status == 'draft' %}badge-draft
+                {% elif sub.status == 'under_initial_check' %}badge-initial-check
+                {% elif sub.status == 'under_review' %}badge-under-review
+                {% elif sub.status == 'revision_required' %}badge-revision
+                {% elif sub.status == 'accepted_awaiting_payment' %}badge-accepted
+                {% elif sub.status == 'payment_processing' %}badge-payment-processing
+                {% elif sub.status == 'paid' %}badge-paid
+                {% elif sub.status == 'published' %}badge-published
+                {% elif sub.status == 'rejected' %}badge-rejected
+                {% elif sub.status == 'expired' %}badge-expired
+                {% endif %}">
+                {{ sub.get_status_display }}
+            </span>
+        </div>
+
+        <!-- تعليقات المراجع -->
+        {% if sub.status == 'revision_required' or sub.status == 'rejected' %}
+            {% with latest_review=sub.reviews.last %}
+                {% if latest_review and latest_review.comments %}
+                <div class="inline-alert inline-alert--warning mt-4">
+                    <span class="inline-alert__icon"><svg class="icon icon-md"><use href="#icon-review"/></svg></span>
+                    <div class="inline-alert__content">
+                        <p class="inline-alert__title">تعليقات المراجع</p>
+                        <p class="inline-alert__message">{{ latest_review.comments|truncatechars:300 }}</p>
+                    </div>
+                </div>
+                {% endif %}
+            {% endwith %}
+        {% endif %}
+
+        <!-- تنبيه الدفع -->
+        {% if sub.status == 'accepted_awaiting_payment' or sub.status == 'payment_processing' %}
+        <div class="inline-alert inline-alert--success mt-4">
+            <span class="inline-alert__icon"><svg class="icon icon-md"><use href="#icon-publish"/></svg></span>
+            <div class="inline-alert__content">
+                <p class="inline-alert__title">تم قبول مقالتك!</p>
+                {% if sub.payment_deadline %}
+                <p class="inline-alert__message">
+                    الموعد النهائي للدفع: <strong>{{ sub.payment_deadline|date:"Y/m/d" }}</strong>
+                </p>
+                {% endif %}
+            </div>
+        </div>
+        {% endif %}
+
+        <!-- إجراءات -->
+        <div style="margin-top: var(--space-4); display: flex; gap: var(--space-2); flex-wrap: wrap;">
+            {% if sub.status == 'draft' %}
+                <a href="{% url 'submissions:edit' sub.pk %}" class="btn btn-sm btn-primary">تعديل</a>
+            {% elif sub.status == 'revision_required' %}
+                <a href="{% url 'submissions:revise' sub.pk %}" class="btn btn-sm btn-accent">رفع تعديل</a>
+            {% elif sub.status == 'accepted_awaiting_payment' %}
+                <a href="{% url 'payments:initiate' sub.pk %}" class="btn btn-sm btn-success">إتمام الدفع</a>
+            {% elif sub.status == 'published' %}
+                {% with article=sub.published %}
+                    {% if article %}
+                        <a href="{{ article.pdf_file.url }}" target="_blank" class="btn btn-sm btn-primary">تحميل PDF</a>
+                        <a href="{% url 'pages:article_detail' article.pk %}" class="btn btn-sm btn-ghost">عرض المقال</a>
+                    {% endif %}
+                {% endwith %}
+            {% endif %}
+        </div>
+    </div>
+    {% endfor %}
+{% else %}
+    <div class="card">
+        <div class="empty-state">
+            <div class="empty-state__icon"><svg class="icon icon-xl icon-muted"><use href="#icon-articles"/></svg></div>
+            <h3 class="empty-state__title">لا توجد تقديمات بعد</h3>
+            <p class="empty-state__message">ابدأ بتقديم مقالتك الأول وتابع مسار المراجعة والنشر.</p>
+            <div class="empty-state__action">
+                <a href="{% url 'submissions:create' %}" class="btn btn-accent">ابدأ بتقديم مقالتك الأول</a>
+            </div>
+        </div>
+    </div>
+{% endif %}
+{% endblock %}

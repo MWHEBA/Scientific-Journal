@@ -1,0 +1,20 @@
+{% extends 'base_public.html' %}
+
+{% block title %}المدونة{% endblock %}
+{% block nav_blog %}active{% endblock %}
+
+{% block content %}
+<div class="page-header">
+    <h1 class="page-header__title">المدونة</h1>
+</div>
+
+<div class="card">
+    <div class="empty-state">
+        <div class="empty-state__icon"><svg class="icon icon-xl icon-muted"><use href="#icon-blog"/></svg></div>
+        <h3 class="empty-state__title">قريباً</h3>
+        <p class="empty-state__message">
+            نعمل على إطلاق مدونة المجلة التي ستضم مقالات ونصائح للباحثين حول النشر العلمي.
+        </p>
+    </div>
+</div>
+{% endblock %}

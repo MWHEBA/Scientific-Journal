@@ -1,0 +1,56 @@
+{% extends 'base_dashboard.html' %}
+{% load crispy_forms_tags %}
+
+{% block title %}رفع نسخة معدّلة{% endblock %}
+{% block nav_author_home %}active{% endblock %}
+{% block breadcrumb %}
+    <span class="dash-breadcrumb__sep">/</span>
+    <a href="{% url 'dashboard:author' %}">تقديماتي</a>
+    <span class="dash-breadcrumb__sep">/</span>
+    <span class="dash-breadcrumb__current">رفع تعديل</span>
+{% endblock %}
+
+{% block content %}
+<div class="page-header">
+    <div>
+        <h1 class="page-header__title">رفع نسخة معدّلة</h1>
+        <p class="text-secondary text-sm mb-0">دورة التعديل: {{ submission.revision_count }} / 2</p>
+    </div>
+    <span class="badge badge-revision">مطلوب تعديل</span>
+</div>
+
+<div style="max-width: 720px;">
+
+    <!-- بيانات المقالة -->
+    <div class="card mb-6">
+        <p class="text-muted text-sm mb-2">المقالة</p>
+        <p class="mb-0" style="font-weight: 600; font-size: var(--text-lg);">{{ submission.title }}</p>
+    </div>
+
+    <!-- تعليقات المراجع -->
+    {% with latest_review=submission.reviews.last %}
+        {% if latest_review and latest_review.comments %}
+            <div class="inline-alert inline-alert--warning mb-6">
+                <span class="inline-alert__icon"><svg class="icon icon-md"><use href="#icon-review"/></svg></span>
+                <div class="inline-alert__content">
+                    <p class="inline-alert__title">تعليقات المراجع</p>
+                    <p class="inline-alert__message">{{ latest_review.comments }}</p>
+                </div>
+            </div>
+        {% endif %}
+    {% endwith %}
+
+    <!-- نموذج الرفع -->
+    <div class="card">
+        <h3 class="mb-6" style="font-size: var(--text-xl); color: var(--color-primary);">رفع الملف المعدّل</h3>
+        <form method="post" enctype="multipart/form-data" novalidate>
+            {% csrf_token %}
+            {{ form|crispy }}
+            <div style="display: flex; gap: var(--space-3); margin-top: var(--space-6);">
+                <button type="submit" class="btn btn-accent">رفع النسخة المعدّلة</button>
+                <a href="{% url 'dashboard:author' %}" class="btn btn-ghost">إلغاء</a>
+            </div>
+        </form>
+    </div>
+</div>
+{% endblock %}

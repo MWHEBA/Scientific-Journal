@@ -1,0 +1,136 @@
+{% extends 'base_dashboard.html' %}
+
+{% block title %}تعيين مراجع — {{ submission.title }}{% endblock %}
+{% block nav_admin_submissions %}active{% endblock %}
+{% block breadcrumb %}
+    <span class="dash-breadcrumb__sep">/</span>
+    <a href="{% url 'dashboard:admin_submissions' %}">التقديمات</a>
+    <span class="dash-breadcrumb__sep">/</span>
+    <span class="dash-breadcrumb__current">تعيين مراجع</span>
+{% endblock %}
+
+{% block content %}
+<div class="page-header">
+    <div>
+        <h1 class="page-header__title">تعيين مراجع</h1>
+        <p class="text-secondary text-sm mb-0">{{ submission.title|truncatechars:70 }}</p>
+    </div>
+</div>
+
+<!-- بيانات التقديم -->
+<div class="card mb-6">
+    <div style="display: grid; grid-template-columns: 1fr 1fr; gap: var(--space-4); font-size: var(--text-sm);">
+        <div><span class="text-muted">القسم:</span> <strong>{{ submission.section.name }}</strong></div>
+        <div>
+            <span class="text-muted">المؤلف:</span>
+            <strong>{{ submission.author.get_full_name|default:submission.author.username }}</strong>
+        </div>
+        <div>
+            <span class="text-muted">الحالة:</span>
+            <span class="badge badge-under-review" style="margin-right: var(--space-2);">{{ submission.get_status_display }}</span>
+        </div>
+        {% if submission.assigned_reviewer %}
+        <div>
+            <span class="text-muted">المراجع الحالي:</span>
+            <strong>{{ submission.assigned_reviewer.get_full_name|default:submission.assigned_reviewer.username }}</strong>
+        </div>
+        {% endif %}
+    </div>
+</div>
+
+<!-- قائمة المراجعين -->
+<form method="post" id="assign-form">
+    {% csrf_token %}
+    <div class="card mb-6" style="padding: 0; overflow: hidden;">
+        <table class="data-table">
+            <thead>
+                <tr>
+                    <th style="width: 40px;"></th>
+                    <th>المراجع</th>
+                    <th>التخصصات</th>
+                    <th>المراجعات الحالية</th>
+                    <th>الحالة</th>
+                </tr>
+            </thead>
+            <tbody>
+                {% for item in reviewer_data %}
+                <tr style="cursor: pointer;" onclick="document.getElementById('rev-{{ item.user.pk }}').click()">
+                    <td>
+                        <input type="radio" name="reviewer_id"
+                               id="rev-{{ item.user.pk }}"
+                               value="{{ item.user.pk }}"
+                               {% if submission.assigned_reviewer.pk == item.user.pk %}checked{% endif %}>
+                    </td>
+                    <td>
+                        <strong class="text-sm">{{ item.user.get_full_name|default:item.user.username }}</strong>
+                        <div class="text-muted" style="font-size: var(--text-xs);">{{ item.user.email }}</div>
+                    </td>
+                    <td>
+                        {% for spec in item.specialties %}
+                            <span class="badge badge-under-review" style="margin-left: 2px; margin-bottom: 2px; font-size: 10px;">
+                                {{ spec.name }}
+                            </span>
+                        {% empty %}
+                            <span class="text-muted text-sm">—</span>
+                        {% endfor %}
+                    </td>
+                    <td style="text-align: center;">
+                        <span style="font-weight: 700;
+                            {% if item.active_count >= 3 %}color: var(--color-danger);
+                            {% elif item.active_count >= 2 %}color: var(--color-warning);
+                            {% else %}color: var(--color-success);{% endif %}">
+                            {{ item.active_count }}
+                        </span>
+                    </td>
+                    <td>
+                        {% if item.user.reviewer_profile.is_available %}
+                            <span class="badge badge-published" style="font-size: 10px;">متاح</span>
+                        {% else %}
+                            <span class="badge badge-rejected" style="font-size: 10px;">غير متاح</span>
+                        {% endif %}
+                    </td>
+                </tr>
+                {% empty %}
+                <tr>
+                    <td colspan="5" style="padding: var(--space-8);">
+                        <div class="empty-state" style="padding: var(--space-4);">
+                            <p class="empty-state__message mb-0">لا يوجد مراجعون مسجّلون في النظام.</p>
+                        </div>
+                    </td>
+                </tr>
+                {% endfor %}
+            </tbody>
+        </table>
+    </div>
+
+    <div style="display: flex; gap: var(--space-3);">
+        <button type="button" class="btn btn-primary" id="btn-assign">تعيين المراجع المختار</button>
+        <a href="{% url 'dashboard:admin_submissions' %}" class="btn btn-ghost">إلغاء</a>
+    </div>
+</form>
+{% endblock %}
+
+{% block extra_js %}
+<script>
+document.getElementById('btn-assign').addEventListener('click', function() {
+    const selected = document.querySelector('input[name="reviewer_id"]:checked');
+    if (!selected) {
+        Swal.fire('تنبيه', 'يرجى اختيار مراجع أولاً.', 'warning');
+        return;
+    }
+    Swal.fire({
+        title: 'تأكيد التعيين',
+        text: 'هل تريد تعيين هذا المراجع للمقالة؟',
+        icon: 'question',
+        showCancelButton: true,
+        confirmButtonText: 'نعم، عيّن',
+        cancelButtonText: 'إلغاء',
+        confirmButtonColor: '#1e2d4a'
+    }).then((result) => {
+        if (result.isConfirmed) {
+            document.getElementById('assign-form').submit();
+        }
+    });
+});
+</script>
+{% endblock %}

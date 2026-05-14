@@ -1,0 +1,158 @@
+{% extends 'base_dashboard.html' %}
+{% load crispy_forms_tags dashboard_extras %}
+
+{% block title %}مراجعة: {{ object.submission.title }}{% endblock %}
+{% block nav_reviewer_home %}active{% endblock %}
+{% block breadcrumb %}
+    <span class="dash-breadcrumb__sep">/</span>
+    <a href="{% url 'dashboard:reviewer' %}">المراجعات</a>
+    <span class="dash-breadcrumb__sep">/</span>
+    <span class="dash-breadcrumb__current">مراجعة المخطوطة</span>
+{% endblock %}
+
+{% block content %}
+<div class="page-header">
+    <div>
+        <h1 class="page-header__title">مراجعة المخطوطة</h1>
+    </div>
+    <span class="badge
+        {% if object.submission.status == 'under_review' %}badge-under-review
+        {% elif object.submission.status == 'revision_required' %}badge-revision
+        {% else %}badge-draft{% endif %}">
+        {{ object.submission.get_status_display }}
+    </span>
+</div>
+
+<!-- بيانات المقالة -->
+<div class="card mb-6">
+    <h2 class="mb-4" style="font-size: var(--text-2xl); color: var(--color-primary);">
+        {{ object.submission.title }}
+    </h2>
+    <div style="display: grid; grid-template-columns: 1fr 1fr; gap: var(--space-3); font-size: var(--text-sm); margin-bottom: var(--space-4);">
+        <div><span class="text-muted">القسم:</span> <strong>{{ object.submission.section.name }}</strong></div>
+        <div><span class="text-muted">دورة المراجعة:</span> <strong>{{ object.revision_round }}</strong></div>
+    </div>
+    <div class="mb-4">
+        <p class="text-muted text-sm mb-2">الملخص</p>
+        <p class="mb-0" style="line-height: var(--leading-loose);">{{ object.submission.abstract }}</p>
+    </div>
+    {% if object.submission.keywords %}
+    <div class="mb-4">
+        <p class="text-muted text-sm mb-2">الكلمات المفتاحية</p>
+        <p class="mb-0 text-secondary">{{ object.submission.keywords }}</p>
+    </div>
+    {% endif %}
+    {% with co_authors=object.submission.co_authors.all %}
+    {% if co_authors %}
+    <div class="mb-4">
+        <p class="text-muted text-sm mb-2">المؤلفون المشاركون</p>
+        <div style="display: flex; flex-wrap: wrap; gap: var(--space-2);">
+            {% for co in co_authors %}
+            <span class="badge badge-draft" style="font-size: var(--text-sm); font-weight: 400;">
+                {{ co.full_name }}{% if co.institution %} — {{ co.institution }}{% endif %}
+            </span>
+            {% endfor %}
+        </div>
+    </div>
+    {% endif %}
+    {% endwith %}
+    {% if manuscript %}
+        <a href="{{ manuscript.file.url }}" target="_blank" class="btn btn-accent btn-sm">
+            <svg class="icon icon-sm icon-inverse"><use href="#icon-pdf"/></svg> تحميل ملف المخطوطة (PDF)
+        </a>
+    {% endif %}
+</div>
+
+<!-- نتيجة المراجعة أو نموذج التقييم -->
+{% if object.is_submitted %}
+    <div class="card">
+        <div style="display: flex; align-items: center; gap: var(--space-3); margin-bottom: var(--space-4);">
+            <h3 class="mb-0" style="font-size: var(--text-xl);">تم إرسال المراجعة</h3>
+            <span class="badge
+                {% if object.decision == 'accept' %}badge-review-accept
+                {% elif object.decision == 'reject' %}badge-review-reject
+                {% else %}badge-review-revision{% endif %}">
+                {{ object.get_decision_display }}
+            </span>
+        </div>
+
+        <!-- درجات التقييم -->
+        {% if object.score_originality or object.score_relevance or object.score_clarity or object.score_language %}
+        <div style="display: grid; grid-template-columns: repeat(auto-fit, minmax(160px, 1fr)); gap: var(--space-4); margin-bottom: var(--space-4);">
+            {% if object.score_originality %}
+            <div class="card card-stat" style="padding: var(--space-4);">
+                <span class="card-stat__number" style="font-size: var(--text-3xl);">{{ object.score_originality }}/5</span>
+                <span class="card-stat__label">الأصالة</span>
+            </div>
+            {% endif %}
+            {% if object.score_relevance %}
+            <div class="card card-stat" style="padding: var(--space-4);">
+                <span class="card-stat__number" style="font-size: var(--text-3xl);">{{ object.score_relevance }}/5</span>
+                <span class="card-stat__label">الصلة بالموضوع</span>
+            </div>
+            {% endif %}
+            {% if object.score_clarity %}
+            <div class="card card-stat" style="padding: var(--space-4);">
+                <span class="card-stat__number" style="font-size: var(--text-3xl);">{{ object.score_clarity }}/5</span>
+                <span class="card-stat__label">الوضوح</span>
+            </div>
+            {% endif %}
+            {% if object.score_language %}
+            <div class="card card-stat" style="padding: var(--space-4);">
+                <span class="card-stat__number" style="font-size: var(--text-3xl);">{{ object.score_language }}/5</span>
+                <span class="card-stat__label">اللغة</span>
+            </div>
+            {% endif %}
+        </div>
+        {% endif %}
+
+        {% if object.comments %}
+            <div class="form-group">
+                <label class="form-label">التعليقات</label>
+                <p class="mb-0" style="line-height: var(--leading-loose);">{{ object.comments }}</p>
+            </div>
+        {% endif %}
+        <p class="text-muted text-sm mb-0">
+            تاريخ الإرسال: {{ object.submitted_at|ar_datetime12 }}
+        </p>
+    </div>
+
+{% elif form %}
+    <div class="card">
+        <h3 class="mb-2" style="font-size: var(--text-xl);">نموذج التقييم</h3>
+        <p class="text-secondary text-sm mb-6">
+            قيّم المقالة على كل معيار من 1 (ضعيف) إلى 5 (ممتاز)، ثم اختر قرارك النهائي.
+        </p>
+        <form method="post" action="{% url 'reviews:submit' object.pk %}" novalidate id="review-form">
+            {% csrf_token %}
+            {{ form|crispy }}
+            <div style="margin-top: var(--space-6); display: flex; gap: var(--space-3);">
+                <button type="button" class="btn btn-primary" id="btn-submit-review">
+                    إرسال قرار المراجعة
+                </button>
+                <a href="{% url 'dashboard:reviewer' %}" class="btn btn-ghost">رجوع</a>
+            </div>
+        </form>
+    </div>
+{% endif %}
+{% endblock %}
+
+{% block extra_js %}
+<script>
+document.getElementById('btn-submit-review')?.addEventListener('click', function() {
+    Swal.fire({
+        title: 'هل أنت متأكد من إرسال قرار المراجعة؟',
+        text: 'لن تتمكن من تعديل القرار بعد الإرسال.',
+        icon: 'warning',
+        showCancelButton: true,
+        confirmButtonText: 'نعم، أرسل',
+        cancelButtonText: 'إلغاء',
+        confirmButtonColor: '#1e2d4a'
+    }).then((result) => {
+        if (result.isConfirmed) {
+            document.getElementById('review-form').submit();
+        }
+    });
+});
+</script>
+{% endblock %}

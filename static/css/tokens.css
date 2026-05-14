@@ -1,0 +1,95 @@
+/**
+ * Design Tokens — Marcil
+ * Variables only — no rules
+ */
+
+:root {
+  /* ── Colors: Primary ── */
+  --color-primary:        #045280;
+  --color-primary-dark:   #03446b;
+  --color-primary-light:  #056a9e;
+
+  /* ── Colors: Neutral (structural chrome) ── */
+  --color-neutral:        #808080;   /* رصاصي نقي */
+  --color-neutral-dark:   #595959;   /* رصاصي داكن نقي */
+  --color-neutral-light:  #999999;   /* رصاصي فاتح نقي */
+
+  /* ── Colors: Accent ── */
+  --color-accent:         #b01116;
+  --color-accent-dark:    #8a0d11;
+
+  /* ── Colors: Special ── */
+  --color-gold:           var(--color-accent);   /* CTA arrow في الـ hero */
+  --color-oa-bg:          #e3f4f4;   /* خلفية badge وصول مجاني */
+  --color-oa-text:        #0a5c5c;   /* نص badge وصول مجاني */
+
+  /* ── Colors: Neutrals ── */
+  --color-bg:             #f4f6f9;
+  --color-surface:        #ffffff;
+  --color-surface-alt:    #f0f2f5;
+  --color-border:         #e2e6ea;
+  --color-border-light:   #eef0f3;
+
+  /* ── Colors: Typography ── */
+  --color-text:           #1a1f2e;
+  --color-text-secondary: #4a5568;
+  --color-text-muted:     #8a94a6;
+  --color-text-inverse:   #ffffff;
+
+  /* ── Colors: Semantic ── */
+  --color-success:        #2d9e6b;
+  --color-warning:        #e8a020;
+  --color-danger:         #b01116;
+  --color-info:           #045280;
+
+  /* ── Dashboard Sidebar ── */
+  --sidebar-bg:           #ffffff;
+  --sidebar-text:         #64748b;
+  --sidebar-active-bg:    #f0f5fa;
+  --sidebar-active-text:  #045280;
+  --sidebar-hover-bg:     #f8fafc;
+  --sidebar-width:        260px;
+
+  /* ── Spacing ── */
+  --space-1:  0.25rem;
+  --space-2:  0.5rem;
+  --space-3:  0.75rem;
+  --space-4:  1rem;
+  --space-5:  1.25rem;
+  --space-6:  1.5rem;
+  --space-8:  2rem;
+  --space-10: 2.5rem;
+  --space-12: 3rem;
+
+  /* ── Border Radius ── */
+  --radius-sm:   4px;    /* buttons, inputs, alerts, tags */
+  --radius-md:   4px;    /* نفس الـ sm — نظام sharp موحّد */
+  --radius-lg:   0px;    /* cards, widgets, panels — sharp */
+  --radius-full: 9999px; /* badges, pills فقط */
+
+  /* ── Shadows ── */
+  --shadow-xs: 0 1px 2px rgba(0, 0, 0, 0.05);
+  --shadow-sm: 0 1px 4px rgba(0, 0, 0, 0.08);
+  --shadow-md: 0 4px 12px rgba(0, 0, 0, 0.10);
+
+  /* ── Typography Scale ── */
+  --text-xs:   0.75rem;
+  --text-sm:   0.875rem;
+  --text-base: 0.9375rem;
+  --text-md:   1rem;
+  --text-lg:   1.125rem;
+  --text-xl:   1.25rem;
+  --text-2xl:  1.5rem;
+  --text-3xl:  1.875rem;
+  --text-4xl:  2.25rem;
+
+  /* ── Line Heights ── */
+  --leading-tight:  1.3;
+  --leading-normal: 1.6;
+  --leading-loose:  1.8;
+
+  /* ── Misc ── */
+  --transition:    0.2s ease;
+  --container-max: 1200px;
+  --topbar-height: 72px;  /* navbar height */
+}

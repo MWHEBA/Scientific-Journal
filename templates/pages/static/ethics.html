@@ -1,0 +1,31 @@
+{% extends 'base_public.html' %}
+
+{% block title %}أخلاقيات النشر{% endblock %}
+
+{% block content %}
+<div class="page-header">
+    <h1 class="page-header__title">أخلاقيات النشر</h1>
+</div>
+
+<div class="card mb-4">
+    <h3 class="mb-3" style="font-size: var(--text-md); color: var(--color-primary);">التزامات المؤلفين</h3>
+    <ul style="line-height: var(--leading-loose); padding-right: var(--space-6); margin-bottom: var(--space-6);">
+        <li>تقديم أعمال أصيلة غير منشورة مسبقاً</li>
+        <li>الإفصاح عن جميع المؤلفين المشاركين</li>
+        <li>الإشارة إلى مصادر التمويل وتضارب المصالح</li>
+        <li>الحصول على الموافقات اللازمة للبيانات والصور</li>
+    </ul>
+
+    <h3 class="mb-3" style="font-size: var(--text-md); color: var(--color-primary);">التزامات المراجعين</h3>
+    <ul style="line-height: var(--leading-loose); padding-right: var(--space-6); margin-bottom: var(--space-6);">
+        <li>الحفاظ على سرية محتوى البحوث المراجَعة</li>
+        <li>الإفصاح عن أي تضارب في المصالح</li>
+        <li>تقديم تقييم موضوعي وبنّاء</li>
+    </ul>
+
+    <h3 class="mb-3" style="font-size: var(--text-md); color: var(--color-primary);">الانتحال العلمي</h3>
+    <p class="mb-0">
+        تستخدم المجلة أدوات للكشف عن الانتحال العلمي. أي مقالة يثبت انتحاله سيُرفض فوراً.
+    </p>
+</div>
+{% endblock %}

@@ -1,0 +1,33 @@
+{% extends 'base_public.html' %}
+{% load static %}
+
+{% block title %}مواضيع المجلة{% endblock %}
+{% block nav_topics %}active{% endblock %}
+
+{% block content %}
+<div class="page-header">
+    <h1 class="page-header__title">مواضيع المجلة</h1>
+</div>
+
+<div class="card mb-4">
+    <p>
+        ترحب <strong>{{ settings.journal_name }}</strong> بالمقالات العلمية في المجالات التالية:
+    </p>
+    {% if sections %}
+    <div style="display:flex;flex-direction:column;gap:var(--space-3);margin-top:var(--space-4);">
+        {% for section in sections %}
+        <a href="{% url 'pages:section_articles' section.slug %}"
+           style="display:flex;align-items:center;gap:var(--space-3);padding:var(--space-4) var(--space-5);border:1px solid var(--color-border);text-decoration:none;color:var(--color-text);transition:all var(--transition);"
+           onmouseover="this.style.borderColor='var(--color-primary-light)';this.style.backgroundColor='var(--color-surface-alt)'"
+           onmouseout="this.style.borderColor='var(--color-border)';this.style.backgroundColor='transparent'">
+            <span style="width:10px;height:10px;border-radius:50%;background-color:{{ section.color }};flex-shrink:0;"></span>
+            <span style="font-weight:600;font-size:var(--text-base);">{{ section.name }}</span>
+            <span style="margin-right:auto;font-size:var(--text-sm);color:var(--color-text-muted);">تصفح المقالات ←</span>
+        </a>
+        {% endfor %}
+    </div>
+    {% else %}
+    <p class="text-muted">لم يتم إضافة أقسام بعد.</p>
+    {% endif %}
+</div>
+{% endblock %}
