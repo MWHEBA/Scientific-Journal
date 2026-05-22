@@ -19,8 +19,7 @@ urlpatterns = [
 
     # المقالات
     path('articles/',              ArticleListView.as_view(),   name='article_list'),
-    path('articles/<int:pk>/',     ArticleDetailView.as_view(), name='article_detail'),
-    path('articles/<int:pk>/views/', article_views_api,          name='article_views'),
+    path('articles/<slug:slug>/views/', article_views_api,       name='article_views'),
 
     # العدد الحالي والأرشيف
     path('current-issue/',         CurrentIssueView.as_view(),  name='current_issue'),
@@ -42,4 +41,5 @@ urlpatterns = [
     path('topics/',             StaticPageView.as_view(), kwargs={'slug': 'topics'},            name='topics'),
     path('blog/',               StaticPageView.as_view(), kwargs={'slug': 'blog'},              name='blog'),
     path('conferences/',        StaticPageView.as_view(), kwargs={'slug': 'conferences'},       name='conferences'),
+    path('<slug:slug>/',        ArticleDetailView.as_view(), name='article_detail'),
 ]

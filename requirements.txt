@@ -5,3 +5,4 @@ crispy-bootstrap5
 django-environ
 hypothesis
 pytest-django
+django-taggit

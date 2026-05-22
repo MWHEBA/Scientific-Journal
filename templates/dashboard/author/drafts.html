@@ -1,0 +1,47 @@
+{% extends 'base_dashboard.html' %}
+
+{% block title %}المسودات{% endblock %}
+{% block nav_author_drafts %}active{% endblock %}
+
+{% block content %}
+<div class="page-header">
+    <h1 class="page-header__title">المسودات</h1>
+    <div class="page-header__actions">
+        <a href="{% url 'submissions:create' %}" class="btn btn-accent">+ تقديم مقالة جديدة</a>
+    </div>
+</div>
+
+<!-- قائمة المسودات -->
+{% if submissions %}
+    {% for sub in submissions %}
+    <div class="card mb-4">
+        <div style="display: flex; justify-content: space-between; align-items: flex-start; flex-wrap: wrap; gap: var(--space-3);">
+            <div style="flex: 1; min-width: 250px;">
+                <h3 class="mb-2" style="font-size: var(--text-md);">{{ sub.title|truncatechars:80 }}</h3>
+                <p class="text-muted text-sm mb-0">
+                    {% if sub.section %}{{ sub.section.name }} &nbsp;·&nbsp; {% endif %}{{ sub.created_at|date:"Y/m/d" }}
+                </p>
+            </div>
+            <span class="badge badge-draft">مسودة</span>
+        </div>
+
+        <!-- إجراءات -->
+        <div style="margin-top: var(--space-4); display: flex; gap: var(--space-2); flex-wrap: wrap;">
+            <a href="{% url 'submissions:edit' sub.pk %}" class="btn btn-sm btn-primary">تعديل</a>
+            <a href="{% url 'dashboard:author' %}" class="btn btn-sm btn-ghost">العودة للتقديمات</a>
+        </div>
+    </div>
+    {% endfor %}
+{% else %}
+    <div class="card">
+        <div class="empty-state">
+            <div class="empty-state__icon"><svg class="icon icon-xl icon-muted"><use href="#icon-save"/></svg></div>
+            <h3 class="empty-state__title">لا توجد مسودات</h3>
+            <p class="empty-state__message">جميع مقالاتك إما مرسلة أو منشورة.</p>
+            <div class="empty-state__action">
+                <a href="{% url 'submissions:create' %}" class="btn btn-accent">ابدأ بتقديم مقالة جديدة</a>
+            </div>
+        </div>
+    </div>
+{% endif %}
+{% endblock %}

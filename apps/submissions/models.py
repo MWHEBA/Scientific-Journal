@@ -1,5 +1,6 @@
 from django.db import models
 from django.conf import settings
+from taggit.managers import TaggableManager
 from apps.submissions.statuses import SubmissionStatus
 
 
@@ -23,13 +24,14 @@ class ArticleSubmission(models.Model):
     STATUS_PUBLISHED          = SubmissionStatus.PUBLISHED
     STATUS_REJECTED           = SubmissionStatus.REJECTED
     STATUS_EXPIRED            = SubmissionStatus.EXPIRED
+    STATUS_WITHDRAWN          = SubmissionStatus.WITHDRAWN
 
     STATUS_CHOICES = SubmissionStatus.CHOICES
 
     title             = models.CharField(max_length=500)
     abstract          = models.TextField()
-    keywords          = models.CharField(max_length=500)
-    section           = models.ForeignKey(JournalSection, on_delete=models.PROTECT)
+    section           = models.ForeignKey(JournalSection, on_delete=models.PROTECT, null=True, blank=True)
+    keywords          = TaggableManager(blank=True, verbose_name='الكلمات المفتاحية')
     author            = models.ForeignKey(settings.AUTH_USER_MODEL, on_delete=models.CASCADE,
                                           related_name='submissions')
     status            = models.CharField(max_length=30, choices=STATUS_CHOICES,
@@ -41,10 +43,11 @@ class ArticleSubmission(models.Model):
     assigned_reviewer = models.ForeignKey(settings.AUTH_USER_MODEL, null=True, blank=True,
                                           on_delete=models.SET_NULL,
                                           related_name='assigned_submissions')
-    admin_notes       = models.TextField(blank=True)
-    payment_deadline  = models.DateTimeField(null=True, blank=True)
-    created_at        = models.DateTimeField(auto_now_add=True)
-    updated_at        = models.DateTimeField(auto_now=True)
+    admin_notes                = models.TextField(blank=True)
+    corresponding_author_email = models.EmailField(blank=True, help_text='البريد الإلكتروني للمؤلف المسؤول عن المراسلات')
+    payment_deadline           = models.DateTimeField(null=True, blank=True)
+    created_at                 = models.DateTimeField(auto_now_add=True)
+    updated_at                 = models.DateTimeField(auto_now=True)
 
     def __str__(self):
         return f"{self.title} [{self.status}]"
@@ -55,7 +58,6 @@ class CoAuthor(models.Model):
                                     related_name='co_authors')
     full_name   = models.CharField(max_length=255)
     institution = models.CharField(max_length=255, blank=True)
-    email       = models.EmailField(blank=True)
     order       = models.PositiveSmallIntegerField(default=0)
 
     class Meta:

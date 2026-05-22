@@ -31,6 +31,7 @@ INSTALLED_APPS = [
     "apps.publishing",
     "apps.notifications",
     "apps.dashboard",
+    "taggit",
     "apps.pages",
 ]
 
@@ -110,3 +111,8 @@ EMAIL_BACKEND = "django.core.mail.backends.console.EmailBackend"
 LOGIN_URL = "/accounts/login/"
 LOGIN_REDIRECT_URL = "/dashboard/author/"
 LOGOUT_REDIRECT_URL = "/"
+
+# Authentication Backends
+AUTHENTICATION_BACKENDS = [
+    "django.contrib.auth.backends.ModelBackend",
+]

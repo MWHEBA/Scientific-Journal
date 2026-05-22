@@ -4,155 +4,190 @@
 {% block title %}مراجعة: {{ object.submission.title }}{% endblock %}
 {% block nav_reviewer_home %}active{% endblock %}
 {% block breadcrumb %}
-    <span class="dash-breadcrumb__sep">/</span>
-    <a href="{% url 'dashboard:reviewer' %}">المراجعات</a>
-    <span class="dash-breadcrumb__sep">/</span>
-    <span class="dash-breadcrumb__current">مراجعة المخطوطة</span>
+  <span class="dash-breadcrumb__sep">/</span>
+  <a href="{% url 'dashboard:reviewer_submissions' %}">التقديمات</a>
+  <span class="dash-breadcrumb__sep">/</span>
+  <span class="dash-breadcrumb__current">مراجعة</span>
+{% endblock %}
+
+{% block extra_css %}
+<style>
+  .review-layout { display: grid; gap: var(--space-5); }
+  .review-split { display: grid; grid-template-columns: 1fr 1.25fr; gap: var(--space-5); align-items: start; }
+  .stack { display: grid; gap: var(--space-5); }
+  .card { border: 1px solid var(--color-border); background: var(--color-surface); padding: var(--space-5); }
+  .title { margin: 0 0 var(--space-3); color: var(--color-primary); font-size: var(--text-xl); }
+  .section-title { margin: 0 0 var(--space-3); font-size: var(--text-lg); color: var(--color-primary); }
+  .meta-grid { display: grid; gap: var(--space-3); }
+  .meta-item { font-size: var(--text-sm); }
+  .meta-label { color: var(--color-text-muted); margin-left: var(--space-1); }
+  .meta-value { color: var(--color-text); font-weight: 600; word-break: break-word; }
+  .text-block { border-top: 1px solid var(--color-border-light); padding-top: var(--space-4); margin-top: var(--space-4); }
+  .abstract-box { background: var(--color-surface-alt); border: 1px solid var(--color-border); border-right: 4px solid var(--color-primary); padding: var(--space-4); line-height: var(--leading-loose); }
+  .badges { display: flex; flex-wrap: wrap; gap: var(--space-2); }
+  .badge-pill { display: inline-flex; align-items: center; padding: var(--space-1) var(--space-3); border: 1px solid var(--color-border); background: var(--color-surface-alt); font-size: var(--text-sm); font-weight: 600; }
+  .manuscript-link { display: inline-flex; align-items: center; padding: var(--space-2) var(--space-3); background: var(--color-primary); color: #fff; text-decoration: none; font-weight: 600; }
+  .scores-grid { display: grid; grid-template-columns: repeat(2, minmax(0, 1fr)); gap: var(--space-3); }
+  .score-card { border: 1px solid var(--color-border); background: var(--color-surface-alt); padding: var(--space-4); border-right: 3px solid var(--color-primary); text-align: center; }
+  .score-value { font-size: var(--text-2xl); font-weight: 700; color: var(--color-primary); margin: 0 0 var(--space-1); }
+  .comments-box { border: 1px solid var(--color-border); border-right: 4px solid var(--color-primary); background: var(--color-surface-alt); padding: var(--space-4); white-space: pre-wrap; }
+  .form-grid { display: grid; grid-template-columns: repeat(2, minmax(0, 1fr)); gap: var(--space-3); }
+  .score-field { display: grid; gap: var(--space-2); }
+  .score-stars {
+    font-size: 16px;
+    color: #d4a017;
+    letter-spacing: 2px;
+    min-height: 30px;
+    line-height: 1.2;
+  }
+  .score-stars.is-empty { color: var(--color-text-muted); letter-spacing: 0; }
+  .card select, .card textarea, .card input[type="text"] {
+    width: 100%;
+    border: 1px solid var(--color-border);
+    background: var(--color-surface);
+    padding: var(--space-2) var(--space-3);
+    font-size: var(--text-base);
+  }
+  .card textarea { min-height: 130px; resize: vertical; }
+  .decision-options { display: grid; gap: var(--space-2); margin-top: var(--space-2); }
+  .form-actions { margin-top: var(--space-4); display: flex; gap: var(--space-2); flex-wrap: wrap; }
+  @media (max-width: 980px) { .review-split { grid-template-columns: 1fr; } .scores-grid, .form-grid { grid-template-columns: 1fr; } }
+</style>
 {% endblock %}
 
 {% block content %}
 <div class="page-header">
-    <div>
-        <h1 class="page-header__title">مراجعة المخطوطة</h1>
-    </div>
-    <span class="badge
-        {% if object.submission.status == 'under_review' %}badge-under-review
-        {% elif object.submission.status == 'revision_required' %}badge-revision
-        {% else %}badge-draft{% endif %}">
-        {{ object.submission.get_status_display }}
-    </span>
+  <h1 class="page-header__title">مراجعة: {{ object.submission.title|truncatechars:90 }}</h1>
+  <span class="badge {% if object.submission.status == 'under_review' %}badge-under-review{% elif object.submission.status == 'revision_required' %}badge-revision{% else %}badge-draft{% endif %}">
+    {{ object.submission.get_status_display }}
+  </span>
 </div>
 
-<!-- بيانات المقالة -->
-<div class="card mb-6">
-    <h2 class="mb-4" style="font-size: var(--text-2xl); color: var(--color-primary);">
-        {{ object.submission.title }}
-    </h2>
-    <div style="display: grid; grid-template-columns: 1fr 1fr; gap: var(--space-3); font-size: var(--text-sm); margin-bottom: var(--space-4);">
-        <div><span class="text-muted">القسم:</span> <strong>{{ object.submission.section.name }}</strong></div>
-        <div><span class="text-muted">دورة المراجعة:</span> <strong>{{ object.revision_round }}</strong></div>
-    </div>
-    <div class="mb-4">
-        <p class="text-muted text-sm mb-2">الملخص</p>
-        <p class="mb-0" style="line-height: var(--leading-loose);">{{ object.submission.abstract }}</p>
-    </div>
-    {% if object.submission.keywords %}
-    <div class="mb-4">
-        <p class="text-muted text-sm mb-2">الكلمات المفتاحية</p>
-        <p class="mb-0 text-secondary">{{ object.submission.keywords }}</p>
-    </div>
-    {% endif %}
-    {% with co_authors=object.submission.co_authors.all %}
-    {% if co_authors %}
-    <div class="mb-4">
-        <p class="text-muted text-sm mb-2">المؤلفون المشاركون</p>
-        <div style="display: flex; flex-wrap: wrap; gap: var(--space-2);">
-            {% for co in co_authors %}
-            <span class="badge badge-draft" style="font-size: var(--text-sm); font-weight: 400;">
-                {{ co.full_name }}{% if co.institution %} — {{ co.institution }}{% endif %}
-            </span>
-            {% endfor %}
+<div class="review-layout">
+  <div class="review-split">
+    <aside class="stack">
+      <section class="card">
+        <h2 class="title">{{ object.submission.title }}</h2>
+        <div class="meta-grid">
+          <div class="meta-item"><span class="meta-label">المؤلف:</span><span class="meta-value">{{ object.submission.author.get_full_name|default:object.submission.author.username }}</span></div>
+          <div class="meta-item"><span class="meta-label">القسم:</span><span class="meta-value">{{ object.submission.section.name }}</span></div>
+          <div class="meta-item"><span class="meta-label">دورة المراجعة:</span><span class="meta-value">#{{ object.revision_round }}</span></div>
+          <div class="meta-item"><span class="meta-label">تاريخ التقديم:</span><span class="meta-value">{{ object.submission.created_at|ar_datetime12 }}</span></div>
         </div>
-    </div>
-    {% endif %}
-    {% endwith %}
-    {% if manuscript %}
-        <a href="{{ manuscript.file.url }}" target="_blank" class="btn btn-accent btn-sm">
-            <svg class="icon icon-sm icon-inverse"><use href="#icon-pdf"/></svg> تحميل ملف المخطوطة (PDF)
-        </a>
-    {% endif %}
-</div>
+      </section>
+      {% if manuscript %}
+      <section class="card">
+        <h3 class="section-title">المخطوطة</h3>
+        <a href="{{ manuscript.file.url }}" target="_blank" class="manuscript-link">تحميل المخطوطة</a>
+      </section>
+      {% endif %}
+    </aside>
 
-<!-- نتيجة المراجعة أو نموذج التقييم -->
-{% if object.is_submitted %}
-    <div class="card">
-        <div style="display: flex; align-items: center; gap: var(--space-3); margin-bottom: var(--space-4);">
-            <h3 class="mb-0" style="font-size: var(--text-xl);">تم إرسال المراجعة</h3>
-            <span class="badge
-                {% if object.decision == 'accept' %}badge-review-accept
-                {% elif object.decision == 'reject' %}badge-review-reject
-                {% else %}badge-review-revision{% endif %}">
-                {{ object.get_decision_display }}
-            </span>
-        </div>
-
-        <!-- درجات التقييم -->
-        {% if object.score_originality or object.score_relevance or object.score_clarity or object.score_language %}
-        <div style="display: grid; grid-template-columns: repeat(auto-fit, minmax(160px, 1fr)); gap: var(--space-4); margin-bottom: var(--space-4);">
-            {% if object.score_originality %}
-            <div class="card card-stat" style="padding: var(--space-4);">
-                <span class="card-stat__number" style="font-size: var(--text-3xl);">{{ object.score_originality }}/5</span>
-                <span class="card-stat__label">الأصالة</span>
-            </div>
-            {% endif %}
-            {% if object.score_relevance %}
-            <div class="card card-stat" style="padding: var(--space-4);">
-                <span class="card-stat__number" style="font-size: var(--text-3xl);">{{ object.score_relevance }}/5</span>
-                <span class="card-stat__label">الصلة بالموضوع</span>
-            </div>
-            {% endif %}
-            {% if object.score_clarity %}
-            <div class="card card-stat" style="padding: var(--space-4);">
-                <span class="card-stat__number" style="font-size: var(--text-3xl);">{{ object.score_clarity }}/5</span>
-                <span class="card-stat__label">الوضوح</span>
-            </div>
-            {% endif %}
-            {% if object.score_language %}
-            <div class="card card-stat" style="padding: var(--space-4);">
-                <span class="card-stat__number" style="font-size: var(--text-3xl);">{{ object.score_language }}/5</span>
-                <span class="card-stat__label">اللغة</span>
-            </div>
-            {% endif %}
+    <div class="stack">
+      <section class="card">
+        <h3 class="section-title">الملخص</h3>
+        <div class="abstract-box">{{ object.submission.abstract }}</div>
+        {% if object.submission.keywords.all %}
+        <div class="text-block">
+          <h3 class="section-title">الكلمات المفتاحية</h3>
+          <div class="badges">{% for keyword in object.submission.keywords.all %}<span class="badge-pill">{{ keyword.name }}</span>{% endfor %}</div>
         </div>
         {% endif %}
+        {% with co_authors=object.submission.co_authors.all %}
+        {% if co_authors %}
+        <div class="text-block">
+          <h3 class="section-title">المؤلفون المشاركون</h3>
+          <div class="badges">{% for co in co_authors %}<span class="badge-pill">{{ co.full_name }}{% if co.institution %} — {{ co.institution }}{% endif %}</span>{% endfor %}</div>
+        </div>
+        {% endif %}
+        {% endwith %}
+      </section>
 
+      {% if object.is_submitted %}
+      <section class="card">
+        <h3 class="section-title">تم إرسال المراجعة</h3>
+        <p class="text-muted text-sm">{{ object.get_decision_display }}</p>
+        <div class="scores-grid">
+          {% if object.score_originality %}<div class="score-card"><p class="score-value">{{ object.score_originality }}/5</p><p class="text-sm">الأصالة</p></div>{% endif %}
+          {% if object.score_relevance %}<div class="score-card"><p class="score-value">{{ object.score_relevance }}/5</p><p class="text-sm">الصلة بالموضوع</p></div>{% endif %}
+          {% if object.score_clarity %}<div class="score-card"><p class="score-value">{{ object.score_clarity }}/5</p><p class="text-sm">الوضوح</p></div>{% endif %}
+          {% if object.score_language %}<div class="score-card"><p class="score-value">{{ object.score_language }}/5</p><p class="text-sm">اللغة</p></div>{% endif %}
+        </div>
         {% if object.comments %}
-            <div class="form-group">
-                <label class="form-label">التعليقات</label>
-                <p class="mb-0" style="line-height: var(--leading-loose);">{{ object.comments }}</p>
-            </div>
+        <div class="text-block">
+          <h3 class="section-title">التعليقات</h3>
+          <div class="comments-box">{{ object.comments }}</div>
+        </div>
         {% endif %}
-        <p class="text-muted text-sm mb-0">
-            تاريخ الإرسال: {{ object.submitted_at|ar_datetime12 }}
-        </p>
-    </div>
-
-{% elif form %}
-    <div class="card">
-        <h3 class="mb-2" style="font-size: var(--text-xl);">نموذج التقييم</h3>
-        <p class="text-secondary text-sm mb-6">
-            قيّم المقالة على كل معيار من 1 (ضعيف) إلى 5 (ممتاز)، ثم اختر قرارك النهائي.
-        </p>
-        <form method="post" action="{% url 'reviews:submit' object.pk %}" novalidate id="review-form">
-            {% csrf_token %}
-            {{ form|crispy }}
-            <div style="margin-top: var(--space-6); display: flex; gap: var(--space-3);">
-                <button type="button" class="btn btn-primary" id="btn-submit-review">
-                    إرسال قرار المراجعة
-                </button>
-                <a href="{% url 'dashboard:reviewer' %}" class="btn btn-ghost">رجوع</a>
-            </div>
+      </section>
+      {% elif form %}
+      <section class="card">
+        <h3 class="section-title">نموذج التقييم</h3>
+        <form method="post" action="{% url 'reviews:submit' object.pk %}" id="review-form">
+          {% csrf_token %}
+          <div class="form-grid">
+            <div class="score-field">{{ form.score_originality|as_crispy_field }}<div class="score-stars is-empty" data-for="id_score_originality">اختر تقييمًا</div></div>
+            <div class="score-field">{{ form.score_relevance|as_crispy_field }}<div class="score-stars is-empty" data-for="id_score_relevance">اختر تقييمًا</div></div>
+            <div class="score-field">{{ form.score_clarity|as_crispy_field }}<div class="score-stars is-empty" data-for="id_score_clarity">اختر تقييمًا</div></div>
+            <div class="score-field">{{ form.score_language|as_crispy_field }}<div class="score-stars is-empty" data-for="id_score_language">اختر تقييمًا</div></div>
+          </div>
+          <div class="text-block">{{ form.comments|as_crispy_field }}</div>
+          <div class="text-block">
+            <h3 class="section-title">القرار النهائي</h3>
+            <div class="decision-options">{{ form.decision|as_crispy_field }}</div>
+          </div>
+          <div class="form-actions">
+            <button type="button" class="btn btn-primary" id="btn-submit-review">إرسال قرار المراجعة</button>
+            <a href="{% url 'dashboard:reviewer_submissions' %}" class="btn btn-ghost">رجوع</a>
+          </div>
         </form>
+      </section>
+      {% endif %}
     </div>
-{% endif %}
+  </div>
+</div>
 {% endblock %}
 
 {% block extra_js %}
 <script>
-document.getElementById('btn-submit-review')?.addEventListener('click', function() {
-    Swal.fire({
-        title: 'هل أنت متأكد من إرسال قرار المراجعة؟',
-        text: 'لن تتمكن من تعديل القرار بعد الإرسال.',
-        icon: 'warning',
-        showCancelButton: true,
-        confirmButtonText: 'نعم، أرسل',
-        cancelButtonText: 'إلغاء',
-        confirmButtonColor: '#1e2d4a'
-    }).then((result) => {
-        if (result.isConfirmed) {
-            document.getElementById('review-form').submit();
-        }
-    });
+document.getElementById('btn-submit-review')?.addEventListener('click', function () {
+  Swal.fire({
+    title: 'هل أنت متأكد من إرسال قرار المراجعة؟',
+    text: 'لن تتمكن من تعديل القرار بعد الإرسال.',
+    icon: 'warning',
+    showCancelButton: true,
+    confirmButtonText: 'نعم، أرسل',
+    cancelButtonText: 'إلغاء',
+    confirmButtonColor: '#1e2d4a'
+  }).then((result) => {
+    if (result.isConfirmed) document.getElementById('review-form').submit();
+  });
+});
+
+function starsForValue(v) {
+  const n = parseInt(v, 10);
+  if (!n || n < 1) return '';
+  return '★'.repeat(n) + '☆'.repeat(5 - n);
+}
+
+['id_score_originality', 'id_score_relevance', 'id_score_clarity', 'id_score_language'].forEach((id) => {
+  const field = document.getElementById(id);
+  const starBox = document.querySelector(`.score-stars[data-for="${id}"]`);
+  if (!field || !starBox) return;
+
+  const render = () => {
+    const stars = starsForValue(field.value);
+    if (!stars) {
+      starBox.textContent = 'اختر تقييمًا';
+      starBox.classList.add('is-empty');
+      return;
+    }
+    starBox.textContent = stars;
+    starBox.classList.remove('is-empty');
+  };
+
+  field.addEventListener('change', render);
+  render();
 });
 </script>
 {% endblock %}

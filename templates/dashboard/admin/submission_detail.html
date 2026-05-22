@@ -162,10 +162,10 @@
 <div class="page-header">
   <h1 class="page-header__title">تفاصيل مقالة: {{ submission.title|truncatechars:70 }}</h1>
   <div class="page-header__actions">
-    {% if submission.status == 'under_review' and not submission.assigned_reviewer %}
+    {% if user.role == 'admin' and submission.status == 'under_review' and not submission.assigned_reviewer %}
       <a href="{% url 'dashboard:assign_reviewer' submission.pk %}" class="btn btn-accent btn-sm">تعيين مراجع</a>
     {% endif %}
-    <a href="{% url 'dashboard:admin_submissions' %}" class="btn btn-ghost btn-sm">رجوع</a>
+    <a href="{% if user.role == 'reviewer' %}{% url 'dashboard:reviewer_submissions' %}{% else %}{% url 'dashboard:admin_submissions' %}{% endif %}" class="btn btn-ghost btn-sm">رجوع</a>
   </div>
 </div>
 
@@ -186,12 +186,13 @@
             {% elif submission.status == 'published' %}badge-published
             {% elif submission.status == 'rejected' %}badge-rejected
             {% elif submission.status == 'expired' %}badge-expired
+            {% elif submission.status == 'withdrawn' %}badge-withdrawn
             {% endif %}" style="font-size:var(--text-sm); padding:var(--space-2) var(--space-4);">
             {{ submission.get_status_display }}
           </span>
         </div>
         <div class="meta-grid">
-          <div class="meta-item"><span class="meta-label">القسم:</span><span class="meta-value">{{ submission.section.name }}</span></div>
+          <div class="meta-item"><span class="meta-label">القسم:</span><span class="meta-value">{% if submission.section %}{{ submission.section.name }}{% else %}غير محدد{% endif %}</span></div>
           <div class="meta-item"><span class="meta-label">تاريخ التقديم:</span><span class="meta-value">{{ submission.created_at|ar_datetime12 }}</span></div>
           <div class="meta-item"><span class="meta-label">دورات التعديل:</span><span class="meta-value">{{ submission.revision_count }} / 2</span></div>
           {% if submission.payment_deadline %}
@@ -199,6 +200,22 @@
           {% endif %}
         </div>
       </section>
+
+      {% if payment_record %}
+      <section class="summary-card">
+        <h3 class="block-title">معلومات الدفع</h3>
+        <div class="meta-grid">
+          <div class="meta-item"><span class="meta-label">الحالة:</span><span class="meta-value">{{ payment_record.get_status_display }}</span></div>
+          <div class="meta-item"><span class="meta-label">المبلغ:</span><span class="meta-value">{{ payment_record.amount }} {{ payment_record.currency }}</span></div>
+          <div class="meta-item"><span class="meta-label">بوابة الدفع:</span><span class="meta-value">{{ payment_record.gateway_name|default:"—" }}</span></div>
+          <div class="meta-item"><span class="meta-label">رقم الطلب:</span><span class="meta-value">{{ payment_record.gateway_order_id|default:"—" }}</span></div>
+          <div class="meta-item"><span class="meta-label">تاريخ الإنشاء:</span><span class="meta-value">{{ payment_record.created_at|ar_datetime12 }}</span></div>
+          {% if payment_record.paid_at %}
+          <div class="meta-item"><span class="meta-label">تاريخ الدفع:</span><span class="meta-value">{{ payment_record.paid_at|ar_datetime12 }}</span></div>
+          {% endif %}
+        </div>
+      </section>
+      {% endif %}
 
       {% if submission.co_authors.all %}
       <section class="summary-card">
@@ -238,12 +255,12 @@
             {{ submission.abstract }}
           </div>
         </div>
-        {% if submission.keywords %}
+        {% if submission.keywords.all %}
         <div class="text-block">
           <p class="text-label">الكلمات المفتاحية</p>
           <div class="keywords-badges">
-            {% for keyword in submission.keywords|keywords_to_list %}
-              <span class="keyword-badge">{{ keyword }}</span>
+            {% for keyword in submission.keywords.all %}
+              <span class="keyword-badge">{{ keyword.name }}</span>
             {% empty %}
               <span class="text-muted text-sm">—</span>
             {% endfor %}
@@ -263,7 +280,9 @@
                 <strong class="text-sm">المراجع الحالي: {{ submission.assigned_reviewer.get_full_name|default:submission.assigned_reviewer.username }}</strong>
                 <span class="badge badge-under-review">مكلّف حاليًا</span>
               </div>
+              {% if user.role == 'admin' %}
               <a href="{% url 'dashboard:assign_reviewer' submission.pk %}" class="btn btn-ghost btn-sm">تغيير المراجع</a>
+              {% endif %}
             </div>
           </div>
           {% endif %}
@@ -320,9 +339,36 @@
     </div>
   </div>
 
-  {% if submission.status == 'under_initial_check' %}
+  {% if submission.status == 'under_review' %}
+    {% if user.role == 'reviewer' and not submission.assigned_reviewer %}
+    <section class="summary-card">
+      <h3 class="block-title">تعيين المراجع</h3>
+      <form method="post" id="form-self-assign">
+        {% csrf_token %}
+        <input type="hidden" name="action" value="self_assign">
+        <p class="text-muted text-sm" style="margin: 0 0 var(--space-3) 0;">هل تريد تعيين نفسك كمراجع لهذا التقديم؟</p>
+        <button type="button" class="btn btn-accent" id="btn-self-assign">تعيين نفسي كمراجع</button>
+      </form>
+    </section>
+    {% endif %}
+  {% endif %}
+
+  {% if submission.status == 'under_initial_check' and user.role == 'admin' %}
   <section class="summary-card">
     <h3 class="block-title">إجراءات الفحص الأولي</h3>
+    <form method="post" style="margin-bottom: var(--space-4);">
+      {% csrf_token %}
+      <input type="hidden" name="action" value="set_section">
+      <div class="reject-inline">
+        <select name="section_id" class="form-input" required>
+          <option value="">اختر القسم المناسب</option>
+          {% for sec in sections %}
+            <option value="{{ sec.pk }}" {% if submission.section_id == sec.pk %}selected{% endif %}>{{ sec.name }}</option>
+          {% endfor %}
+        </select>
+        <button type="submit" class="btn btn-ghost">حفظ القسم</button>
+      </div>
+    </form>
     <div class="decision-actions">
       <form method="post" id="form-pass">
         {% csrf_token %}
@@ -345,6 +391,20 @@
 
 {% block extra_js %}
 <script>
+document.getElementById('btn-self-assign')?.addEventListener('click', () => {
+  Swal.fire({
+    title: 'تعيين نفسك كمراجع؟',
+    text: 'سيتم إسنادك كمراجع لهذا التقديم',
+    icon: 'question',
+    showCancelButton: true,
+    confirmButtonText: 'نعم، تعيين',
+    cancelButtonText: 'إلغاء',
+    confirmButtonColor: '#3b82f6'
+  }).then((result) => {
+    if (result.isConfirmed) document.getElementById('form-self-assign').submit();
+  });
+});
+
 document.getElementById('btn-pass')?.addEventListener('click', () => {
   Swal.fire({
     title: 'قبول التقديم للمراجعة؟',

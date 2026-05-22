@@ -158,6 +158,28 @@ def test_webhook_failure_returns_to_accepted(make_submission, author, payment_se
     assert Notification.objects.filter(user=author, type='payment_required').exists()
 
 
+@pytest.mark.django_db
+def test_webhook_success_without_section_rolls_back_to_accepted(
+    make_submission, author, payment_service, site_settings
+):
+    sub = make_submission(status=SubmissionStatus.ACCEPTED, author=author)
+    sub.section = None
+    sub.payment_deadline = timezone.now() + timedelta(days=30)
+    sub.save(update_fields=['section', 'payment_deadline'])
+
+    payment_service.initiate_payment(sub, actor=author)
+    sub.refresh_from_db()
+    order_id = sub.payment.gateway_order_id
+
+    payload, signature = _make_webhook(order_id, 'paid')
+    payment_service.handle_webhook(payload, signature)
+
+    sub.refresh_from_db()
+    assert sub.status == SubmissionStatus.ACCEPTED
+    assert sub.payment.status == Payment.STATUS_FAILED
+    assert not PublishedArticle.objects.filter(submission=sub).exists()
+
+
 # ─── Property-Based Test P8 — Idempotency ────────────────────────────────────
 
 @pytest.mark.django_db

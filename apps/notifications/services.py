@@ -99,6 +99,21 @@ class NotificationService:
         )
 
     @staticmethod
+    def notify_admin_reviewer_self_assigned(submission, reviewer) -> None:
+        """إشعار المشرف عند تسجيل المراجع نفسه لمراجعة مقالة."""
+        from django.contrib.auth import get_user_model
+        User = get_user_model()
+        admins = User.objects.filter(role=User.ROLE_ADMIN)
+        for admin in admins:
+            NotificationService.notify(
+                user=admin,
+                type='reviewer_self_assigned',
+                title='مراجع سجل نفسه لمراجعة مقالة',
+                message=f'{reviewer.get_full_name() or reviewer.username} سجل نفسه لمراجعة المقالة "{submission.title}".',
+                target_url=reverse('dashboard:submission_detail', args=[submission.pk]),
+            )
+
+    @staticmethod
     def notify_author_payment_failed(submission) -> None:
         """إشعار المؤلف عند فشل الدفع."""
         NotificationService.notify(

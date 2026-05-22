@@ -120,6 +120,12 @@ def make_review(db, make_user):
     def _make(submission, reviewer=None, is_submitted=False, decision='', **kwargs):
         if reviewer is None:
             reviewer = make_user(role=User.ROLE_REVIEWER)
+        
+        # تعيين المراجع للتقديم فقط إذا لم يكن معيّن بالفعل
+        if submission.assigned_reviewer is None:
+            submission.assigned_reviewer = reviewer
+            submission.save(update_fields=['assigned_reviewer'])
+        
         review = Review.objects.create(
             submission=submission,
             reviewer=reviewer,

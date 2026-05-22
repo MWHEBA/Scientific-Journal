@@ -22,7 +22,7 @@
         <div class="card mb-4">
             <span class="badge badge-draft mb-3">{{ article.section.name }}</span>
             <h3 class="mb-2" style="font-size: var(--text-lg);">
-                <a href="{% url 'pages:article_detail' article.pk %}" style="color: var(--color-text);">
+                <a href="{% url 'pages:article_detail' article.slug %}" style="color: var(--color-text);">
                     {{ article.title }}
                 </a>
             </h3>

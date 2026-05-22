@@ -141,7 +141,24 @@ class PaymentService:
 
         # استدعاء النشر صراحةً — لا signals
         from apps.publishing.services import PublishingService
-        PublishingService.publish(sub)
+        from apps.publishing.exceptions import MissingSectionError
+        try:
+            PublishingService.publish(sub)
+        except MissingSectionError:
+            # لا نترك الدفع مكتملًا مع فشل النشر بسبب بيانات ناقصة.
+            payment.status = Payment.STATUS_FAILED
+            payment.save(update_fields=['status'])
+            SubmissionStateMachine.transition(
+                sub, SubmissionStatus.ACCEPTED,
+                notes='Payment confirmed but publishing blocked: missing section',
+            )
+            AuditLog.objects.create(
+                entity_type='Payment',
+                entity_id=payment.id,
+                event='payment_failed',
+                notes='Publishing blocked بسبب عدم تحديد قسم للمقالة',
+            )
+            NotificationService.notify_author_payment_failed(sub)
 
     def _handle_payment_failure(self, payment: Payment) -> None:
         """معالجة فشل الدفع — يُعيد الحالة لـ accepted للسماح بإعادة المحاولة."""

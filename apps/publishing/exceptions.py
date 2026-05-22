@@ -11,3 +11,8 @@ class MissingManuscriptError(Exception):
 class PublishNotAllowedError(Exception):
     """حالة التقديم لا تسمح بالنشر — يجب أن تكون paid."""
     pass
+
+
+class MissingSectionError(Exception):
+    """لا يمكن نشر المقالة بدون قسم."""
+    pass

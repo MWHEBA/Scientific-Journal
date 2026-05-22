@@ -9,7 +9,7 @@ from django.db import models as django_models
 from django.conf import settings
 from urllib.parse import urlencode
 
-from apps.accounts.mixins import AuthorRequiredMixin, ReviewerRequiredMixin, AdminRequiredMixin
+from apps.accounts.mixins import AuthorRequiredMixin, ReviewerRequiredMixin, AdminRequiredMixin, SuperUserRequiredMixin
 from apps.submissions.models import ArticleSubmission
 from apps.submissions.statuses import SubmissionStatus
 from apps.payments.models import Payment
@@ -34,20 +34,62 @@ class AuthorDashboardView(AuthorRequiredMixin, ListView):
     ordering            = ['-created_at']
 
     def get_queryset(self):
-        return ArticleSubmission.objects.filter(
+        qs = ArticleSubmission.objects.filter(
             author=self.request.user
+        ).exclude(status='published').select_related('section').prefetch_related(
+            'manuscript_files', 'reviews', 'co_authors'
+        ).order_by('-created_at')
+        
+        return qs
+
+    def get_context_data(self, **kwargs):
+        ctx = super().get_context_data(**kwargs)
+        # احسب الإحصائيات من كل التقديمات بدون فلترة (بدون المنشورة)
+        all_submissions = ArticleSubmission.objects.filter(
+            author=self.request.user
+        ).exclude(status='published')
+        ctx['total']     = all_submissions.count()
+        ctx['active']    = all_submissions.exclude(status__in=['draft', 'rejected', 'expired']).count()
+        ctx['published'] = ArticleSubmission.objects.filter(
+            author=self.request.user, status='published'
+        ).count()
+        return ctx
+
+
+class AuthorDraftsView(AuthorRequiredMixin, ListView):
+    """صفحة المسودات — قائمة مسودات المؤلف فقط."""
+    model               = ArticleSubmission
+    template_name       = 'dashboard/author/drafts.html'
+    context_object_name = 'submissions'
+    ordering            = ['-created_at']
+
+    def get_queryset(self):
+        return ArticleSubmission.objects.filter(
+            author=self.request.user,
+            status='draft'
         ).select_related('section').prefetch_related(
             'manuscript_files', 'reviews', 'co_authors'
         ).order_by('-created_at')
 
     def get_context_data(self, **kwargs):
         ctx = super().get_context_data(**kwargs)
-        qs = self.get_queryset()
-        ctx['total']     = qs.count()
-        ctx['drafts']    = qs.filter(status='draft').count()
-        ctx['active']    = qs.exclude(status__in=['draft', 'published', 'rejected', 'expired']).count()
-        ctx['published'] = qs.filter(status='published').count()
+        ctx['total_drafts'] = self.get_queryset().count()
         return ctx
+
+
+class AuthorPublishedArticlesView(AuthorRequiredMixin, ListView):
+    """لوحة تحكم المؤلف — قائمة مقالاته المنشورة."""
+    template_name       = 'dashboard/author/published.html'
+    context_object_name = 'articles'
+    paginate_by         = 20
+
+    def get_queryset(self):
+        from apps.publishing.models import PublishedArticle
+        return PublishedArticle.objects.filter(
+            submission__author=self.request.user
+        ).select_related(
+            'submission__author', 'section', 'issue', 'issue__volume'
+        ).order_by('-published_at')
 
 
 class ReviewerDashboardView(ReviewerRequiredMixin, ListView):
@@ -57,8 +99,11 @@ class ReviewerDashboardView(ReviewerRequiredMixin, ListView):
 
     def get_queryset(self):
         from apps.reviews.models import Review
+        # احصل على المراجعات اللي المراجع الحالي هو المراجع المعيّن فيها الآن فقط
+        # (وليس كل المراجعات اللي راجعها في الماضي)
         return Review.objects.filter(
-            reviewer=self.request.user
+            reviewer=self.request.user,
+            submission__assigned_reviewer=self.request.user
         ).select_related('submission', 'submission__section').order_by('-created_at')
 
     def get_context_data(self, **kwargs):
@@ -73,6 +118,381 @@ class ReviewerDashboardView(ReviewerRequiredMixin, ListView):
         ctx['pending_count']       = qs.filter(is_submitted=False).count()
         ctx['completed_count']     = qs.filter(is_submitted=True).count()
         return ctx
+
+
+class ReviewerSubmissionsView(ReviewerRequiredMixin, ListView):
+    """عرض التقديمات للمراجع — مقالاته قيد المراجعة + مقالات الفحص الأولي بدون مراجع."""
+    model               = ArticleSubmission
+    template_name       = 'dashboard/admin/submissions.html'
+    context_object_name = 'submissions'
+    paginate_by         = 20
+
+    def get_queryset(self):
+        from apps.reviews.models import Review
+        
+        # احصل على المقالات اللي المراجع الحالي هو المراجع المعيّن فيها الآن
+        # (وليس كل المقالات اللي راجعها في الماضي)
+        my_assigned_submissions = ArticleSubmission.objects.filter(
+            assigned_reviewer=self.request.user,
+            status=SubmissionStatus.UNDER_REVIEW
+        ).values_list('pk', flat=True)
+        
+        # دمج الاستعلامات:
+        # 1. المقالات قيد المراجعة اللي هو المراجع المعيّن فيها الآن
+        # 2. مقالات الفحص الأولي بدون مراجع معيّن
+        # 3. مقالات تحت المراجعة بدون مراجع معيّن
+        from django.db.models import Q
+        qs = ArticleSubmission.objects.filter(
+            Q(pk__in=my_assigned_submissions) |
+            Q(status=SubmissionStatus.UNDER_REVIEW, assigned_reviewer__isnull=True)
+        ).select_related(
+            'author', 'section', 'assigned_reviewer'
+        ).order_by('-created_at')
+
+        section = self.request.GET.get('section')
+        search = (self.request.GET.get('q') or '').strip()
+
+        if section:
+            qs = qs.filter(section_id=section)
+        if search:
+            search_filter = (
+                django_models.Q(title__icontains=search) |
+                django_models.Q(author__username__icontains=search) |
+                django_models.Q(author__first_name__icontains=search) |
+                django_models.Q(author__last_name__icontains=search)
+            )
+            if search.isdigit():
+                search_filter |= django_models.Q(pk=int(search))
+            qs = qs.filter(search_filter)
+        return qs
+
+    def get_context_data(self, **kwargs):
+        ctx = super().get_context_data(**kwargs)
+        from apps.submissions.models import JournalSection
+        
+        ctx['sections']        = JournalSection.objects.all()
+        ctx['status_choices']  = ArticleSubmission.STATUS_CHOICES
+        ctx['current_filters'] = {
+            'status':    '',
+            'section':   self.request.GET.get('section', ''),
+            'q':         self.request.GET.get('q', '').strip(),
+        }
+        
+        # احصل على المقالات اللي المراجع الحالي هو المراجع المعيّن فيها الآن
+        my_assigned_submissions = ArticleSubmission.objects.filter(
+            assigned_reviewer=self.request.user,
+            status=SubmissionStatus.UNDER_REVIEW
+        ).values_list('pk', flat=True)
+        
+        from django.db.models import Q
+        base_qs = ArticleSubmission.objects.filter(
+            Q(pk__in=my_assigned_submissions) |
+            Q(status=SubmissionStatus.UNDER_REVIEW, assigned_reviewer__isnull=True)
+        ).select_related('author', 'section', 'assigned_reviewer')
+        
+        section = self.request.GET.get('section')
+        search = (self.request.GET.get('q') or '').strip()
+        if section:
+            base_qs = base_qs.filter(section_id=section)
+        if search:
+            search_filter = (
+                django_models.Q(title__icontains=search) |
+                django_models.Q(author__username__icontains=search) |
+                django_models.Q(author__first_name__icontains=search) |
+                django_models.Q(author__last_name__icontains=search)
+            )
+            if search.isdigit():
+                search_filter |= django_models.Q(pk=int(search))
+            base_qs = base_qs.filter(search_filter)
+
+        # عرض الحالات المتاحة
+        status_labels = dict(ArticleSubmission.STATUS_CHOICES)
+        ctx['preset_items'] = [
+            {
+                'key': f'status:{SubmissionStatus.UNDER_REVIEW}',
+                'label': 'قيد المراجعة',
+                'count': base_qs.filter(status=SubmissionStatus.UNDER_REVIEW).count()
+            },
+            {
+                'key': f'status:{SubmissionStatus.INITIAL_CHECK}',
+                'label': 'فحص أولي',
+                'count': base_qs.filter(status=SubmissionStatus.INITIAL_CHECK).count()
+            }
+        ]
+
+        preset_query = {}
+        if current := self.request.GET.get('q', '').strip():
+            preset_query['q'] = current
+        if current := self.request.GET.get('section', ''):
+            preset_query['section'] = current
+        ctx['preset_query'] = urlencode(preset_query, doseq=True)
+
+        query_params = self.request.GET.copy()
+        if 'page' in query_params:
+            query_params.pop('page')
+        ctx['page_query'] = urlencode(query_params, doseq=True)
+        ctx['default_submissions_url'] = reverse('dashboard:admin_submissions')
+        ctx['base_submissions_url'] = reverse('dashboard:reviewer_submissions')
+        
+        return ctx
+
+
+class ReviewerArticlesView(ReviewerRequiredMixin, ListView):
+    """عرض المقالات المنشورة للمراجع — بدون مقالات الفحص الأولي."""
+    template_name = 'dashboard/admin/articles.html'
+    context_object_name = 'articles'
+    paginate_by = 20
+
+    def get_queryset(self):
+        from apps.publishing.models import PublishedArticle
+        
+        # عرض المقالات المنشورة فقط (بدون الفحص الأولي)
+        qs = PublishedArticle.objects.filter(
+            submission__reviews__reviewer=self.request.user
+        ).select_related(
+            'submission__author', 'section', 'issue', 'issue__volume'
+        ).order_by('-published_at').distinct()
+
+        section = self.request.GET.get('section', '').strip()
+        issue = self.request.GET.get('issue', '').strip()
+        search = (self.request.GET.get('q') or '').strip()
+
+        if section:
+            qs = qs.filter(section_id=section)
+        if issue:
+            qs = qs.filter(issue_id=issue)
+        if search:
+            qs = qs.filter(
+                django_models.Q(title__icontains=search) |
+                django_models.Q(submission__author__username__icontains=search) |
+                django_models.Q(submission__author__first_name__icontains=search) |
+                django_models.Q(submission__author__last_name__icontains=search)
+            )
+        return qs
+
+    def get_context_data(self, **kwargs):
+        ctx = super().get_context_data(**kwargs)
+        from apps.submissions.models import JournalSection
+        from apps.publishing.models import Issue
+        
+        ctx['sections'] = JournalSection.objects.order_by('name')
+        ctx['issues'] = Issue.objects.select_related('volume').order_by('-volume__number', '-number')
+        ctx['current_filters'] = {
+            'section': self.request.GET.get('section', '').strip(),
+            'issue': self.request.GET.get('issue', '').strip(),
+            'q': self.request.GET.get('q', '').strip(),
+        }
+        
+        query_params = self.request.GET.copy()
+        if 'page' in query_params:
+            query_params.pop('page')
+        ctx['page_query'] = urlencode(query_params, doseq=True)
+        ctx['default_submissions_url'] = reverse('dashboard:admin_submissions')
+        ctx['base_submissions_url'] = reverse('dashboard:reviewer_submissions')
+        
+        return ctx
+
+
+class ReviewerPostReviewView(ReviewerRequiredMixin, ListView):
+    """تقديمات المراجع بعد إرسال المراجعة وقبل النشر."""
+    model = ArticleSubmission
+    template_name = 'dashboard/admin/submissions.html'
+    context_object_name = 'submissions'
+    paginate_by = 20
+
+    def get_queryset(self):
+        from django.db.models import Prefetch
+        from apps.reviews.models import Review
+        post_review_statuses = [
+            SubmissionStatus.REVISION_REQUIRED,
+            SubmissionStatus.ACCEPTED,
+            SubmissionStatus.PAYMENT_PROCESSING,
+            SubmissionStatus.PAID,
+            SubmissionStatus.EXPIRED,
+        ]
+        qs = ArticleSubmission.objects.filter(
+            reviews__reviewer=self.request.user,
+            reviews__is_submitted=True,
+            status__in=post_review_statuses,
+        ).select_related(
+            'author', 'section', 'assigned_reviewer'
+        ).prefetch_related(
+            Prefetch(
+                'reviews',
+                queryset=Review.objects.filter(reviewer=self.request.user).order_by('-submitted_at', '-created_at'),
+            )
+        ).distinct().order_by('-updated_at', '-created_at')
+
+        status = (self.request.GET.get('status') or '').strip()
+        section = (self.request.GET.get('section') or '').strip()
+        date_from = (self.request.GET.get('date_from') or '').strip()
+        date_to = (self.request.GET.get('date_to') or '').strip()
+        search = (self.request.GET.get('q') or '').strip()
+
+        if status:
+            qs = qs.filter(status=status)
+        if section:
+            qs = qs.filter(section_id=section)
+        if date_from:
+            qs = qs.filter(created_at__date__gte=date_from)
+        if date_to:
+            qs = qs.filter(created_at__date__lte=date_to)
+        if search:
+            search_filter = (
+                django_models.Q(title__icontains=search) |
+                django_models.Q(author__username__icontains=search) |
+                django_models.Q(author__first_name__icontains=search) |
+                django_models.Q(author__last_name__icontains=search)
+            )
+            if search.isdigit():
+                search_filter |= django_models.Q(pk=int(search))
+            qs = qs.filter(search_filter)
+
+        return qs
+
+    def get_context_data(self, **kwargs):
+        ctx = super().get_context_data(**kwargs)
+        from apps.submissions.models import JournalSection
+        from django.urls import reverse
+        ctx['sections'] = JournalSection.objects.all()
+        ctx['status_choices'] = ArticleSubmission.STATUS_CHOICES
+        ctx['current_filters'] = {
+            'status': (self.request.GET.get('status') or '').strip(),
+            'section': (self.request.GET.get('section') or '').strip(),
+            'date_from': (self.request.GET.get('date_from') or '').strip(),
+            'date_to': (self.request.GET.get('date_to') or '').strip(),
+            'q': (self.request.GET.get('q') or '').strip(),
+            'preset': '',
+        }
+        ctx['preset_items'] = []
+        ctx['preset_query'] = ''
+        query_params = self.request.GET.copy()
+        if 'page' in query_params:
+            query_params.pop('page')
+        ctx['page_query'] = urlencode(query_params, doseq=True)
+        ctx['default_submissions_url'] = reverse('dashboard:admin_submissions')
+        ctx['base_submissions_url'] = reverse('dashboard:reviewer_post_review')
+        ctx['is_post_review_page'] = True
+        return ctx
+
+
+class ReviewerSubmissionDetailView(ReviewerRequiredMixin, View):
+    """عرض تفاصيل تقديم للمراجع — يقدر يشوف مقالته أو الفحص الأولي."""
+    template_name = 'dashboard/admin/submission_detail.html'
+
+    def get(self, request, pk):
+        from apps.submissions.models import ManuscriptFile
+        from apps.submissions.models import JournalSection
+        
+        submission = get_object_or_404(
+            ArticleSubmission.objects.select_related(
+                'author', 'section', 'assigned_reviewer'
+            ).prefetch_related(
+                django_models.Prefetch(
+                    'manuscript_files',
+                    queryset=ManuscriptFile.objects.order_by('-uploaded_at', '-version')
+                ),
+                'reviews',
+                'co_authors'
+            ),
+            pk=pk,
+        )
+        
+        # تحقق من أن المراجع يقدر يشوف هذه المقالة
+        # إما أنه المراجع المعيّن الآن أو أنها في الفحص الأولي بدون مراجع معيّن أو تحت المراجعة بدون مراجع معيّن
+        is_assigned_reviewer = (
+            submission.assigned_reviewer_id == request.user.id and
+            submission.status == SubmissionStatus.UNDER_REVIEW
+        )
+        
+        is_initial_check_unassigned = (
+            submission.status == SubmissionStatus.INITIAL_CHECK and
+            submission.assigned_reviewer is None
+        )
+        
+        is_under_review_unassigned = (
+            submission.status == SubmissionStatus.UNDER_REVIEW and
+            submission.assigned_reviewer is None
+        )
+        
+        if not (
+            is_assigned_reviewer
+            or is_initial_check_unassigned
+            or is_under_review_unassigned
+            or (submission.status == SubmissionStatus.ACCEPTED and submission.assigned_reviewer is None)
+        ):
+            raise PermissionDenied("ليس لديك صلاحية لعرض هذه المقالة")
+        
+        try:
+            payment_record = submission.payment
+        except Exception:
+            payment_record = None
+        return render(request, self.template_name, {
+            'submission': submission,
+            'sections': JournalSection.objects.order_by('name'),
+            'payment_record': payment_record,
+        })
+
+    def post(self, request, pk):
+        submission = get_object_or_404(ArticleSubmission, pk=pk)
+        
+        # تحقق من الصلاحيات
+        is_assigned_reviewer = (
+            submission.assigned_reviewer_id == request.user.id and
+            submission.status == SubmissionStatus.UNDER_REVIEW
+        )
+        
+        is_initial_check_unassigned = (
+            submission.status == SubmissionStatus.INITIAL_CHECK and
+            submission.assigned_reviewer is None
+        )
+        
+        is_under_review_unassigned = (
+            submission.status == SubmissionStatus.UNDER_REVIEW and
+            submission.assigned_reviewer is None
+        )
+        
+        if not (
+            is_assigned_reviewer
+            or is_initial_check_unassigned
+            or is_under_review_unassigned
+            or (submission.status == SubmissionStatus.ACCEPTED and submission.assigned_reviewer is None)
+        ):
+            raise PermissionDenied("ليس لديك صلاحية لتعديل هذه المقالة")
+        
+        action = request.POST.get('action')
+        from apps.submissions.services import SubmissionService
+        from apps.submissions.exceptions import InvalidStateTransitionError
+
+        # المراجع يمكنه فقط تعيين نفسه أو مراجعة التقديمات المعينة له
+        # لا يمكنه رفع/رفض التقديمات في الفحص الأولي
+        if action == 'self_assign':
+            # تعيين المراجع نفسه كمراجع للتقديم
+            if submission.status == SubmissionStatus.INITIAL_CHECK:
+                messages.error(request, 'لا يمكن تعيين نفسك أثناء قيد الفحص الأولي.')
+                return redirect(reverse('dashboard:reviewer_submissions'))
+
+            if submission.assigned_reviewer is not None:
+                messages.error(request, 'هذا التقديم معيّن لمراجع بالفعل.')
+                return redirect(reverse('dashboard:reviewer_submissions'))
+            
+            from apps.reviews.models import Review
+            submission.assigned_reviewer = request.user
+            submission.save(update_fields=['assigned_reviewer', 'updated_at'])
+            
+            # إنشاء Review object
+            Review.objects.get_or_create(
+                submission=submission,
+                reviewer=request.user,
+                defaults={'revision_round': submission.revision_count + 1},
+            )
+            
+            messages.success(request, 'تم تعيينك كمراجع لهذا التقديم.')
+            return redirect(reverse('dashboard:reviewer_submissions'))
+        
+        # الإجراءات الأخرى (pass/reject) غير مسموحة للمراجع
+        messages.error(request, 'ليس لديك صلاحية لتنفيذ هذا الإجراء.')
+        return redirect(reverse('dashboard:reviewer_submissions'))
 
 
 class AssignReviewerView(AdminRequiredMixin, View):
@@ -152,6 +572,14 @@ class SiteSettingsView(AdminRequiredMixin, View):
         form = SiteSettingsForm(instance=settings_obj)
         return render(request, self.template_name, {'form': form, 'settings': settings_obj})
 
+    @staticmethod
+    def _recompute_current_issue():
+        from apps.publishing.models import Issue
+        current = Issue.objects.select_related('volume').order_by('-volume__year', '-quarter', '-number').first()
+        Issue.objects.update(is_current=False)
+        if current:
+            Issue.objects.filter(pk=current.pk).update(is_current=True)
+
     def post(self, request):
         from apps.pages.models import SiteSettings
         from apps.pages.forms import SiteSettingsForm
@@ -217,7 +645,9 @@ class AdminSubmissionsView(AdminRequiredMixin, ListView):
     def get_queryset(self):
         qs = ArticleSubmission.objects.select_related(
             'author', 'section', 'assigned_reviewer'
-        ).exclude(status=SubmissionStatus.PUBLISHED).order_by('-created_at')
+        ).exclude(
+            status__in=[SubmissionStatus.PUBLISHED, SubmissionStatus.DRAFT]
+        ).order_by('-created_at')
 
         status = self.request.GET.get('status')
         section = self.request.GET.get('section')
@@ -255,6 +685,7 @@ class AdminSubmissionsView(AdminRequiredMixin, ListView):
     def get_context_data(self, **kwargs):
         ctx = super().get_context_data(**kwargs)
         from apps.submissions.models import JournalSection
+        from django.urls import reverse
         ctx['sections']        = JournalSection.objects.all()
         ctx['status_choices']  = ArticleSubmission.STATUS_CHOICES
         ctx['current_filters'] = {
@@ -268,7 +699,7 @@ class AdminSubmissionsView(AdminRequiredMixin, ListView):
 
         # Preset counters based on current search scope (without status/preset restriction).
         base_qs = ArticleSubmission.objects.select_related('author', 'section', 'assigned_reviewer')
-        base_qs = base_qs.exclude(status=SubmissionStatus.PUBLISHED)
+        base_qs = base_qs.exclude(status__in=[SubmissionStatus.PUBLISHED, SubmissionStatus.DRAFT])
         section = self.request.GET.get('section')
         date_from = self.request.GET.get('date_from')
         date_to = self.request.GET.get('date_to')
@@ -333,6 +764,7 @@ class AdminSubmissionsView(AdminRequiredMixin, ListView):
         if 'page' in query_params:
             query_params.pop('page')
         ctx['page_query'] = urlencode(query_params, doseq=True)
+        ctx['default_submissions_url'] = reverse('dashboard:admin_submissions')
         return ctx
 
 
@@ -402,7 +834,14 @@ class AdminSubmissionDetailView(AdminRequiredMixin, View):
             ),
             pk=pk,
         )
-        return render(request, self.template_name, {'submission': submission})
+        try:
+            payment_record = submission.payment
+        except Exception:
+            payment_record = None
+        return render(request, self.template_name, {
+            'submission': submission,
+            'payment_record': payment_record,
+        })
 
     def post(self, request, pk):
         submission = get_object_or_404(ArticleSubmission, pk=pk)
@@ -411,11 +850,24 @@ class AdminSubmissionDetailView(AdminRequiredMixin, View):
         from apps.submissions.exceptions import InvalidStateTransitionError
 
         if action == 'pass':
+            if submission.section_id is None:
+                messages.error(request, 'لا يمكن قبول التقديم للمراجعة قبل تحديد القسم.')
+                return redirect(reverse('dashboard:submission_detail', kwargs={'pk': pk}))
             try:
                 SubmissionService.admin_pass_initial_check(submission, actor=request.user)
                 messages.success(request, 'تم قبول التقديم للمراجعة.')
             except InvalidStateTransitionError as e:
                 messages.error(request, f'خطأ: {e}')
+
+        elif action == 'set_section':
+            section_id = (request.POST.get('section_id') or '').strip()
+            if not section_id:
+                messages.error(request, 'يرجى اختيار قسم صالح.')
+                return redirect(reverse('dashboard:submission_detail', kwargs={'pk': pk}))
+            submission.section_id = section_id
+            submission.save(update_fields=['section', 'updated_at'])
+            messages.success(request, 'تم تحديث قسم المقالة بنجاح.')
+            return redirect(reverse('dashboard:submission_detail', kwargs={'pk': pk}))
 
         elif action == 'reject':
             reason = request.POST.get('reason', '').strip()
@@ -532,6 +984,13 @@ class VolumeUpdateView(AdminRequiredMixin, View):
 
 
 class IssueCreateView(AdminRequiredMixin, View):
+    @staticmethod
+    def _recompute_current_issue():
+        from apps.publishing.models import Issue
+        current = Issue.objects.select_related('volume').order_by('-volume__year', '-quarter', '-number').first()
+        Issue.objects.update(is_current=False)
+        if current:
+            Issue.objects.filter(pk=current.pk).update(is_current=True)
     """إنشاء عدد جديد."""
 
     def post(self, request):
@@ -539,7 +998,6 @@ class IssueCreateView(AdminRequiredMixin, View):
         volume_id = request.POST.get('volume_id')
         number    = request.POST.get('number')
         quarter   = request.POST.get('quarter')
-        is_current = request.POST.get('is_current') == 'on'
 
         if not all([volume_id, number, quarter]):
             messages.error(request, 'يرجى إدخال جميع البيانات المطلوبة.')
@@ -547,20 +1005,36 @@ class IssueCreateView(AdminRequiredMixin, View):
 
         volume = get_object_or_404(Volume, pk=volume_id)
 
-        if is_current:
-            Issue.objects.filter(is_current=True).update(is_current=False)
+        try:
+            number_int = int(number)
+            quarter_int = int(quarter)
+            if number_int < 1 or quarter_int not in (1, 2, 3, 4, 5, 6):
+                raise ValueError
+        except ValueError:
+            messages.error(request, 'يرجى إدخال بيانات عدد صحيحة.')
+            return redirect(reverse('dashboard:issues'))
 
         Issue.objects.get_or_create(
             volume=volume,
-            number=number,
-            defaults={'quarter': quarter, 'is_current': is_current},
+            number=number_int,
+            defaults={'quarter': quarter_int, 'is_current': False},
         )
+        self._recompute_current_issue()
         messages.success(request, f'تم إنشاء العدد {number}.')
+        
         return redirect(reverse('dashboard:issues'))
 
 
 class IssueUpdateView(AdminRequiredMixin, View):
     """Update an existing issue."""
+
+    @staticmethod
+    def _recompute_current_issue():
+        from apps.publishing.models import Issue
+        current = Issue.objects.select_related('volume').order_by('-volume__year', '-quarter', '-number').first()
+        Issue.objects.update(is_current=False)
+        if current:
+            Issue.objects.filter(pk=current.pk).update(is_current=True)
 
     def post(self, request, pk):
         from django.db import IntegrityError
@@ -570,25 +1044,21 @@ class IssueUpdateView(AdminRequiredMixin, View):
         volume_id = (request.POST.get('volume_id') or '').strip()
         number_raw = (request.POST.get('number') or '').strip()
         quarter_raw = (request.POST.get('quarter') or '').strip()
-        is_current = request.POST.get('is_current') == 'on'
 
         try:
             number = int(number_raw)
             quarter = int(quarter_raw)
-            if number < 1 or quarter not in (1, 2, 3, 4):
+            if number < 1 or quarter not in (1, 2, 3, 4, 5, 6):
                 raise ValueError
         except ValueError:
             messages.error(request, 'يرجى إدخال بيانات عدد صحيحة.')
             return redirect(reverse('dashboard:issues'))
 
         volume = get_object_or_404(Volume, pk=volume_id)
-        if is_current:
-            Issue.objects.exclude(pk=issue.pk).filter(is_current=True).update(is_current=False)
-
         issue.volume = volume
         issue.number = number
         issue.quarter = quarter
-        issue.is_current = is_current
+        issue.is_current = False
         try:
             issue.save(update_fields=['volume', 'number', 'quarter', 'is_current'])
         except IntegrityError:
@@ -606,6 +1076,10 @@ class IssueManagementView(AdminRequiredMixin, TemplateView):
     def get_context_data(self, **kwargs):
         ctx = super().get_context_data(**kwargs)
         from apps.publishing.models import Volume, Issue
+        current = Issue.objects.select_related('volume').order_by('-volume__year', '-quarter', '-number').first()
+        Issue.objects.update(is_current=False)
+        if current:
+            Issue.objects.filter(pk=current.pk).update(is_current=True)
         ctx['volumes'] = Volume.objects.prefetch_related('issues__articles').order_by('-number')
         ctx['issues']  = Issue.objects.select_related('volume').order_by('-volume__number', '-number')
         return ctx
@@ -742,6 +1216,11 @@ class UserManagementView(AdminRequiredMixin, ListView):
             return redirect(reverse('dashboard:users'))
 
         if action == 'set_role':
+            # منع تغيير دور الـ superuser
+            if user.is_superuser:
+                messages.error(request, 'لا يمكن تغيير دور superuser.')
+                return redirect(reverse('dashboard:users'))
+            
             new_role = request.POST.get('role')
             if new_role in dict(User.ROLE_CHOICES):
                 user.role = new_role
@@ -754,6 +1233,11 @@ class UserManagementView(AdminRequiredMixin, ListView):
                 messages.error(request, 'دور غير صالح.')
 
         elif action == 'toggle_active':
+            # منع تعطيل الـ superuser
+            if user.is_superuser:
+                messages.error(request, 'لا يمكن تعطيل حساب superuser.')
+                return redirect(reverse('dashboard:users'))
+            
             user.is_active = not user.is_active
             user.save(update_fields=['is_active'])
             status_text = 'تفعيل' if user.is_active else 'تعطيل'
@@ -808,8 +1292,8 @@ class ReviewerManagementView(AdminRequiredMixin, ListView):
         return redirect(reverse('dashboard:reviewers'))
 
 
-class AdminImpersonateStartView(AdminRequiredMixin, View):
-    """Allow admins to log in as another user from the dashboard."""
+class AdminImpersonateStartView(SuperUserRequiredMixin, View):
+    """السماح للـ superuser فقط بتسجيل الدخول كمستخدم آخر."""
 
     def post(self, request, pk):
         from apps.accounts.models import User
@@ -819,17 +1303,23 @@ class AdminImpersonateStartView(AdminRequiredMixin, View):
             messages.error(request, 'لا يمكن تسجيل الدخول بنفس الحساب الحالي.')
             return redirect(reverse('dashboard:users'))
 
-        if not request.session.get('impersonator_user_id'):
-            request.session['impersonator_user_id'] = request.user.pk
-
+        # احفظ معرف المشرف الأصلي (superuser)
+        admin_id = request.user.pk
+        
+        # قم بتسجيل الدخول كمستخدم آخر
         target_user.backend = settings.AUTHENTICATION_BACKENDS[0]
         login(request, target_user)
+        
+        # بعد تسجيل الدخول، أعد تعيين impersonator_user_id
+        request.session['impersonator_user_id'] = admin_id
+        request.session.save()
+        
         messages.success(request, f'أنت الآن داخل حساب {target_user.get_full_name() or target_user.username}.')
         return redirect(reverse('dashboard:home'))
 
 
 class AdminImpersonateStopView(LoginRequiredMixin, View):
-    """Return to the original admin account after impersonation."""
+    """العودة إلى حساب الـ superuser الأصلي بعد الدخول كمستخدم آخر."""
 
     def post(self, request):
         from apps.accounts.models import User
@@ -839,12 +1329,20 @@ class AdminImpersonateStopView(LoginRequiredMixin, View):
             messages.error(request, 'لا يوجد وضع دخول كمستخدم نشط.')
             return redirect(reverse('dashboard:home'))
 
+        # تحقق من أن المستخدم الأصلي كان superuser
         admin_user = get_object_or_404(
-            User.objects.filter(role=User.ROLE_ADMIN, is_active=True),
+            User.objects.filter(is_superuser=True, is_active=True),
             pk=impersonator_id
         )
+        
+        # حذف المفتاح من الـ session أولاً
+        request.session.pop('impersonator_user_id', None)
+        # حفظ الجلسة قبل تسجيل الدخول
+        request.session.save()
+        
+        # ثم قم بتسجيل الدخول كـ superuser
         admin_user.backend = settings.AUTHENTICATION_BACKENDS[0]
         login(request, admin_user)
-        request.session.pop('impersonator_user_id', None)
-        messages.success(request, 'تمت العودة إلى حساب المشرف.')
+        
+        messages.success(request, 'تمت العودة إلى حسابك.')
         return redirect(reverse('dashboard:users'))

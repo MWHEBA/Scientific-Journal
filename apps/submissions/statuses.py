@@ -9,6 +9,7 @@ class SubmissionStatus:
     PUBLISHED          = 'published'
     REJECTED           = 'rejected'
     EXPIRED            = 'expired'
+    WITHDRAWN          = 'withdrawn'
 
     CHOICES = [
         (DRAFT,              'مسودة'),
@@ -21,4 +22,5 @@ class SubmissionStatus:
         (PUBLISHED,          'منشور'),
         (REJECTED,           'مرفوض'),
         (EXPIRED,            'منتهي الصلاحية'),
+        (WITHDRAWN,          'مسحوبة'),
     ]

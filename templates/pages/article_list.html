@@ -30,7 +30,7 @@
         {% if articles %}
             {% for article in articles %}
             <div class="card card-article mb-4" style="position:relative;">
-                <a href="{% url 'pages:article_detail' article.pk %}" class="card-article__overlay-link" aria-label="{{ article.title }}"></a>
+                <a href="{% url 'pages:article_detail' article.slug %}" class="card-article__overlay-link" aria-label="{{ article.title }}"></a>
                 <div class="article-row">
                     <div class="article-row__body">
                         <div class="article-meta-row">

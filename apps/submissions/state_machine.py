@@ -12,7 +12,8 @@ class SubmissionStateMachine:
     ALLOWED_TRANSITIONS = {
         SubmissionStatus.DRAFT:              [SubmissionStatus.INITIAL_CHECK],
         SubmissionStatus.INITIAL_CHECK:      [SubmissionStatus.UNDER_REVIEW,
-                                              SubmissionStatus.REJECTED],
+                                              SubmissionStatus.REJECTED,
+                                              SubmissionStatus.WITHDRAWN],
         SubmissionStatus.UNDER_REVIEW:       [SubmissionStatus.ACCEPTED,
                                               SubmissionStatus.REJECTED,
                                               SubmissionStatus.REVISION_REQUIRED],
@@ -26,6 +27,7 @@ class SubmissionStateMachine:
         SubmissionStatus.PUBLISHED:          [],
         SubmissionStatus.REJECTED:           [],
         SubmissionStatus.EXPIRED:            [],
+        SubmissionStatus.WITHDRAWN:          [],
     }
 
     @classmethod

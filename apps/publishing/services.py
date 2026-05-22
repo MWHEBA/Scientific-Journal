@@ -5,6 +5,7 @@ from apps.publishing.models import PublishedArticle
 from apps.publishing.exceptions import (
     AlreadyPublishedError,
     MissingManuscriptError,
+    MissingSectionError,
     PublishNotAllowedError,
 )
 from apps.submissions.models import ArticleSubmission, AuditLog
@@ -46,14 +47,19 @@ class PublishingService:
                 raise MissingManuscriptError(
                     f"No current manuscript file for submission {sub.id}"
                 )
+            if not sub.section_id:
+                raise MissingSectionError(
+                    f"No section assigned for submission {sub.id}"
+                )
 
             # إنشاء PublishedArticle بـ reference للـ ManuscriptFile — لا نسخ
+            keywords_str = ', '.join(sub.keywords.values_list('name', flat=True))
             article = PublishedArticle.objects.create(
                 submission      = sub,
                 manuscript_file = manuscript,
                 title           = sub.title,
                 abstract        = sub.abstract,
-                keywords        = sub.keywords,
+                keywords        = keywords_str,
                 section         = sub.section,
             )
 

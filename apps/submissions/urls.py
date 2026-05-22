@@ -4,6 +4,7 @@ from apps.submissions.views import (
     SubmissionUpdateView,
     SubmissionSubmitView,
     RevisionUploadView,
+    SubmissionWithdrawView,
 )
 
 app_name = 'submissions'
@@ -13,4 +14,5 @@ urlpatterns = [
     path('<int:pk>/edit/',    SubmissionUpdateView.as_view(), name='edit'),
     path('<int:pk>/submit/',  SubmissionSubmitView.as_view(), name='submit'),
     path('<int:pk>/revise/',  RevisionUploadView.as_view(),   name='revise'),
+    path('<int:pk>/withdraw/',  SubmissionWithdrawView.as_view(),   name='withdraw'),
 ]

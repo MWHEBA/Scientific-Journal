@@ -11,90 +11,25 @@
 {% block extra_css %}
 <style>
   .issues-layout { display: grid; gap: var(--space-6); }
-  .issue-create-grid {
-    --filter-cols: minmax(220px, 1.2fr) minmax(120px, .6fr) minmax(160px, .8fr) auto auto;
-  }
-  .issue-create-current {
-    display: inline-flex;
-    align-items: center;
-    gap: var(--space-2);
-    height: 42px;
-    margin: 0;
-    white-space: nowrap;
-    font-size: var(--text-sm);
-  }
-  .issue-create-current input[type="checkbox"] {
-    width: 16px;
-    height: 16px;
-    margin: 0;
-  }
-  .issue-card {
-    border: 1px solid var(--color-border);
-    background: var(--color-surface);
-    padding: var(--space-5);
-  }
-  .issue-head {
-    display: flex;
-    justify-content: space-between;
-    align-items: center;
-    gap: var(--space-4);
-  }
-  .issue-title {
-    font-size: var(--text-lg);
-    font-weight: 700;
-    margin: 0;
-    color: var(--color-primary);
-  }
-  .issue-meta {
-    font-size: var(--text-sm);
-    color: var(--color-text-muted);
-  }
+  .issue-create-grid { --filter-cols: minmax(220px, 1.2fr) minmax(120px, .6fr) minmax(160px, .8fr) auto; }
+  .issue-card { border: 1px solid var(--color-border); background: var(--color-surface); padding: var(--space-5); }
+  .issue-head { display: flex; justify-content: space-between; align-items: center; gap: var(--space-4); }
+  .issue-title { font-size: var(--text-lg); font-weight: 700; margin: 0; color: var(--color-primary); }
+  .issue-meta { font-size: var(--text-sm); color: var(--color-text-muted); }
   .issue-actions { display:flex; align-items:center; gap:var(--space-2); }
-
-  .modal-backdrop {
-    position: fixed; inset: 0; background: rgba(15,23,42,.45); z-index: 200;
-    display: none; align-items: center; justify-content: center; padding: var(--space-4);
-  }
+  .modal-backdrop { position: fixed; inset: 0; background: rgba(15,23,42,.45); z-index: 200; display: none; align-items: center; justify-content: center; padding: var(--space-4); }
   .modal-backdrop.show { display: flex; }
-  .modal-card {
-    width: min(840px, 96vw);
-    background: var(--color-surface);
-    border: 1px solid var(--color-border);
-    box-shadow: var(--shadow-md);
-  }
-  .modal-head {
-    display:flex; justify-content:space-between; align-items:center;
-    padding: var(--space-4) var(--space-5); border-bottom:1px solid var(--color-border);
-  }
+  .modal-card { width: min(840px, 96vw); background: var(--color-surface); border: 1px solid var(--color-border); box-shadow: var(--shadow-md); }
+  .modal-head { display:flex; justify-content:space-between; align-items:center; padding: var(--space-4) var(--space-5); border-bottom:1px solid var(--color-border); }
   .modal-title { margin:0; font-size:var(--text-lg); font-weight:700; color:var(--color-primary); }
   .modal-close { border:0; background:none; font-size:20px; cursor:pointer; color:var(--color-text-muted); }
   .modal-body { padding: var(--space-5); }
-  .issue-edit-grid {
-    display:grid; gap:var(--space-3);
-    grid-template-columns: 1.2fr .6fr .8fr auto auto; align-items:end;
-  }
-
-  .articles-list {
-    margin-top: var(--space-3);
-    border-top: 1px solid var(--color-border);
-    padding-top: var(--space-3);
-  }
-  .article-row {
-    display: flex;
-    justify-content: space-between;
-    align-items: center;
-    gap: var(--space-4);
-    padding: var(--space-2) 0;
-    border-bottom: 1px solid var(--color-border-light);
-  }
+  .issue-edit-grid { display:grid; gap:var(--space-3); grid-template-columns: 1.2fr .6fr .8fr auto; align-items:end; }
+  .articles-list { margin-top: var(--space-3); border-top: 1px solid var(--color-border); padding-top: var(--space-3); }
+  .article-row { display: flex; justify-content: space-between; align-items: center; gap: var(--space-4); padding: var(--space-2) 0; border-bottom: 1px solid var(--color-border-light); }
   .article-row:last-child { border-bottom: 0; }
-
-  @media (max-width: 1024px) {
-    .issue-edit-grid { grid-template-columns: 1fr 1fr; }
-  }
-  @media (max-width: 768px) {
-    .issue-edit-grid { grid-template-columns: 1fr; }
-  }
+  @media (max-width: 1024px) { .issue-edit-grid { grid-template-columns: 1fr 1fr; } }
+  @media (max-width: 768px) { .issue-edit-grid { grid-template-columns: 1fr; } }
 </style>
 {% endblock %}
 
@@ -124,18 +59,16 @@
       <input id="create_number" type="number" name="number" class="form-input" min="1" required>
     </div>
     <div class="form-group mb-0">
-      <label class="form-label" for="create_quarter">الفصل</label>
+      <label class="form-label" for="create_quarter">شهر الإصدار</label>
       <select id="create_quarter" name="quarter" class="form-select" required>
-        <option value="1">يناير–مارس</option>
-        <option value="2">أبريل–يونيو</option>
-        <option value="3">يوليو–سبتمبر</option>
-        <option value="4">أكتوبر–ديسمبر</option>
+        <option value="1">يناير</option>
+        <option value="2">مارس</option>
+        <option value="3">مايو</option>
+        <option value="4">يوليو</option>
+        <option value="5">سبتمبر</option>
+        <option value="6">نوفمبر</option>
       </select>
     </div>
-    <label class="issue-create-current">
-      <input type="checkbox" name="is_current">
-      العدد الحالي
-    </label>
     <div class="form-group mb-0 filter-bar__actions-wrap">
       <label class="form-label">إجراءات</label>
       <div class="filter-bar__actions">
@@ -149,28 +82,24 @@
   {% for volume in volumes %}
     <article class="card">
       <h2 class="mb-4" style="font-size:var(--text-lg);color:var(--color-primary);">المجلد {{ volume.number }} — {{ volume.year }}</h2>
-
       {% if volume.issues.all %}
         {% for issue in volume.issues.all %}
           <div class="issue-card mb-4">
             <div class="issue-head">
               <div>
-                <p class="issue-title">العدد {{ issue.number }}{% if issue.is_current %} <span class="badge badge-published">حالي</span>{% endif %}</p>
+                <p class="issue-title">العدد {{ issue.number }}{% if issue.is_current %} <span class="badge badge-published">الحالي</span>{% endif %}</p>
                 <p class="issue-meta">{{ issue.get_quarter_display }} • {{ issue.articles.count }} مقال</p>
               </div>
               <div class="issue-actions">
-                <button type="button"
-                        class="btn btn-ghost btn-sm js-open-issue-modal"
+                <button type="button" class="btn btn-ghost btn-sm js-open-issue-modal"
                         data-action="{% url 'dashboard:issue_update' issue.pk %}"
                         data-volume="{{ issue.volume_id }}"
                         data-number="{{ issue.number }}"
-                        data-quarter="{{ issue.quarter }}"
-                        data-current="{% if issue.is_current %}1{% else %}0{% endif %}">
+                        data-quarter="{{ issue.quarter }}">
                   تعديل هذا العدد
                 </button>
               </div>
             </div>
-
             {% if issue.articles.all %}
               <div class="articles-list">
                 {% for article in issue.articles.all %}
@@ -223,18 +152,16 @@
           <input id="issue_modal_number" type="number" name="number" class="form-input" min="1" required>
         </div>
         <div class="form-group mb-0">
-          <label class="form-label">الفصل</label>
+          <label class="form-label">شهر الإصدار</label>
           <select id="issue_modal_quarter" name="quarter" class="form-select" required>
-            <option value="1">يناير–مارس</option>
-            <option value="2">أبريل–يونيو</option>
-            <option value="3">يوليو–سبتمبر</option>
-            <option value="4">أكتوبر–ديسمبر</option>
+            <option value="1">يناير</option>
+            <option value="2">مارس</option>
+            <option value="3">مايو</option>
+            <option value="4">يوليو</option>
+            <option value="5">سبتمبر</option>
+            <option value="6">نوفمبر</option>
           </select>
         </div>
-        <label style="display:flex;align-items:center;gap:var(--space-2);font-size:var(--text-sm);">
-          <input id="issue_modal_current" type="checkbox" name="is_current">
-          العدد الحالي
-        </label>
         <button type="submit" class="btn btn-primary">حفظ التعديلات</button>
       </form>
     </div>
@@ -254,14 +181,12 @@
   const volume = document.getElementById('issue_modal_volume');
   const number = document.getElementById('issue_modal_number');
   const quarter = document.getElementById('issue_modal_quarter');
-  const current = document.getElementById('issue_modal_current');
 
   const open = (btn) => {
     form.action = btn.dataset.action;
     volume.value = btn.dataset.volume;
     number.value = btn.dataset.number;
     quarter.value = btn.dataset.quarter;
-    current.checked = btn.dataset.current === '1';
     modal.classList.add('show');
     modal.setAttribute('aria-hidden', 'false');
   };

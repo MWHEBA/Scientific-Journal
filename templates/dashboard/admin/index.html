@@ -111,6 +111,7 @@
                         {% elif sub.status == 'published' %}badge-published
                         {% elif sub.status == 'rejected' %}badge-rejected
                         {% elif sub.status == 'expired' %}badge-expired
+                        {% elif sub.status == 'withdrawn' %}badge-withdrawn
                         {% endif %}">
                         {{ sub.get_status_display }}
                     </span>

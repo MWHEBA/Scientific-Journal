@@ -1,14 +1,13 @@
 from django.views.generic import TemplateView, ListView, DetailView
 from django.db.models import Q
-from django.shortcuts import get_object_or_404
+from django.shortcuts import get_object_or_404, redirect
 from django.http import JsonResponse
 
-from apps.publishing.models import PublishedArticle, Issue, Volume
+from apps.publishing.models import PublishedArticle, PublishedArticleSlugHistory, Issue, Volume
 from apps.submissions.models import JournalSection
 
 
 class HomeView(TemplateView):
-    """الصفحة الرئيسية — آخر المقالات + العدد الحالي + الإحصائيات."""
     template_name = 'pages/home.html'
 
     def get_context_data(self, **kwargs):
@@ -25,11 +24,10 @@ class HomeView(TemplateView):
 
 
 class ArticleListView(ListView):
-    """قائمة جميع المقالات المنشورة — مرتبة تنازلياً حسب published_at."""
-    model               = PublishedArticle
-    template_name       = 'pages/article_list.html'
+    model = PublishedArticle
+    template_name = 'pages/article_list.html'
     context_object_name = 'articles'
-    paginate_by         = 12
+    paginate_by = 12
 
     def get_queryset(self):
         return PublishedArticle.objects.select_related(
@@ -43,27 +41,30 @@ class ArticleListView(ListView):
 
 
 class ArticleDetailView(DetailView):
-    """صفحة تفاصيل مقال — العنوان، المؤلفين، الملخص، الكلمات المفتاحية، PDF."""
-    model         = PublishedArticle
+    model = PublishedArticle
     template_name = 'pages/article_detail.html'
+
+    def dispatch(self, request, *args, **kwargs):
+        slug = kwargs.get('slug')
+        if slug and not PublishedArticle.objects.filter(slug=slug).exists():
+            old = PublishedArticleSlugHistory.objects.select_related('article').filter(slug=slug).first()
+            if old:
+                return redirect('pages:article_detail', slug=old.article.slug, permanent=True)
+        return super().dispatch(request, *args, **kwargs)
 
     def get_object(self, queryset=None):
         obj = get_object_or_404(
             PublishedArticle.objects.select_related(
                 'section', 'submission__author', 'issue__volume'
             ).prefetch_related('submission__co_authors'),
-            pk=self.kwargs['pk'],
+            slug=self.kwargs['slug'],
         )
-        # زيادة عداد المشاهدات
-        PublishedArticle.objects.filter(pk=obj.pk).update(
-            views_count=obj.views_count + 1
-        )
+        PublishedArticle.objects.filter(pk=obj.pk).update(views_count=obj.views_count + 1)
         return obj
 
     def get_context_data(self, **kwargs):
         ctx = super().get_context_data(**kwargs)
         ctx['co_authors'] = self.object.submission.co_authors.all()
-        # مقالات ذات صلة — نفس القسم، مختلفة عن الحالية
         ctx['related_articles'] = PublishedArticle.objects.filter(
             section=self.object.section
         ).exclude(pk=self.object.pk).select_related(
@@ -73,7 +74,6 @@ class ArticleDetailView(DetailView):
 
 
 class CurrentIssueView(TemplateView):
-    """صفحة العدد الحالي — آخر Issue بـ is_current=True + مقالاته."""
     template_name = 'pages/current_issue.html'
 
     def get_context_data(self, **kwargs):
@@ -87,23 +87,19 @@ class CurrentIssueView(TemplateView):
 
 
 class ArchiveView(TemplateView):
-    """صفحة الأرشيف — جميع Volumes و Issues."""
     template_name = 'pages/archive.html'
 
     def get_context_data(self, **kwargs):
         ctx = super().get_context_data(**kwargs)
-        ctx['volumes'] = Volume.objects.prefetch_related(
-            'issues__articles'
-        ).order_by('-number')
+        ctx['volumes'] = Volume.objects.prefetch_related('issues__articles').order_by('-number')
         return ctx
 
 
 class SearchView(ListView):
-    """البحث في title, abstract, keywords."""
-    model               = PublishedArticle
-    template_name       = 'pages/search.html'
+    model = PublishedArticle
+    template_name = 'pages/search.html'
     context_object_name = 'articles'
-    paginate_by         = 10
+    paginate_by = 10
 
     def get_queryset(self):
         query = self.request.GET.get('q', '').strip()
@@ -122,11 +118,10 @@ class SearchView(ListView):
 
 
 class SectionArticlesView(ListView):
-    """تصفح المقالات حسب القسم العلمي."""
-    model               = PublishedArticle
-    template_name       = 'pages/article_list.html'
+    model = PublishedArticle
+    template_name = 'pages/article_list.html'
     context_object_name = 'articles'
-    paginate_by         = 12
+    paginate_by = 12
 
     def get_queryset(self):
         self.section = get_object_or_404(JournalSection, slug=self.kwargs['slug'])
@@ -136,25 +131,24 @@ class SectionArticlesView(ListView):
 
     def get_context_data(self, **kwargs):
         ctx = super().get_context_data(**kwargs)
-        ctx['section']  = self.section
+        ctx['section'] = self.section
         ctx['sections'] = JournalSection.objects.all()
         return ctx
 
 
 class StaticPageView(TemplateView):
-    """عرض الصفحات الثابتة بناءً على slug."""
     PAGES = {
-        'about':            ('pages/static/about.html',            'عن المجلة'),
-        'aims-scope':       ('pages/static/aims_scope.html',       'الأهداف والنطاق'),
-        'editorial-board':  ('pages/static/editorial_board.html',  'هيئة التحرير'),
-        'review-process':   ('pages/static/review_process.html',   'عملية المراجعة'),
-        'ethics':           ('pages/static/ethics.html',           'أخلاقيات النشر'),
-        'author-guidelines':('pages/static/author_guidelines.html','إرشادات المؤلفين'),
-        'apc':              ('pages/static/apc.html',              'رسوم النشر'),
-        'contact':          ('pages/static/contact.html',          'اتصل بنا'),
-        'topics':           ('pages/static/topics.html',           'مواضيع المجلة'),
-        'blog':             ('pages/static/blog.html',             'المدونة'),
-        'conferences':      ('pages/static/conferences.html',      'المؤتمرات العلمية'),
+        'about': ('pages/static/about.html', 'عن المجلة'),
+        'aims-scope': ('pages/static/aims_scope.html', 'الأهداف والنطاق'),
+        'editorial-board': ('pages/static/editorial_board.html', 'هيئة التحرير'),
+        'review-process': ('pages/static/review_process.html', 'عملية المراجعة'),
+        'ethics': ('pages/static/ethics.html', 'أخلاقيات النشر'),
+        'author-guidelines': ('pages/static/author_guidelines.html', 'إرشادات المؤلفين'),
+        'apc': ('pages/static/apc.html', 'رسوم النشر'),
+        'contact': ('pages/static/contact.html', 'اتصل بنا'),
+        'topics': ('pages/static/topics.html', 'مواضيع المجلة'),
+        'blog': ('pages/static/blog.html', 'المدونة'),
+        'conferences': ('pages/static/conferences.html', 'المؤتمرات العلمية'),
     }
 
     def get_template_names(self):
@@ -169,53 +163,36 @@ class StaticPageView(TemplateView):
         ctx['page_title'] = title
         from apps.pages.models import SiteSettings
         ctx['settings'] = SiteSettings.get()
-        # نمرر الأقسام لصفحة الأهداف والنطاق
         if slug == 'aims-scope':
             ctx['sections'] = JournalSection.objects.all()
-        # نمرر أعضاء هيئة التحرير لصفحتها
         if slug == 'editorial-board':
             from apps.pages.models import EditorialBoardMember
             ctx['board_members'] = EditorialBoardMember.objects.filter(is_active=True)
-        # نمرر الـ form لصفحة الاتصال
         if slug == 'contact':
             from apps.pages.forms import ContactForm
             ctx['form'] = ContactForm()
         return ctx
 
     def post(self, request, *args, **kwargs):
-        """معالجة إرسال نموذج الاتصال."""
         slug = self.kwargs.get('slug', 'about')
         if slug != 'contact':
             return self.get(request, *args, **kwargs)
-        
+
         from apps.pages.forms import ContactForm
         from django.core.mail import send_mail
         from django.conf import settings as django_settings
-        
+
         form = ContactForm(request.POST)
         if form.is_valid():
-            # إرسال البريد الإلكتروني
             name = form.cleaned_data['name']
             email = form.cleaned_data['email']
             subject = form.cleaned_data['subject']
             message = form.cleaned_data['message']
-            
-            full_message = f"""
-رسالة جديدة من نموذج الاتصال
-
-الاسم: {name}
-البريد الإلكتروني: {email}
-الموضوع: {subject}
-
-الرسالة:
-{message}
-            """
-            
+            full_message = f"\nرسالة جديدة من نموذج الاتصال\n\nالاسم: {name}\nالبريد الإلكتروني: {email}\nالموضوع: {subject}\n\nالرسالة:\n{message}\n"
             try:
                 from apps.pages.models import SiteSettings
                 site_settings = SiteSettings.get()
                 recipient_email = site_settings.contact_email or django_settings.DEFAULT_FROM_EMAIL
-                
                 send_mail(
                     subject=f'[اتصل بنا] {subject}',
                     message=full_message,
@@ -224,13 +201,11 @@ class StaticPageView(TemplateView):
                     fail_silently=False,
                 )
                 return JsonResponse({'success': True, 'message': 'تم إرسال رسالتك بنجاح'})
-            except Exception as e:
+            except Exception:
                 return JsonResponse({'success': False, 'message': 'حدث خطأ أثناء إرسال الرسالة'}, status=500)
-        
         return JsonResponse({'success': False, 'errors': form.errors}, status=400)
 
 
-def article_views_api(request, pk):
-    """API endpoint — يرجع عدد المشاهدات الحالي."""
-    article = get_object_or_404(PublishedArticle, pk=pk)
+def article_views_api(request, slug):
+    article = get_object_or_404(PublishedArticle, slug=slug)
     return JsonResponse({'views': article.views_count})

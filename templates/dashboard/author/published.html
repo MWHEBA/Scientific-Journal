@@ -1,0 +1,109 @@
+{% extends 'base_dashboard.html' %}
+
+{% block title %}المقالات المنشورة{% endblock %}
+{% block nav_author_published %}active{% endblock %}
+
+{% block breadcrumb %}
+    <span class="dash-breadcrumb__sep">/</span>
+    <span class="dash-breadcrumb__current">المقالات المنشورة</span>
+{% endblock %}
+
+{% block content %}
+<div class="page-header">
+    <h1 class="page-header__title">المقالات المنشورة</h1>
+    <div class="page-header__actions">
+        <a href="{% url 'submissions:create' %}" class="btn btn-accent">+ تقديم مقالة جديدة</a>
+    </div>
+</div>
+
+<!-- قائمة المقالات المنشورة -->
+{% if articles %}
+    {% for article in articles %}
+    <div class="card mb-4">
+        <div style="display: flex; justify-content: space-between; align-items: flex-start; flex-wrap: wrap; gap: var(--space-3);">
+            <div style="flex: 1; min-width: 250px;">
+                <h3 class="mb-2" style="font-size: var(--text-md);">{{ article.title|truncatechars:80 }}</h3>
+                <p class="text-muted text-sm mb-2">
+                    {{ article.section.name }} &nbsp;·&nbsp; 
+                    {% if article.issue %}
+                        المجلد {{ article.issue.volume.number }} - العدد {{ article.issue.number }}
+                    {% endif %}
+                </p>
+                <p class="text-muted text-sm mb-0">
+                    تاريخ النشر: {{ article.published_at|date:"Y/m/d" }}
+                </p>
+            </div>
+            <span class="badge badge-published">منشور</span>
+        </div>
+
+        <!-- معلومات المقالة -->
+        <div style="margin-top: var(--space-4); padding-top: var(--space-4); border-top: 1px solid var(--color-border); display: grid; grid-template-columns: repeat(auto-fit, minmax(150px, 1fr)); gap: var(--space-3);">
+            {% if article.doi %}
+            <div>
+                <p class="text-muted text-xs mb-1">DOI</p>
+                <p class="text-sm"><code>{{ article.doi }}</code></p>
+            </div>
+            {% endif %}
+            {% if article.pages %}
+            <div>
+                <p class="text-muted text-xs mb-1">الصفحات</p>
+                <p class="text-sm">{{ article.pages }}</p>
+            </div>
+            {% endif %}
+            {% if article.submission.co_authors.exists %}
+            <div>
+                <p class="text-muted text-xs mb-1">المؤلفون</p>
+                <p class="text-sm">{{ article.submission.co_authors.count }} مؤلف مشارك</p>
+            </div>
+            {% endif %}
+        </div>
+
+        <!-- إجراءات -->
+        <div style="margin-top: var(--space-4); display: flex; gap: var(--space-2); flex-wrap: wrap;">
+            {% if article.pdf_file %}
+                <a href="{{ article.pdf_file.url }}" target="_blank" class="btn btn-sm btn-primary">
+                    <svg class="icon icon-xs"><use href="#icon-pdf"/></svg>
+                    تحميل PDF
+                </a>
+            {% endif %}
+            <a href="{% url 'pages:article_detail' article.slug %}" class="btn btn-sm btn-ghost">
+                <svg class="icon icon-xs"><use href="#icon-review"/></svg>
+                عرض المقال
+            </a>
+        </div>
+    </div>
+    {% endfor %}
+
+    <!-- Pagination -->
+    {% if is_paginated %}
+    <div style="display: flex; justify-content: center; gap: var(--space-2); margin-top: var(--space-6);">
+        {% if page_obj.has_previous %}
+            <a href="?page=1" class="btn btn-sm btn-ghost">الأولى</a>
+            <a href="?page={{ page_obj.previous_page_number }}" class="btn btn-sm btn-ghost">السابقة</a>
+        {% endif %}
+        
+        <span class="btn btn-sm" style="cursor: default; background: var(--color-bg-secondary);">
+            الصفحة {{ page_obj.number }} من {{ page_obj.paginator.num_pages }}
+        </span>
+        
+        {% if page_obj.has_next %}
+            <a href="?page={{ page_obj.next_page_number }}" class="btn btn-sm btn-ghost">التالية</a>
+            <a href="?page={{ page_obj.paginator.num_pages }}" class="btn btn-sm btn-ghost">الأخيرة</a>
+        {% endif %}
+    </div>
+    {% endif %}
+{% else %}
+    <div class="card">
+        <div class="empty-state">
+            <div class="empty-state__icon"><svg class="icon icon-xl icon-muted"><use href="#icon-publish"/></svg></div>
+            <h3 class="empty-state__title">لا توجد مقالات منشورة بعد</h3>
+            <p class="empty-state__message">
+                ستظهر مقالاتك المنشورة هنا بعد قبولها والموافقة على نشرها.
+            </p>
+            <div class="empty-state__action">
+                <a href="{% url 'submissions:create' %}" class="btn btn-accent">ابدأ بتقديم مقالتك الأولى</a>
+            </div>
+        </div>
+    </div>
+{% endif %}
+{% endblock %}

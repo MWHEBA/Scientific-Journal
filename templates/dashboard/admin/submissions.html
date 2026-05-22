@@ -128,7 +128,7 @@
     <p class="triage-title">قوائم فرز سريعة</p>
     <div class="preset-row">
       {% for item in preset_items %}
-      <a href="{% url 'dashboard:admin_submissions' %}?preset={{ item.key }}{% if preset_query %}&{{ preset_query }}{% endif %}"
+      <a href="{{ base_submissions_url|default:default_submissions_url }}?preset={{ item.key }}{% if preset_query %}&{{ preset_query }}{% endif %}"
          class="btn btn-sm btn-ghost preset-btn {% if current_filters.preset == item.key %}active{% endif %}">
         {{ item.label }} ({{ item.count }})
       </a>
@@ -162,7 +162,7 @@
         <label class="form-label">إجراءات</label>
         <div class="filter-bar__actions">
           <button type="submit" class="btn btn-primary">تطبيق</button>
-          <a href="{% url 'dashboard:admin_submissions' %}" class="btn btn-ghost">مسح</a>
+          <a href="{{ base_submissions_url|default:default_submissions_url }}" class="btn btn-ghost">مسح</a>
         </div>
       </div>
     </form>
@@ -187,7 +187,17 @@
         <tr>
           <td class="text-muted text-sm">{{ sub.pk }}</td>
           <td>
-            <a href="{% url 'dashboard:submission_detail' sub.pk %}" class="sub-title-link">{{ sub.title|truncatechars:62 }}</a>
+            {% if user.role == 'reviewer' and is_post_review_page %}
+              {% with review=sub.reviews.first %}
+                {% if review %}
+                  <a href="{% url 'reviews:detail' review.pk %}" class="sub-title-link">{{ sub.title|truncatechars:62 }}</a>
+                {% else %}
+                  <span class="sub-title-link">{{ sub.title|truncatechars:62 }}</span>
+                {% endif %}
+              {% endwith %}
+            {% else %}
+              <a href="{% if user.role == 'reviewer' %}{% url 'dashboard:reviewer_submission_detail' sub.pk %}{% else %}{% url 'dashboard:submission_detail' sub.pk %}{% endif %}" class="sub-title-link">{{ sub.title|truncatechars:62 }}</a>
+            {% endif %}
           </td>
           <td class="text-sm">{{ sub.author.get_full_name|default:sub.author.username }}</td>
           <td class="text-sm">{{ sub.section.name }}</td>
@@ -203,6 +213,7 @@
               {% elif sub.status == 'published' %}badge-published
               {% elif sub.status == 'rejected' %}badge-rejected
               {% elif sub.status == 'expired' %}badge-expired
+              {% elif sub.status == 'withdrawn' %}badge-withdrawn
               {% endif %}">
               {{ sub.get_status_display }}
             </span>
@@ -217,26 +228,52 @@
           <td class="age-cell">{{ sub.created_at|arabic_timesince }}</td>
           <td>
             <div class="actions-cell">
-              <a href="{% url 'dashboard:submission_detail' sub.pk %}" class="btn btn-sm btn-ghost">عرض</a>
-
-              {% if sub.status == 'under_initial_check' %}
-                <form method="post" action="{% url 'dashboard:submission_detail' sub.pk %}">
-                  {% csrf_token %}
-                  <input type="hidden" name="action" value="pass">
-                  <button type="submit" class="btn btn-sm btn-primary">قبول</button>
-                </form>
-                <button type="button"
-                        class="btn btn-sm btn-danger js-open-reject-modal"
-                        data-action="{% url 'dashboard:submission_detail' sub.pk %}"
-                        data-title="{{ sub.title|escape }}">
-                  رفض
-                </button>
+              {% if user.role == 'reviewer' and is_post_review_page %}
+                {% with review=sub.reviews.first %}
+                  {% if review %}
+                    <a href="{% url 'reviews:detail' review.pk %}" class="btn btn-sm btn-primary">عرض المراجعة</a>
+                  {% endif %}
+                {% endwith %}
+              {% else %}
+                <a href="{% if user.role == 'reviewer' %}{% url 'dashboard:reviewer_submission_detail' sub.pk %}{% else %}{% url 'dashboard:submission_detail' sub.pk %}{% endif %}" class="btn btn-sm btn-ghost">عرض</a>
               {% endif %}
 
-              {% if sub.status == 'under_review' and not sub.assigned_reviewer %}
-                <a href="{% url 'dashboard:assign_reviewer' sub.pk %}" class="btn btn-sm btn-accent">تعيين مراجع</a>
-              {% elif sub.status == 'under_review' %}
-                <a href="{% url 'dashboard:assign_reviewer' sub.pk %}" class="btn btn-sm btn-ghost">تغيير مراجع</a>
+              {% if user.role == 'admin' %}
+                {% if sub.status == 'under_initial_check' %}
+                  <form method="post" action="{% url 'dashboard:submission_detail' sub.pk %}">
+                    {% csrf_token %}
+                    <input type="hidden" name="action" value="pass">
+                    <button type="submit" class="btn btn-sm btn-primary">قبول</button>
+                  </form>
+                  <button type="button"
+                          class="btn btn-sm btn-danger js-open-reject-modal"
+                          data-action="{% url 'dashboard:submission_detail' sub.pk %}"
+                          data-title="{{ sub.title|escape }}">
+                    رفض
+                  </button>
+                {% endif %}
+
+                {% if sub.status == 'under_review' %}
+                  {% if not sub.assigned_reviewer %}
+                    <a href="{% url 'dashboard:assign_reviewer' sub.pk %}" class="btn btn-sm btn-accent">تعيين مراجع</a>
+                  {% else %}
+                    <a href="{% url 'dashboard:assign_reviewer' sub.pk %}" class="btn btn-sm btn-ghost">تغيير مراجع</a>
+                  {% endif %}
+                {% endif %}
+              {% elif user.role == 'reviewer' and not is_post_review_page %}
+                {% if sub.status != 'under_initial_check' %}
+                  {% if not sub.assigned_reviewer %}
+                    <form method="post" action="{% url 'dashboard:reviewer_submission_detail' sub.pk %}">
+                      {% csrf_token %}
+                      <input type="hidden" name="action" value="self_assign">
+                      <button type="submit" class="btn btn-sm btn-accent">تعيين نفسي</button>
+                    </form>
+                  {% elif sub.assigned_reviewer.id == user.id %}
+                    {% with review=sub.reviews.first %}
+                      <a href="{% url 'reviews:detail' review.pk %}" class="btn btn-sm btn-primary">مراجعة</a>
+                    {% endwith %}
+                  {% endif %}
+                {% endif %}
               {% endif %}
             </div>
           </td>

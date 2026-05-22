@@ -99,6 +99,7 @@
                 <td class="text-sm">{{ u.email|default:"—" }}</td>
                 <td>
                     {% if u != request.user %}
+                    {% if not u.is_superuser %}
                     <form method="post" style="display:inline;">
                         {% csrf_token %}
                         <input type="hidden" name="user_id" value="{{ u.pk }}">
@@ -111,6 +112,9 @@
                             {% endfor %}
                         </select>
                     </form>
+                    {% else %}
+                        <span class="badge badge-warning">الإدارة</span>
+                    {% endif %}
                     {% else %}
                         <span class="badge badge-under-review">{{ u.get_role_display }}</span>
                     {% endif %}
@@ -125,12 +129,15 @@
                 <td class="text-sm text-muted">{{ u.date_joined|date:"Y/m/d" }}</td>
                 <td>
                     {% if u != request.user %}
+                    {% if request.user.is_superuser %}
                     <form method="post" action="{% url 'dashboard:impersonate_start' u.pk %}" style="display:inline;">
                         {% csrf_token %}
                         <button type="submit" class="btn btn-sm btn-ghost" style="margin-inline-end:6px;">
-                            Login as user
+                            الدخول
                         </button>
                     </form>
+                    {% endif %}
+                    {% if not u.is_superuser %}
                     <form method="post" style="display:inline;" id="toggle-form-{{ u.pk }}">
                         {% csrf_token %}
                         <input type="hidden" name="user_id" value="{{ u.pk }}">
@@ -141,6 +148,7 @@
                             {% if u.is_active %}تعطيل{% else %}تفعيل{% endif %}
                         </button>
                     </form>
+                    {% endif %}
                     {% else %}
                         <span class="text-muted text-sm">—</span>
                     {% endif %}

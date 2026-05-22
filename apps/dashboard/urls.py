@@ -2,7 +2,13 @@ from django.urls import path
 from apps.dashboard.views import (
     DashboardHomeRedirectView,
     AuthorDashboardView,
+    AuthorDraftsView,
+    AuthorPublishedArticlesView,
     ReviewerDashboardView,
+    ReviewerSubmissionsView,
+    ReviewerPostReviewView,
+    ReviewerArticlesView,
+    ReviewerSubmissionDetailView,
     AssignReviewerView,
     SiteSettingsView,
     AdminDashboardView,
@@ -29,9 +35,15 @@ urlpatterns = [
     path('',                                DashboardHomeRedirectView.as_view(),  name='home'),
     # المؤلف
     path('author/',                         AuthorDashboardView.as_view(),        name='author'),
+    path('author/drafts/',                  AuthorDraftsView.as_view(),           name='author_drafts'),
+    path('author/published/',               AuthorPublishedArticlesView.as_view(), name='author_published'),
 
     # المراجع
     path('reviewer/',                       ReviewerDashboardView.as_view(),      name='reviewer'),
+    path('reviewer/submissions/',           ReviewerSubmissionsView.as_view(),    name='reviewer_submissions'),
+    path('reviewer/post-review/',           ReviewerPostReviewView.as_view(),     name='reviewer_post_review'),
+    path('reviewer/submissions/<int:pk>/',  ReviewerSubmissionDetailView.as_view(), name='reviewer_submission_detail'),
+    path('reviewer/articles/',              ReviewerArticlesView.as_view(),       name='reviewer_articles'),
 
     # المشرف — الرئيسية
     path('admin/',                          AdminDashboardView.as_view(),         name='admin'),

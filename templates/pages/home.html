@@ -72,7 +72,7 @@
                 {{ article.submission.author.get_full_name|default:article.submission.author.username }}
                 &nbsp;·&nbsp; {{ article.published_at|date:"Y/m/d" }}
             </p>
-            <a href="{% url 'pages:article_detail' article.pk %}" class="btn-ghost-white">← قراءة المقالة</a>
+            <a href="{% url 'pages:article_detail' article.slug %}" class="btn-ghost-white">← قراءة المقالة</a>
             {% endwith %}
         {% else %}
             <span class="pub-hero__issue-pill">العدد الحالي</span>
@@ -261,7 +261,7 @@
 {% if latest_articles %}
     {% for article in latest_articles %}
     <div class="card card-article {% if forloop.first %}card-article--featured{% endif %} mb-4" style="position:relative;">
-        <a href="{% url 'pages:article_detail' article.pk %}" class="card-article__overlay-link" aria-label="{{ article.title }}"></a>
+        <a href="{% url 'pages:article_detail' article.slug %}" class="card-article__overlay-link" aria-label="{{ article.title }}"></a>
         <div class="article-meta-row">
             <span class="article-badge-type">{{ article.section.name }}</span>
             <span class="article-badge-oa">وصول حر</span>

@@ -70,14 +70,30 @@
             </a>
 
             {% elif user.role == 'author' %}
-            <span class="dash-sidebar__section-label">المؤلف</span>
-            <a href="{% url 'dashboard:author' %}" class="dash-nav-item {% block nav_author_home %}{% endblock %}">
-                <svg class="icon icon-sm dash-nav-item__icon"><use href="#icon-dashboard"/></svg>
-                لوحة التحكم
-            </a>
-            <a href="{% url 'submissions:create' %}" class="dash-nav-item {% block nav_author_create %}{% endblock %}">
-                <svg class="icon icon-sm dash-nav-item__icon"><use href="#icon-guidelines"/></svg>
+            <span class="dash-sidebar__section-label">التقديمات</span>
+            <a href="{% url 'submissions:create' %}" class="dash-nav-item dash-nav-item--accent {% block nav_author_create %}{% endblock %}" style="font-weight: 600;">
+                <svg class="icon icon-sm dash-nav-item__icon"><use href="#icon-plus"/></svg>
                 تقديم مقالة جديدة
+            </a>
+            <a href="{% url 'dashboard:author' %}" class="dash-nav-item {% block nav_author_articles %}{% endblock %}">
+                <svg class="icon icon-sm dash-nav-item__icon"><use href="#icon-articles"/></svg>
+                التقديمات
+            </a>
+            <a href="{% url 'dashboard:author_drafts' %}" class="dash-nav-item {% block nav_author_drafts %}{% endblock %}">
+                <svg class="icon icon-sm dash-nav-item__icon"><use href="#icon-save"/></svg>
+                المسودات
+            </a>
+
+            <span class="dash-sidebar__section-label">المقالات</span>
+            <a href="{% url 'dashboard:author_published' %}" class="dash-nav-item {% block nav_author_published %}{% endblock %}">
+                <svg class="icon icon-sm dash-nav-item__icon"><use href="#icon-guidelines"/></svg>
+                المقالات المنشورة
+            </a>
+
+            <span class="dash-sidebar__section-label">إعدادات</span>
+            <a href="{% url 'accounts:profile' %}" class="dash-nav-item {% block nav_author_profile %}{% endblock %}">
+                <svg class="icon icon-sm dash-nav-item__icon"><use href="#icon-user"/></svg>
+                حسابي
             </a>
 
             {% elif user.role == 'reviewer' %}
@@ -85,6 +101,18 @@
             <a href="{% url 'dashboard:reviewer' %}" class="dash-nav-item {% block nav_reviewer_home %}{% endblock %}">
                 <svg class="icon icon-sm dash-nav-item__icon"><use href="#icon-dashboard"/></svg>
                 لوحة التحكم
+            </a>
+            <a href="{% url 'dashboard:reviewer_submissions' %}" class="dash-nav-item {% block nav_reviewer_submissions %}{% endblock %}">
+                <svg class="icon icon-sm dash-nav-item__icon"><use href="#icon-archive"/></svg>
+                التقديمات
+            </a>
+            <a href="{% url 'dashboard:reviewer_post_review' %}" class="dash-nav-item {% block nav_reviewer_post_review %}{% endblock %}">
+                <svg class="icon icon-sm dash-nav-item__icon"><use href="#icon-review"/></svg>
+                مراجعاتي
+            </a>
+            <a href="{% url 'dashboard:reviewer_articles' %}" class="dash-nav-item {% block nav_reviewer_articles %}{% endblock %}">
+                <svg class="icon icon-sm dash-nav-item__icon"><use href="#icon-articles"/></svg>
+                المقالات
             </a>
             {% endif %}
         </nav>
@@ -127,11 +155,11 @@
                 </nav>
             </div>
             <div class="dash-topbar__left">
-                {% if is_impersonating %}
+                {% if is_impersonating and request.user.is_authenticated %}
                 <form method="post" action="{% url 'dashboard:impersonate_stop' %}" style="display:flex;align-items:center;gap:8px;">
                     {% csrf_token %}
-                    <span class="badge badge-under-review">أنت في وضع Login as user</span>
-                    <button type="submit" class="btn btn-sm btn-primary">الرجوع لحساب المشرف</button>
+                    <span class="badge badge-under-review">أنت في وضع الدخول كمستخدم</span>
+                    <button type="submit" class="btn btn-sm btn-primary">الرجوع</button>
                 </form>
                 {% endif %}
                 <a href="/" class="dash-topbar__notif" title="الموقع العام" aria-label="الموقع العام">

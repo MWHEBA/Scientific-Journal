@@ -1,5 +1,5 @@
 {% extends 'base_public.html' %}
-{% load static %}
+{% load static dashboard_extras %}
 
 {% block title %}{{ object.title }}{% endblock %}
 {% block nav_articles %}active{% endblock %}
@@ -42,18 +42,20 @@
 
             <!-- المؤلفون -->
             <div class="article-detail__authors">
-                <span class="article-detail__author-main">
-                    {{ object.submission.author.get_full_name|default:object.submission.author.username }}
-                </span>
-                {% for co in co_authors %}
-                    <span class="article-detail__author-sep">·</span>
-                    <span class="article-detail__author-co">
-                        {{ co.full_name }}
-                        {% if co.institution %}
-                            <em class="article-detail__author-inst">({{ co.institution }})</em>
+                {% with main_author=object.submission.author.get_full_name|default:object.submission.author.username %}
+                    <span class="article-detail__author-main">{{ main_author }}</span>
+                    {% for co in co_authors %}
+                        {% if co.full_name and co.full_name != main_author %}
+                            <span class="article-detail__author-sep">·</span>
+                            <span class="article-detail__author-co">
+                                {{ co.full_name }}
+                                {% if co.institution %}
+                                    <em class="article-detail__author-inst">({{ co.institution }})</em>
+                                {% endif %}
+                            </span>
                         {% endif %}
-                    </span>
-                {% endfor %}
+                    {% endfor %}
+                {% endwith %}
             </div>
 
             <!-- Meta row -->
@@ -72,8 +74,8 @@
             {% if object.keywords %}
             <div class="article-detail__keywords">
                 <span class="article-detail__keywords-label">الكلمات المفتاحية:</span>
-                {% for kw in object.keywords.split %}
-                    <span class="article-detail__kw-tag">{{ kw|cut:"," }}</span>
+                {% for kw in object.keywords|keywords_to_list %}
+                    <span class="article-detail__kw-tag">{{ kw }}</span>
                 {% endfor %}
             </div>
             {% endif %}
@@ -95,7 +97,7 @@
                     <a href="{% url 'pages:section_articles' object.section.slug %}" class="section-header__link">عرض كل مقالات {{ object.section.name }} ←</a>
                 </div>
                 {% for art in related_articles %}
-                <a href="{% url 'pages:article_detail' art.pk %}" class="article-related__card">
+                <a href="{% url 'pages:article_detail' art.slug %}" class="article-related__card">
                     <div class="article-related__body">
                         <span class="article-related__section" style="color:{{ art.section.color }};">{{ art.section.name }}</span>
                         <h4 class="article-related__title">{{ art.title|truncatechars:100 }}</h4>
@@ -144,7 +146,7 @@
                         </li>
                         <li class="article-info-list__item">
                             <span class="article-info-list__label">المشاهدات</span>
-                            <span class="article-info-list__value article-views-count" id="views-count" data-url="{% url 'pages:article_views' object.pk %}">
+                            <span class="article-info-list__value article-views-count" id="views-count" data-url="{% url 'pages:article_views' object.slug %}">
                                 <span class="article-views-num">{{ object.views_count }}</span>
                                 <svg class="icon icon-xs icon-muted" style="margin-right:2px"><use href="#icon-review"/></svg>
                             </span>
@@ -159,24 +161,20 @@
 
             <!-- المؤلف -->
             <div class="pub-widget">
-                <div class="pub-widget__header"><svg class="icon icon-sm"><use href="#icon-user"/></svg> المؤلف الرئيسي</div>
+                <div class="pub-widget__header"><svg class="icon icon-sm"><use href="#icon-user"/></svg> المؤلفون</div>
                 <div class="pub-widget__body">
-                    <p style="font-weight:600;font-size:var(--text-sm);margin-bottom:var(--space-1);">
-                        <a href="{% url 'pages:article_list' %}?author={{ object.submission.author.pk }}" class="article-info-list__link" style="font-weight:600;">
-                            {{ object.submission.author.get_full_name|default:object.submission.author.username }}
-                        </a>
-                    </p>
-                    {% if object.submission.author.author_profile.institution %}
-                    <p class="text-muted text-xs">{{ object.submission.author.author_profile.institution }}</p>
-                    {% endif %}
-                    {% if co_authors %}
-                    <div style="margin-top:var(--space-3);padding-top:var(--space-3);border-top:1px solid var(--color-border-light);">
-                        <p class="text-muted text-xs" style="margin-bottom:var(--space-2);">المؤلفون المشاركون:</p>
+                    {% with main_author=object.submission.author.get_full_name|default:object.submission.author.username %}
+                        <p style="font-size:var(--text-xs);color:var(--color-text-secondary);margin-bottom:var(--space-1);">
+                            {{ main_author }}{% if object.submission.author.author_profile.institution %} — {{ object.submission.author.author_profile.institution }}{% endif %}
+                        </p>
                         {% for co in co_authors %}
-                        <p style="font-size:var(--text-xs);color:var(--color-text-secondary);margin-bottom:var(--space-1);">{{ co.full_name }}</p>
+                            {% if co.full_name and co.full_name != main_author %}
+                                <p style="font-size:var(--text-xs);color:var(--color-text-secondary);margin-bottom:var(--space-1);">
+                                    {{ co.full_name }}{% if co.institution %} — {{ co.institution }}{% endif %}
+                                </p>
+                            {% endif %}
                         {% endfor %}
-                    </div>
-                    {% endif %}
+                    {% endwith %}
                 </div>
             </div>
 

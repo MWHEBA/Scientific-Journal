@@ -12,32 +12,19 @@
 
 {% block content %}
 
+<!-- Tagify CSS -->
+<link rel="stylesheet" href="https://cdn.jsdelivr.net/npm/@yaireo/tagify@latest/dist/tagify.css">
+
 <!-- Page Header -->
 <div class="submit-page-header">
     <div>
         <h1 class="submit-page-header__title">تعديل التقديم</h1>
         <p class="submit-page-header__subtitle">{{ object.title|truncatechars:70 }}</p>
     </div>
-    <div style="display:flex;align-items:center;gap:var(--space-3);">
-        <span class="badge
-            {% if object.status == 'draft' %}badge-draft
-            {% elif object.status == 'under_initial_check' %}badge-initial-check
-            {% elif object.status == 'under_review' %}badge-under-review
-            {% elif object.status == 'revision_required' %}badge-revision
-            {% elif object.status == 'accepted_awaiting_payment' %}badge-accepted
-            {% elif object.status == 'payment_processing' %}badge-payment-processing
-            {% elif object.status == 'paid' %}badge-paid
-            {% elif object.status == 'published' %}badge-published
-            {% elif object.status == 'rejected' %}badge-rejected
-            {% elif object.status == 'expired' %}badge-expired
-            {% endif %}">
-            {{ object.get_status_display }}
-        </span>
-        <a href="{% url 'dashboard:author' %}" class="btn btn-ghost btn-sm">
-            <svg class="icon icon-xs"><use href="#icon-home"/></svg>
-            العودة
-        </a>
-    </div>
+    <a href="{% url 'dashboard:author' %}" class="btn btn-ghost btn-sm">
+        <svg class="icon icon-xs"><use href="#icon-home"/></svg>
+        العودة للوحة التحكم
+    </a>
 </div>
 
 <form method="post" enctype="multipart/form-data" novalidate class="submit-form">
@@ -84,31 +71,53 @@
 
                     <div class="submit-field-row">
                         <div class="submit-field">
-                            <label class="submit-field__label" for="id_keywords">
-                                الكلمات المفتاحية <span class="submit-field__required">*</span>
+                            <label class="submit-field__label" for="id_keywords_input">
+                                الكلمات المفتاحية <span class="submit-field__help">(اختياري)</span>
                             </label>
-                            <input type="text" name="keywords" id="id_keywords"
-                                   class="submit-field__input {% if form.keywords.errors %}submit-field__input--error{% endif %}"
-                                   value="{{ form.keywords.value|default:'' }}"
-                                   placeholder="كلمة١، كلمة٢، كلمة٣">
-                            <span class="submit-field__help">افصل الكلمات بفاصلة</span>
-                            {% if form.keywords.errors %}<span class="submit-field__error">{{ form.keywords.errors.0 }}</span>{% endif %}
+                            <input type="text" id="id_keywords_input"
+                                   class="submit-field__input tagify-input {% if form.keywords.errors %}submit-field__input--error{% endif %}"
+                                   value="{{ form.keywords.initial|default:'' }}"
+                                   placeholder="أضف الكلمات المفتاحية">
+                            <input type="hidden" name="keywords" id="id_keywords">
+                            <span class="submit-field__help">افصل الكلمات بفاصلة أو اضغط Enter</span>
+                            {% if form.keywords.errors %}
+                            <span class="submit-field__error">{{ form.keywords.errors.0 }}</span>
+                            {% endif %}
                         </div>
 
                         <div class="submit-field">
                             <label class="submit-field__label" for="id_section">
-                                القسم العلمي <span class="submit-field__required">*</span>
+                                القسم العلمي <span class="submit-field__help">(اختياري)</span>
                             </label>
                             <select name="section" id="id_section"
                                     class="submit-field__input submit-field__select {% if form.section.errors %}submit-field__input--error{% endif %}">
-                                <option value="">— اختر القسم —</option>
+                                <option value="">— لم يتم تحديد قسم —</option>
                                 {% for val, label in form.section.field.choices %}
                                     {% if val %}
-                                    <option value="{{ val }}" {% if form.section.value|stringformat:"s" == val|stringformat:"s" %}selected{% endif %}>{{ label }}</option>
+                                    <option value="{{ val }}" {% if form.section.value|stringformat:"s" == val|stringformat:"s" %}selected{% endif %}>
+                                        {{ label }}
+                                    </option>
                                     {% endif %}
                                 {% endfor %}
                             </select>
-                            {% if form.section.errors %}<span class="submit-field__error">{{ form.section.errors.0 }}</span>{% endif %}
+                            {% if form.section.errors %}
+                            <span class="submit-field__error">{{ form.section.errors.0 }}</span>
+                            {% endif %}
+                        </div>
+
+                        <div class="submit-field">
+                            <label class="submit-field__label" for="id_corresponding_author_email">
+                                البريد الإلكتروني للمؤلف المسؤول
+                                <span class="submit-field__required">*</span>
+                            </label>
+                            <input type="email" name="corresponding_author_email" id="id_corresponding_author_email"
+                                   class="submit-field__input {% if form.corresponding_author_email.errors %}submit-field__input--error{% endif %}"
+                                   value="{{ form.corresponding_author_email.value|default:'' }}"
+                                   placeholder="email@example.com"
+                                   required>
+                            {% if form.corresponding_author_email.errors %}
+                            <span class="submit-field__error">{{ form.corresponding_author_email.errors.0 }}</span>
+                            {% endif %}
                         </div>
                     </div>
 
@@ -179,97 +188,84 @@
                 <div class="submit-section__body">
                     {{ coauthor_formset.management_form }}
                     {% for coform in coauthor_formset %}
-                    <div class="submit-coauthor-row">
-                        <div class="submit-field-row">
-                            <div class="submit-field">
+                    <div class="submit-coauthor-row" data-form-idx="{{ forloop.counter0 }}">
+                        <div style="display: grid; grid-template-columns: 1fr 1fr auto; gap: var(--space-4); align-items: flex-end;">
+                            <div>
                                 <label class="submit-field__label">الاسم الكامل</label>
                                 <input type="text" name="{{ coform.full_name.html_name }}"
                                        class="submit-field__input"
                                        value="{{ coform.full_name.value|default:'' }}"
-                                       placeholder="د. محمد أحمد">
+                                       placeholder="">
                             </div>
-                            <div class="submit-field">
+                            <div>
                                 <label class="submit-field__label">المؤسسة</label>
                                 <input type="text" name="{{ coform.institution.html_name }}"
                                        class="submit-field__input"
                                        value="{{ coform.institution.value|default:'' }}"
-                                       placeholder="جامعة / مؤسسة بحثية">
+                                       placeholder="">
+                            </div>
+                            <div style="display:flex;align-items:center;justify-content:flex-end;">
+                                {% if coform.instance.pk %}
+                                <label style="display:flex;align-items:center;gap:0.5rem;">
+                                    {{ coform.DELETE }}
+                                    <span style="font-size:0.875rem;">حذف</span>
+                                </label>
+                                {% endif %}
                             </div>
                         </div>
-                        <div class="submit-field">
-                            <label class="submit-field__label">البريد الإلكتروني</label>
-                            <input type="email" name="{{ coform.email.html_name }}"
-                                   class="submit-field__input"
-                                   value="{{ coform.email.value|default:'' }}"
-                                   placeholder="email@example.com">
-                        </div>
                         {{ coform.order }}
-                        {% if coform.instance.pk %}{{ coform.DELETE }}{% endif %}
                     </div>
                     {% endfor %}
+                    <button type="button" class="btn btn-secondary btn-sm" id="addCoauthor" style="margin-top:var(--space-3);">
+                        <svg class="icon icon-xs"><use href="#icon-plus"/></svg>
+                        إضافة مؤلف آخر
+                    </button>
                 </div>
             </div>
 
         </div>
 
-        <!-- ===== Sidebar ===== -->
+        <!-- ===== Sidebar Summary ===== -->
         <div class="submit-sidebar">
 
-            <!-- حالة التقديم -->
+            <!-- إرشادات -->
             <div class="submit-guide">
                 <h3 class="submit-guide__title">
                     <svg class="icon icon-xs"><use href="#icon-about"/></svg>
-                    حالة التقديم
+                    إرشادات التعديل
                 </h3>
-                <div style="text-align:center;padding:var(--space-3) 0;">
-                    <span class="badge badge-lg
-                        {% if object.status == 'draft' %}badge-draft
-                        {% elif object.status == 'under_initial_check' %}badge-initial-check
-                        {% elif object.status == 'under_review' %}badge-under-review
-                        {% elif object.status == 'revision_required' %}badge-revision
-                        {% elif object.status == 'accepted_awaiting_payment' %}badge-accepted
-                        {% elif object.status == 'published' %}badge-published
-                        {% elif object.status == 'rejected' %}badge-rejected
-                        {% endif %}">
-                        {{ object.get_status_display }}
-                    </span>
-                </div>
-                <div style="margin-top:var(--space-4);display:flex;flex-direction:column;gap:var(--space-2);">
-                    <div style="display:flex;justify-content:space-between;font-size:var(--text-xs);color:var(--color-text-secondary);">
-                        <span>تاريخ التقديم</span>
-                        <span>{{ object.created_at|date:"Y/m/d" }}</span>
-                    </div>
-                    <div style="display:flex;justify-content:space-between;font-size:var(--text-xs);color:var(--color-text-secondary);">
-                        <span>آخر تعديل</span>
-                        <span>{{ object.updated_at|date:"Y/m/d" }}</span>
-                    </div>
-                </div>
+                <ul class="submit-guide__list">
+                    <li>تأكد من أن العنوان واضح ودقيق</li>
+                    <li>الملخص بين 150 و300 كلمة</li>
+                    <li>الكلمات المفتاحية من 4 إلى 8 كلمات</li>
+                    <li>الملف بصيغة PDF فقط</li>
+                    <li>الحجم الأقصى للملف 20MB</li>
+                </ul>
             </div>
 
-            <!-- أزرار -->
+            <!-- أزرار الحفظ والتقديم -->
             <div class="submit-actions">
-                <button type="submit" class="btn btn-primary btn-full">
-                    <svg class="icon icon-sm"><use href="#icon-guidelines"/></svg>
+                <button type="submit" class="btn btn-secondary btn-full">
+                    <svg class="icon icon-sm"><use href="#icon-save"/></svg>
                     حفظ التعديلات
                 </button>
-
                 {% if object.status == 'draft' %}
-                <button type="button" class="btn btn-success btn-full" id="btn-submit-research">
-                    <svg class="icon icon-sm"><use href="#icon-submit"/></svg>
-                    إرسال المقالة رسمياً
+                <button type="button" class="btn btn-primary btn-full" id="btn-submit-research">
+                    <svg class="icon icon-sm"><use href="#icon-send"/></svg>
+                    إرسال المقالة
                 </button>
                 {% endif %}
-
-                <a href="{% url 'dashboard:author' %}" class="btn btn-ghost btn-full">رجوع</a>
+                <a href="{% url 'dashboard:author' %}" class="btn btn-ghost btn-full">
+                    <svg class="icon icon-sm"><use href="#icon-home"/></svg>
+                    العودة
+                </a>
             </div>
 
             <!-- ملاحظة -->
-            {% if object.status == 'draft' %}
             <div class="submit-note">
-                <svg class="icon icon-xs" style="color:var(--color-warning);flex-shrink:0;margin-top:2px;"><use href="#icon-about"/></svg>
-                <p>بعد الإرسال الرسمي لن تتمكن من تعديل المقالة</p>
+                <svg class="icon icon-xs" style="color:var(--color-info);flex-shrink:0;margin-top:2px;"><use href="#icon-about"/></svg>
+                <p>{% if object.status == 'draft' %}يمكنك تعديل المقالة وحفظ التعديلات قبل الإرسال الرسمي{% else %}لا يمكن تعديل المقالة بعد الإرسال الرسمي{% endif %}</p>
             </div>
-            {% endif %}
 
         </div>
 
@@ -279,27 +275,74 @@
 {% endblock %}
 
 {% block extra_js %}
+<!-- Tagify JS -->
+<script src="https://cdn.jsdelivr.net/npm/@yaireo/tagify@latest/dist/tagify.min.js"></script>
 <script>
+// Initialize Tagify
+const input = document.getElementById('id_keywords_input');
+const hiddenInput = document.getElementById('id_keywords');
+const tagify = new Tagify(input, {
+    whitelist: [],
+    maxTags: 8,
+    dropdown: {
+        maxItems: 20,
+        classname: "tagify__dropdown",
+        enabled: 0,
+        closeOnSelect: false,
+        searchByKey: true
+    },
+    placeholder: 'أضف الكلمات المفتاحية...',
+    delimiters: ",",
+});
+
+// Update hidden input when tags change
+tagify.on('change', function() {
+    hiddenInput.value = tagify.value.map(tag => tag.value).join(', ');
+});
+
 // File upload preview
-const input = document.getElementById('manuscriptFile');
-const area  = document.getElementById('uploadArea');
+const fileInput = document.getElementById('manuscriptFile');
+const area = document.getElementById('uploadArea');
 const preview = document.getElementById('uploadPreview');
 const fileName = document.getElementById('uploadFileName');
 const fileSize = document.getElementById('uploadFileSize');
 const removeBtn = document.getElementById('removeFile');
 
-input.addEventListener('change', function() {
+const MAX_FILE_SIZE = 20 * 1024 * 1024; // 20MB
+
+fileInput.addEventListener('change', function() {
     if (this.files && this.files[0]) {
         const file = this.files[0];
+        
+        // التحقق من صيغة الملف
+        if (file.type !== 'application/pdf') {
+            toastr.error('يجب أن يكون الملف بصيغة PDF فقط');
+            this.value = '';
+            area.style.display = 'flex';
+            preview.style.display = 'none';
+            return;
+        }
+        
+        // التحقق من حجم الملف
+        if (file.size > MAX_FILE_SIZE) {
+            toastr.error('حجم الملف يتجاوز 20MB. الحد الأقصى المسموح به هو 20MB');
+            this.value = '';
+            area.style.display = 'flex';
+            preview.style.display = 'none';
+            return;
+        }
+        
+        // إذا كان الملف صحيح، عرض المعاينة
         fileName.textContent = file.name;
         fileSize.textContent = (file.size / (1024*1024)).toFixed(2) + ' MB';
         area.style.display = 'none';
         preview.style.display = 'flex';
+        toastr.success('تم اختيار الملف بنجاح');
     }
 });
 
 removeBtn.addEventListener('click', function() {
-    input.value = '';
+    fileInput.value = '';
     area.style.display = 'flex';
     preview.style.display = 'none';
 });
@@ -310,16 +353,186 @@ area.addEventListener('drop', e => {
     e.preventDefault();
     area.classList.remove('submit-upload-area--drag');
     const file = e.dataTransfer.files[0];
-    if (file && file.type === 'application/pdf') {
-        input.files = e.dataTransfer.files;
-        input.dispatchEvent(new Event('change'));
-    } else {
-        toastr.error('يجب أن يكون الملف بصيغة PDF');
+    
+    if (!file) {
+        toastr.error('لم يتم اختيار ملف');
+        return;
+    }
+    
+    // التحقق من صيغة الملف
+    if (file.type !== 'application/pdf') {
+        toastr.error('يجب أن يكون الملف بصيغة PDF فقط');
+        return;
+    }
+    
+    // التحقق من حجم الملف
+    if (file.size > MAX_FILE_SIZE) {
+        toastr.error('حجم الملف يتجاوز 20MB. الحد الأقصى المسموح به هو 20MB');
+        return;
+    }
+    
+    // إذا كان الملف صحيح، عيّن الملف
+    fileInput.files = e.dataTransfer.files;
+    fileInput.dispatchEvent(new Event('change'));
+});
+
+// Co-author validation
+function checkAllNamesAreFilled() {
+    const nameInputs = document.querySelectorAll('input[name*="full_name"]');
+    return Array.from(nameInputs).every(input => input.value.trim() !== '');
+}
+
+function updateFormSubmitState() {
+    const allFilled = checkAllNamesAreFilled();
+    const submitBtn = document.querySelector('button[type="submit"]:first-of-type');
+    if (submitBtn) {
+        submitBtn.disabled = !allFilled;
+        submitBtn.style.opacity = allFilled ? '1' : '0.5';
+        submitBtn.style.cursor = allFilled ? 'pointer' : 'not-allowed';
+        submitBtn.title = allFilled ? 'حفظ التعديلات' : 'يجب ملء أسماء جميع المؤلفين أولاً';
+    }
+}
+
+function attachNameInputListeners() {
+    const nameInputs = document.querySelectorAll('input[name*="full_name"]');
+    nameInputs.forEach(input => {
+        input.addEventListener('input', updateFormSubmitState);
+        input.addEventListener('change', updateFormSubmitState);
+    });
+}
+
+// Initial check
+attachNameInputListeners();
+updateFormSubmitState();
+
+// Submit form validation
+document.querySelector('form').addEventListener('submit', function(e) {
+    if (!checkAllNamesAreFilled()) {
+        e.preventDefault();
+        toastr.warning('يجب ملء أسماء جميع المؤلفين قبل الحفظ');
+        return false;
     }
 });
 
+// Add co-author button
+const addCoauthorBtn = document.getElementById('addCoauthor');
+const coauthorContainer = document.querySelectorAll('.submit-coauthor-row');
+const totalForms = document.querySelector('input[name="co_authors-TOTAL_FORMS"]');
+
+// Function to update button state
+function updateAddCoauthorButtonState() {
+    const allFilled = checkAllNamesAreFilled();
+    if (addCoauthorBtn) {
+        addCoauthorBtn.disabled = !allFilled;
+        addCoauthorBtn.style.opacity = allFilled ? '1' : '0.5';
+        addCoauthorBtn.style.cursor = allFilled ? 'pointer' : 'not-allowed';
+        addCoauthorBtn.title = allFilled ? 'إضافة مؤلف آخر' : 'يجب ملء أسماء جميع المؤلفين أولاً';
+    }
+}
+
+if (addCoauthorBtn) {
+    addCoauthorBtn.addEventListener('click', function(e) {
+        e.preventDefault();
+        
+        // Check again before adding
+        if (!checkAllNamesAreFilled()) {
+            toastr.warning('يجب ملء أسماء جميع المؤلفين قبل إضافة مؤلف جديد');
+            return;
+        }
+        
+        const formIdx = parseInt(totalForms.value);
+        const newForm = coauthorContainer[0].cloneNode(true);
+        
+        // Update form field names and ids
+        newForm.querySelectorAll('input, select, label').forEach(field => {
+            const name = field.getAttribute('name') || field.getAttribute('for');
+            if (name) {
+                const newName = name.replace(/-\d+-/, `-${formIdx}-`);
+                if (field.getAttribute('name')) {
+                    field.setAttribute('name', newName);
+                }
+                if (field.getAttribute('for')) {
+                    field.setAttribute('for', newName);
+                }
+                if (field.getAttribute('id')) {
+                    field.setAttribute('id', newName);
+                }
+            }
+        });
+        
+        // Clear values
+        newForm.querySelectorAll('input:not([type="hidden"]), select').forEach(field => {
+            if (field.type !== 'checkbox') field.value = '';
+        });
+        
+        // Hide delete checkbox for new forms
+        const deleteCheckbox = newForm.querySelector('input[name*="DELETE"]');
+        if (deleteCheckbox) {
+            deleteCheckbox.parentElement.style.display = 'none';
+        }
+        
+        // Insert before the add button in the correct section
+        const sectionBody = addCoauthorBtn.closest('.submit-section__body');
+        sectionBody.insertBefore(newForm, addCoauthorBtn);
+        
+        totalForms.value = formIdx + 1;
+        
+        // Re-attach listeners to new form
+        attachNameInputListeners();
+        updateAddCoauthorButtonState();
+    });
+}
+
 // Submit confirmation
-document.getElementById('btn-submit-research')?.addEventListener('click', function() {
+document.getElementById('btn-submit-research')?.addEventListener('click', function(e) {
+    e.preventDefault();
+    
+    const titleInput = document.getElementById('id_title');
+    const abstractInput = document.getElementById('id_abstract');
+    const emailInput = document.getElementById('id_corresponding_author_email');
+    const manuscriptInput = document.getElementById('manuscriptFile');
+    
+    // التحقق من العنوان
+    if (!titleInput.value.trim()) {
+        toastr.error('يجب إدخال عنوان المقالة');
+        titleInput.focus();
+        return false;
+    }
+    
+    // التحقق من الملخص
+    if (!abstractInput.value.trim()) {
+        toastr.error('يجب إدخال ملخص المقالة');
+        abstractInput.focus();
+        return false;
+    }
+    
+    // التحقق من البريد الإلكتروني
+    if (!emailInput.value.trim()) {
+        toastr.error('يجب إدخال البريد الإلكتروني للمؤلف المسؤول');
+        emailInput.focus();
+        return false;
+    }
+    
+    // التحقق من ملف PDF
+    if (!manuscriptInput.files || manuscriptInput.files.length === 0) {
+        toastr.error('يجب اختيار ملف PDF للمخطوطة');
+        return false;
+    }
+    
+    // التحقق من صيغة الملف
+    const file = manuscriptInput.files[0];
+    if (file.type !== 'application/pdf') {
+        toastr.error('يجب أن يكون الملف بصيغة PDF فقط');
+        return false;
+    }
+    
+    // التحقق من حجم الملف
+    if (file.size > MAX_FILE_SIZE) {
+        toastr.error('حجم الملف يتجاوز 20MB');
+        return false;
+    }
+    
+    // إذا كان كل شيء صحيح، عرض رسالة التأكيد
     Swal.fire({
         title: 'هل أنت متأكد من إرسال المقالة؟',
         text: 'لن تتمكن من التعديل بعد الإرسال.',

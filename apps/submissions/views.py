@@ -22,12 +22,25 @@ class SubmissionCreateView(AuthorRequiredMixin, CreateView):
     form_class    = SubmissionForm
     template_name = 'submissions/create.html'
 
+    def get_form_kwargs(self):
+        kwargs = super().get_form_kwargs()
+        kwargs['user'] = self.request.user
+        return kwargs
+
     def get_context_data(self, **kwargs):
         ctx = super().get_context_data(**kwargs)
         if self.request.POST:
             ctx['coauthor_formset'] = CoAuthorFormSet(self.request.POST)
         else:
             ctx['coauthor_formset'] = CoAuthorFormSet()
+            # ملء بيانات المؤلف الأول من المستخدم
+            user = self.request.user
+            if ctx['coauthor_formset'].forms:
+                first_form = ctx['coauthor_formset'].forms[0]
+                first_form.fields['full_name'].initial = user.get_full_name() or user.username
+                # محاولة الحصول على المؤسسة من AuthorProfile إن وجدت
+                if hasattr(user, 'author_profile'):
+                    first_form.fields['institution'].initial = user.author_profile.institution
         return ctx
 
     def form_valid(self, form):
@@ -56,7 +69,22 @@ class SubmissionCreateView(AuthorRequiredMixin, CreateView):
             coauthor_formset.instance = self.object
             coauthor_formset.save()
 
-        messages.success(self.request, 'تم حفظ التقديم كمسودة.')
+        # التحقق من نوع الإجراء (حفظ أو تقديم)
+        action = self.request.POST.get('action', 'save')
+        if action == 'submit':
+            # تقديم مباشر إذا كان هناك ملف
+            if ManuscriptFile.objects.filter(submission=self.object, is_current=True).exists():
+                try:
+                    SubmissionService.submit(self.object, actor=self.request.user)
+                    messages.success(self.request, 'تم إرسال مقالتك بنجاح. سيتم مراجعته من قِبَل المشرف.')
+                    return redirect(reverse('dashboard:author'))
+                except InvalidStateTransitionError as e:
+                    messages.error(self.request, f'خطأ: {e}')
+            else:
+                messages.error(self.request, 'يجب رفع ملف المخطوطة قبل الإرسال.')
+        else:
+            messages.success(self.request, 'تم حفظ التقديم كمسودة.')
+
         return redirect(reverse('submissions:edit', kwargs={'pk': self.object.pk}))
 
     def form_invalid(self, form):
@@ -119,7 +147,23 @@ class SubmissionUpdateView(AuthorRequiredMixin, UpdateView):
             coauthor_formset.instance = self.object
             coauthor_formset.save()
 
-        messages.success(self.request, 'تم حفظ التعديلات.')
+        # التحقق من نوع الإجراء (حفظ أو تقديم)
+        action = self.request.POST.get('action', 'save')
+        if action == 'submit':
+            # تقديم مباشر
+            if ManuscriptFile.objects.filter(submission=self.object, is_current=True).exists():
+                try:
+                    SubmissionService.submit(self.object, actor=self.request.user)
+                    messages.success(self.request, 'تم إرسال مقالتك بنجاح. سيتم مراجعته من قِبَل المشرف.')
+                    return redirect(reverse('dashboard:author'))
+                except InvalidStateTransitionError as e:
+                    messages.error(self.request, f'خطأ: {e}')
+            else:
+                messages.error(self.request, 'يجب رفع ملف المخطوطة قبل الإرسال.')
+                return self.form_invalid(form)
+        else:
+            messages.success(self.request, 'تم حفظ التعديلات.')
+
         return redirect(reverse('submissions:edit', kwargs={'pk': self.object.pk}))
 
 
@@ -185,5 +229,22 @@ class RevisionUploadView(AuthorRequiredMixin, View):
             messages.error(request, 'تجاوزت الحد الأقصى لدورات التعديل (دورتان).')
         except InvalidManuscriptFileError:
             messages.error(request, 'يجب أن يكون الملف بصيغة PDF.')
+
+        return redirect(reverse('dashboard:author'))
+
+
+class SubmissionWithdrawView(AuthorRequiredMixin, View):
+    """سحب التقديم — Under Initial Check → Withdrawn."""
+
+    def post(self, request, pk):
+        submission = get_object_or_404(ArticleSubmission, pk=pk)
+        if submission.author != request.user:
+            raise PermissionDenied
+
+        try:
+            SubmissionService.withdraw(submission, actor=request.user)
+            messages.success(request, 'تم سحب مقالتك بنجاح.')
+        except InvalidStateTransitionError as e:
+            messages.error(request, f'لا يمكن سحب التقديم: {e}')
 
         return redirect(reverse('dashboard:author'))

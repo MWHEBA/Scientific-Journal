@@ -108,3 +108,20 @@ class SubmissionService:
                 actor=actor,
                 notes=f'Revision #{sub.revision_count} uploaded',
             )
+
+    @staticmethod
+    def withdraw(submission: ArticleSubmission, actor) -> None:
+        """المؤلف يسحب المقالة — Under Initial Check → Withdrawn."""
+        with transaction.atomic():
+            sub = ArticleSubmission.objects.select_for_update().get(pk=submission.pk)
+            SubmissionStateMachine.transition(
+                sub,
+                SubmissionStatus.WITHDRAWN,
+                actor=actor,
+                notes='Author withdrew submission',
+            )
+            NotificationService.notify_author(
+                sub,
+                'withdrawal_confirmation',
+                f'تم سحب مقالتك "{sub.title}" بنجاح.',
+            )
