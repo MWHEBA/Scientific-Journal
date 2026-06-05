@@ -7,6 +7,7 @@
 <div class="page-header">
     <h1 class="page-header__title">التقديمات</h1>
     <div class="page-header__actions">
+        <a href="{% url 'dashboard:author_archive' %}" class="btn btn-ghost">الأرشيف{% if archived %} ({{ archived }}){% endif %}</a>
         <a href="{% url 'submissions:create' %}" class="btn btn-accent">+ تقديم مقالة جديدة</a>
     </div>
 </div>
@@ -18,7 +19,9 @@
     <div class="card mb-4">
         <div style="display: flex; justify-content: space-between; align-items: flex-start; flex-wrap: wrap; gap: var(--space-3);">
             <div style="flex: 1; min-width: 250px;">
-                <h3 class="mb-2" style="font-size: var(--text-md);">{{ sub.title|truncatechars:80 }}</h3>
+                <h3 class="mb-2" style="font-size: var(--text-md);">
+                    <a href="{% url 'dashboard:author_submission_detail' sub.pk %}" class="sub-title-link">{{ sub.title|truncatechars:80 }}</a>
+                </h3>
                 <p class="text-muted text-sm mb-0">
                     {{ sub.section.name }} &nbsp;·&nbsp; {{ sub.created_at|date:"Y/m/d" }}
                 </p>
@@ -39,6 +42,17 @@
                 {{ sub.get_status_display }}
             </span>
         </div>
+
+        <!-- سبب الرفض -->
+        {% if sub.status == 'rejected' and sub.admin_notes %}
+        <div class="inline-alert inline-alert--danger mt-4">
+            <span class="inline-alert__icon"><svg class="icon icon-md"><use href="#icon-reject"/></svg></span>
+            <div class="inline-alert__content">
+                <p class="inline-alert__title">سبب الرفض</p>
+                <p class="inline-alert__message">{{ sub.admin_notes|truncatechars:300 }}</p>
+            </div>
+        </div>
+        {% endif %}
 
         <!-- تعليقات المراجع -->
         {% if sub.status == 'revision_required' or sub.status == 'rejected' %}
@@ -72,6 +86,7 @@
 
         <!-- إجراءات -->
         <div style="margin-top: var(--space-4); display: flex; gap: var(--space-2); flex-wrap: wrap;">
+            <a href="{% url 'dashboard:author_submission_detail' sub.pk %}" class="btn btn-sm btn-ghost">عرض</a>
             {% if sub.status == 'draft' %}
                 <a href="{% url 'submissions:edit' sub.pk %}" class="btn btn-sm btn-primary">تعديل</a>
             {% elif sub.status == 'under_initial_check' %}
@@ -87,6 +102,11 @@
                         <a href="{% url 'pages:article_detail' article.slug %}" class="btn btn-sm btn-ghost">عرض المقال</a>
                     {% endif %}
                 {% endwith %}
+            {% elif sub.status == 'rejected' or sub.status == 'withdrawn' %}
+                <form method="post" action="{% url 'submissions:archive' sub.pk %}" style="display:inline;">
+                    {% csrf_token %}
+                    <button type="submit" class="btn btn-sm btn-ghost">إرسال للأرشيف</button>
+                </form>
             {% endif %}
         </div>
     </div>

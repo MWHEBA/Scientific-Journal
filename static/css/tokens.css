@@ -73,8 +73,8 @@
   --shadow-md: 0 4px 12px rgba(0, 0, 0, 0.10);
 
   /* ── Typography Scale ── */
-  --text-xs:   0.75rem;
-  --text-sm:   0.875rem;
+  --text-xs:   0.65rem;
+  --text-sm:   0.775rem;
   --text-base: 0.9375rem;
   --text-md:   1rem;
   --text-lg:   1.125rem;

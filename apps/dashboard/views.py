@@ -35,7 +35,8 @@ class AuthorDashboardView(AuthorRequiredMixin, ListView):
 
     def get_queryset(self):
         qs = ArticleSubmission.objects.filter(
-            author=self.request.user
+            author=self.request.user,
+            is_archived=False,
         ).exclude(status='published').select_related('section').prefetch_related(
             'manuscript_files', 'reviews', 'co_authors'
         ).order_by('-created_at')
@@ -46,13 +47,38 @@ class AuthorDashboardView(AuthorRequiredMixin, ListView):
         ctx = super().get_context_data(**kwargs)
         # احسب الإحصائيات من كل التقديمات بدون فلترة (بدون المنشورة)
         all_submissions = ArticleSubmission.objects.filter(
-            author=self.request.user
+            author=self.request.user,
+            is_archived=False,
         ).exclude(status='published')
         ctx['total']     = all_submissions.count()
         ctx['active']    = all_submissions.exclude(status__in=['draft', 'rejected', 'expired']).count()
         ctx['published'] = ArticleSubmission.objects.filter(
             author=self.request.user, status='published'
         ).count()
+        ctx['archived'] = ArticleSubmission.objects.filter(
+            author=self.request.user, is_archived=True
+        ).count()
+        return ctx
+
+
+class AuthorArchiveView(AuthorRequiredMixin, ListView):
+    """أرشيف المؤلف — تقديمات مرفوضة أو مسحوبة أخفاها المؤلف من القائمة الرئيسية."""
+    model               = ArticleSubmission
+    template_name       = 'dashboard/author/archive.html'
+    context_object_name = 'submissions'
+    ordering            = ['-updated_at']
+
+    def get_queryset(self):
+        return ArticleSubmission.objects.filter(
+            author=self.request.user,
+            is_archived=True,
+        ).select_related('section').prefetch_related(
+            'manuscript_files', 'reviews', 'co_authors'
+        ).order_by('-updated_at')
+
+    def get_context_data(self, **kwargs):
+        ctx = super().get_context_data(**kwargs)
+        ctx['archived_count'] = self.get_queryset().count()
         return ctx
 
 
@@ -75,6 +101,36 @@ class AuthorDraftsView(AuthorRequiredMixin, ListView):
         ctx = super().get_context_data(**kwargs)
         ctx['total_drafts'] = self.get_queryset().count()
         return ctx
+
+
+class AuthorSubmissionDetailView(AuthorRequiredMixin, View):
+    """عرض تفاصيل تقديم يملكه المؤلف."""
+    template_name = 'dashboard/admin/submission_detail.html'
+
+    def get(self, request, pk):
+        from apps.submissions.models import ManuscriptFile
+        submission = get_object_or_404(
+            ArticleSubmission.objects.select_related(
+                'author', 'section', 'assigned_reviewer'
+            ).prefetch_related(
+                django_models.Prefetch(
+                    'manuscript_files',
+                    queryset=ManuscriptFile.objects.order_by('-uploaded_at', '-version')
+                ),
+                'reviews',
+                'co_authors'
+            ),
+            pk=pk,
+            author=request.user,
+        )
+        try:
+            payment_record = submission.payment
+        except Exception:
+            payment_record = None
+        return render(request, self.template_name, {
+            'submission': submission,
+            'payment_record': payment_record,
+        })
 
 
 class AuthorPublishedArticlesView(AuthorRequiredMixin, ListView):

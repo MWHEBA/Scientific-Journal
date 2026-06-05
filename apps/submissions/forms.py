@@ -100,7 +100,7 @@ CoAuthorFormSet = inlineformset_factory(
     ArticleSubmission,
     CoAuthor,
     form=CoAuthorForm,
-    extra=1,
+    extra=0,
     can_delete=True,
     max_num=10,
 )

@@ -7,6 +7,7 @@ from django.urls import reverse_lazy, reverse
 
 from apps.accounts.mixins import AuthorRequiredMixin
 from apps.submissions.models import ArticleSubmission, ManuscriptFile
+from apps.submissions.statuses import SubmissionStatus
 from apps.submissions.forms import SubmissionForm, CoAuthorFormSet, ManuscriptUploadForm
 from apps.submissions.services import SubmissionService
 from apps.submissions.exceptions import (
@@ -20,7 +21,7 @@ class SubmissionCreateView(AuthorRequiredMixin, CreateView):
     """إنشاء تقديم جديد — يُحفظ كمسودة."""
     model         = ArticleSubmission
     form_class    = SubmissionForm
-    template_name = 'submissions/create.html'
+    template_name = 'submissions/form.html'
 
     def get_form_kwargs(self):
         kwargs = super().get_form_kwargs()
@@ -41,6 +42,9 @@ class SubmissionCreateView(AuthorRequiredMixin, CreateView):
                 # محاولة الحصول على المؤسسة من AuthorProfile إن وجدت
                 if hasattr(user, 'author_profile'):
                     first_form.fields['institution'].initial = user.author_profile.institution
+        ctx['is_create'] = True
+        ctx['is_edit'] = False
+        ctx['current_manuscript'] = None
         return ctx
 
     def form_valid(self, form):
@@ -96,7 +100,7 @@ class SubmissionUpdateView(AuthorRequiredMixin, UpdateView):
     """تعديل مسودة — object-level permission."""
     model         = ArticleSubmission
     form_class    = SubmissionForm
-    template_name = 'submissions/edit.html'
+    template_name = 'submissions/form.html'
 
     def get_object(self, queryset=None):
         obj = get_object_or_404(ArticleSubmission, pk=self.kwargs['pk'])
@@ -118,6 +122,8 @@ class SubmissionUpdateView(AuthorRequiredMixin, UpdateView):
         ctx['current_manuscript'] = self.object.manuscript_files.filter(
             is_current=True
         ).first()
+        ctx['is_create'] = False
+        ctx['is_edit'] = True
         return ctx
 
     def form_valid(self, form):
@@ -248,3 +254,40 @@ class SubmissionWithdrawView(AuthorRequiredMixin, View):
             messages.error(request, f'لا يمكن سحب التقديم: {e}')
 
         return redirect(reverse('dashboard:author'))
+
+
+class SubmissionArchiveView(AuthorRequiredMixin, View):
+    """إخفاء التقديم من قائمة المؤلف الرئيسية بعد الرفض أو السحب."""
+
+    allowed_statuses = {
+        SubmissionStatus.REJECTED,
+        SubmissionStatus.WITHDRAWN,
+    }
+
+    def post(self, request, pk):
+        submission = get_object_or_404(ArticleSubmission, pk=pk)
+        if submission.author != request.user:
+            raise PermissionDenied
+
+        if submission.status not in self.allowed_statuses:
+            messages.error(request, 'يمكن أرشفة التقديمات المرفوضة أو المسحوبة فقط.')
+            return redirect(reverse('dashboard:author'))
+
+        submission.is_archived = True
+        submission.save(update_fields=['is_archived', 'updated_at'])
+        messages.success(request, 'تم إرسال التقديم إلى الأرشيف.')
+        return redirect(reverse('dashboard:author'))
+
+
+class SubmissionUnarchiveView(AuthorRequiredMixin, View):
+    """إرجاع التقديم المؤرشف إلى قائمة المؤلف الرئيسية."""
+
+    def post(self, request, pk):
+        submission = get_object_or_404(ArticleSubmission, pk=pk)
+        if submission.author != request.user:
+            raise PermissionDenied
+
+        submission.is_archived = False
+        submission.save(update_fields=['is_archived', 'updated_at'])
+        messages.success(request, 'تمت إزالة التقديم من الأرشيف.')
+        return redirect(reverse('dashboard:author_archive'))

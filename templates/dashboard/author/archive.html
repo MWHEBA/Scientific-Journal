@@ -1,0 +1,76 @@
+{% extends 'base_dashboard.html' %}
+
+{% block title %}الأرشيف{% endblock %}
+{% block nav_author_articles %}active{% endblock %}
+
+{% block content %}
+<div class="page-header">
+    <h1 class="page-header__title">الأرشيف</h1>
+    <div class="page-header__actions">
+        <a href="{% url 'dashboard:author' %}" class="btn btn-ghost">العودة للتقديمات</a>
+        <a href="{% url 'submissions:create' %}" class="btn btn-accent">+ تقديم مقالة جديدة</a>
+    </div>
+</div>
+
+{% if submissions %}
+    {% for sub in submissions %}
+    <div class="card mb-4">
+        <div style="display: flex; justify-content: space-between; align-items: flex-start; flex-wrap: wrap; gap: var(--space-3);">
+            <div style="flex: 1; min-width: 250px;">
+                <h3 class="mb-2" style="font-size: var(--text-md);">{{ sub.title|truncatechars:80 }}</h3>
+                <p class="text-muted text-sm mb-0">
+                    {% if sub.section %}{{ sub.section.name }} &nbsp;·&nbsp; {% endif %}{{ sub.created_at|date:"Y/m/d" }}
+                </p>
+            </div>
+            <span class="badge
+                {% if sub.status == 'rejected' %}badge-rejected
+                {% elif sub.status == 'withdrawn' %}badge-withdrawn
+                {% else %}badge-secondary
+                {% endif %}">
+                {{ sub.get_status_display }}
+            </span>
+        </div>
+
+        {% if sub.status == 'rejected' and sub.admin_notes %}
+        <div class="inline-alert inline-alert--danger mt-4">
+            <span class="inline-alert__icon"><svg class="icon icon-md"><use href="#icon-reject"/></svg></span>
+            <div class="inline-alert__content">
+                <p class="inline-alert__title">سبب الرفض</p>
+                <p class="inline-alert__message">{{ sub.admin_notes|truncatechars:300 }}</p>
+            </div>
+        </div>
+        {% endif %}
+
+        {% with latest_review=sub.reviews.last %}
+            {% if latest_review and latest_review.comments %}
+            <div class="inline-alert inline-alert--warning mt-4">
+                <span class="inline-alert__icon"><svg class="icon icon-md"><use href="#icon-review"/></svg></span>
+                <div class="inline-alert__content">
+                    <p class="inline-alert__title">تعليقات المراجع</p>
+                    <p class="inline-alert__message">{{ latest_review.comments|truncatechars:300 }}</p>
+                </div>
+            </div>
+            {% endif %}
+        {% endwith %}
+
+        <div style="margin-top: var(--space-4); display: flex; gap: var(--space-2); flex-wrap: wrap;">
+            <form method="post" action="{% url 'submissions:unarchive' sub.pk %}" style="display:inline;">
+                {% csrf_token %}
+                <button type="submit" class="btn btn-sm btn-ghost">إزالة من الأرشيف</button>
+            </form>
+        </div>
+    </div>
+    {% endfor %}
+{% else %}
+    <div class="card">
+        <div class="empty-state">
+            <div class="empty-state__icon"><svg class="icon icon-xl icon-muted"><use href="#icon-save"/></svg></div>
+            <h3 class="empty-state__title">الأرشيف فارغ</h3>
+            <p class="empty-state__message">التقديمات المرفوضة أو المسحوبة التي ترسلها للأرشيف ستظهر هنا.</p>
+            <div class="empty-state__action">
+                <a href="{% url 'dashboard:author' %}" class="btn btn-accent">العودة للتقديمات</a>
+            </div>
+        </div>
+    </div>
+{% endif %}
+{% endblock %}

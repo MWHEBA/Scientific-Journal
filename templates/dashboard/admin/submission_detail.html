@@ -2,10 +2,17 @@
 {% load dashboard_extras %}
 
 {% block title %}تفاصيل التقديم — {{ submission.title }}{% endblock %}
-{% block nav_admin_submissions %}active{% endblock %}
+{% block nav_admin_submissions %}{% if user.role == 'admin' %}active{% endif %}{% endblock %}
+{% block nav_author_articles %}{% if user.role == 'author' %}active{% endif %}{% endblock %}
 {% block breadcrumb %}
   <span class="dash-breadcrumb__sep">/</span>
+  {% if user.role == 'author' %}
+  <a href="{% url 'dashboard:author' %}">التقديمات</a>
+  {% elif user.role == 'reviewer' %}
+  <a href="{% url 'dashboard:reviewer_submissions' %}">التقديمات</a>
+  {% else %}
   <a href="{% url 'dashboard:admin_submissions' %}">التقديمات</a>
+  {% endif %}
   <span class="dash-breadcrumb__sep">/</span>
   <span class="dash-breadcrumb__current">تفاصيل التقديم</span>
 {% endblock %}
@@ -165,7 +172,7 @@
     {% if user.role == 'admin' and submission.status == 'under_review' and not submission.assigned_reviewer %}
       <a href="{% url 'dashboard:assign_reviewer' submission.pk %}" class="btn btn-accent btn-sm">تعيين مراجع</a>
     {% endif %}
-    <a href="{% if user.role == 'reviewer' %}{% url 'dashboard:reviewer_submissions' %}{% else %}{% url 'dashboard:admin_submissions' %}{% endif %}" class="btn btn-ghost btn-sm">رجوع</a>
+    <a href="{% if user.role == 'author' %}{% url 'dashboard:author' %}{% elif user.role == 'reviewer' %}{% url 'dashboard:reviewer_submissions' %}{% else %}{% url 'dashboard:admin_submissions' %}{% endif %}" class="btn btn-ghost btn-sm">رجوع</a>
   </div>
 </div>
 
@@ -331,7 +338,9 @@
               <strong class="text-sm">المراجع الحالي: {{ submission.assigned_reviewer.get_full_name|default:submission.assigned_reviewer.username }}</strong>
               <span class="badge badge-under-review">مكلّف حاليًا</span>
             </div>
+            {% if user.role == 'admin' %}
             <a href="{% url 'dashboard:assign_reviewer' submission.pk %}" class="btn btn-ghost btn-sm">تغيير المراجع</a>
+            {% endif %}
           </div>
         </div>
       </section>

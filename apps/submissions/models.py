@@ -44,6 +44,7 @@ class ArticleSubmission(models.Model):
                                           on_delete=models.SET_NULL,
                                           related_name='assigned_submissions')
     admin_notes                = models.TextField(blank=True)
+    is_archived                = models.BooleanField(default=False)
     corresponding_author_email = models.EmailField(blank=True, help_text='البريد الإلكتروني للمؤلف المسؤول عن المراسلات')
     payment_deadline           = models.DateTimeField(null=True, blank=True)
     created_at                 = models.DateTimeField(auto_now_add=True)

@@ -2,7 +2,9 @@ from django.urls import path
 from apps.dashboard.views import (
     DashboardHomeRedirectView,
     AuthorDashboardView,
+    AuthorArchiveView,
     AuthorDraftsView,
+    AuthorSubmissionDetailView,
     AuthorPublishedArticlesView,
     ReviewerDashboardView,
     ReviewerSubmissionsView,
@@ -35,7 +37,9 @@ urlpatterns = [
     path('',                                DashboardHomeRedirectView.as_view(),  name='home'),
     # المؤلف
     path('author/',                         AuthorDashboardView.as_view(),        name='author'),
+    path('author/archive/',                 AuthorArchiveView.as_view(),          name='author_archive'),
     path('author/drafts/',                  AuthorDraftsView.as_view(),           name='author_drafts'),
+    path('author/submissions/<int:pk>/',     AuthorSubmissionDetailView.as_view(), name='author_submission_detail'),
     path('author/published/',               AuthorPublishedArticlesView.as_view(), name='author_published'),
 
     # المراجع
