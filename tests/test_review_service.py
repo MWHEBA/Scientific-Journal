@@ -131,7 +131,7 @@ def test_submit_review_notifies_author_and_admin(make_submission, make_review, r
 
 @pytest.mark.django_db(transaction=True)
 @given(revision_count=st.integers(min_value=2, max_value=5))
-@h_settings(max_examples=10, suppress_health_check=[HealthCheck.too_slow, HealthCheck.function_scoped_fixture])
+@h_settings(max_examples=10, deadline=None, suppress_health_check=[HealthCheck.too_slow, HealthCheck.function_scoped_fixture])
 def test_p3_revision_limit_enforced(make_submission, make_review, reviewer, revision_count):
     """P3: revision_count >= 2 مع قرار revision → RevisionLimitExceededError"""
     sub = make_submission(

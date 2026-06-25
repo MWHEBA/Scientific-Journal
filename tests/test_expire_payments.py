@@ -39,7 +39,7 @@ def test_expire_payments_notifies_author(make_submission):
     call_command('expire_payments')
 
     assert Notification.objects.filter(
-        user=sub.author, type='payment_reminder'
+        user=sub.author, type='payment_required'
     ).exists()
 
 
@@ -93,7 +93,7 @@ def test_p5_payment_deadline_calculated_from_settings(
 
     reviewer = make_user(role=User.ROLE_REVIEWER)
     sub = make_submission(status=SubmissionStatus.UNDER_REVIEW)
-    review = Review.objects.create(
+    review = make_review(
         submission=sub,
         reviewer=reviewer,
         revision_round=1,

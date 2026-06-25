@@ -33,10 +33,11 @@ class Issue(models.Model):
 
     class Meta:
         unique_together = ('volume', 'number')
-        ordering = ['-volume__number', '-number']
+        ordering = ['-published_at', '-volume__number', '-number']
 
     def __str__(self):
-        return f"مجلد {self.volume.number} - عدد {self.number} ({self.volume.year}، {self.get_quarter_display()})"
+        year = self.published_at.year if self.published_at else self.volume.year
+        return f"مجلد {self.volume.number} - عدد {self.number} ({year}، {self.get_quarter_display()})"
 
 
 class PublishedArticle(models.Model):

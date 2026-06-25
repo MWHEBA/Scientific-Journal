@@ -7,7 +7,10 @@ from apps.submissions.statuses import SubmissionStatus
 class JournalSection(models.Model):
     name  = models.CharField(max_length=100)
     slug  = models.SlugField(unique=True)
-    color = models.CharField(max_length=7, default='#3b82f6', help_text='Hex color code')
+    order = models.PositiveIntegerField(default=0, verbose_name="المسلسل")
+
+    class Meta:
+        ordering = ['order', 'name']
 
     def __str__(self):
         return self.name

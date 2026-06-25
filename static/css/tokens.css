@@ -92,4 +92,5 @@
   --transition:    0.2s ease;
   --container-max: 1200px;
   --topbar-height: 72px;  /* navbar height */
+  --color-backdrop:       rgba(15, 23, 42, 0.75);
 }

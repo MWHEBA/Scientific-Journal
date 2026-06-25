@@ -40,3 +40,12 @@ htmlcov/
 # OS
 Thumbs.db
 .DS_Store
+
+# Private Keys and Deploy Scripts
+id_rsa
+id_rsa.pub
+project.zip
+project_fast.zip
+ssh_*.py
+WordPress.2026-06-25.xml
+

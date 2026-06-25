@@ -141,22 +141,22 @@ class PaymentService:
 
         # استدعاء النشر صراحةً — لا signals
         from apps.publishing.services import PublishingService
-        from apps.publishing.exceptions import MissingSectionError
+        from apps.publishing.exceptions import MissingSectionError, MissingManuscriptError
         try:
             PublishingService.publish(sub)
-        except MissingSectionError:
+        except (MissingSectionError, MissingManuscriptError) as e:
             # لا نترك الدفع مكتملًا مع فشل النشر بسبب بيانات ناقصة.
             payment.status = Payment.STATUS_FAILED
             payment.save(update_fields=['status'])
             SubmissionStateMachine.transition(
                 sub, SubmissionStatus.ACCEPTED,
-                notes='Payment confirmed but publishing blocked: missing section',
+                notes=f'Payment confirmed but publishing blocked: {e}',
             )
             AuditLog.objects.create(
                 entity_type='Payment',
                 entity_id=payment.id,
                 event='payment_failed',
-                notes='Publishing blocked بسبب عدم تحديد قسم للمقالة',
+                notes=f'Publishing blocked بسبب: {e}',
             )
             NotificationService.notify_author_payment_failed(sub)
 

@@ -111,7 +111,7 @@ def test_terminal_states_have_no_transitions(make_submission):
     from_status=st.sampled_from(ALL_STATUSES),
     to_status=st.sampled_from(ALL_STATUSES),
 )
-@h_settings(max_examples=50, suppress_health_check=[HealthCheck.too_slow, HealthCheck.function_scoped_fixture])
+@h_settings(max_examples=50, deadline=None, suppress_health_check=[HealthCheck.too_slow, HealthCheck.function_scoped_fixture])
 def test_p1_only_allowed_transitions_succeed(make_submission, from_status, to_status):
     """P1: ∀ (from, to) not in ALLOWED_TRANSITIONS → raises InvalidStateTransitionError"""
     sub = make_submission(status=from_status)

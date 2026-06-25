@@ -163,7 +163,7 @@
             {% for section in sections %}
             <li class="pub-widget__list-item">
                 <a href="{% url 'pages:section_articles' section.slug %}">
-                    <span class="pub-widget__section-dot" style="background-color:{{ section.color }};"></span>
+                    <span class="pub-widget__section-dot" style="background-color:var(--color-primary);"></span>
                     {{ section.name }}
                 </a>
             </li>

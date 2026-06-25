@@ -22,7 +22,8 @@ class SubmissionStateMachine:
                                               SubmissionStatus.EXPIRED],
         SubmissionStatus.PAYMENT_PROCESSING: [SubmissionStatus.PAID,
                                               SubmissionStatus.ACCEPTED],
-        SubmissionStatus.PAID:               [SubmissionStatus.PUBLISHED],
+        SubmissionStatus.PAID:               [SubmissionStatus.PUBLISHED,
+                                              SubmissionStatus.ACCEPTED],
         # Terminal states — لا انتقالات منها
         SubmissionStatus.PUBLISHED:          [],
         SubmissionStatus.REJECTED:           [],

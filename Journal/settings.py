@@ -3,14 +3,20 @@ Django settings for Journal project.
 """
 
 from pathlib import Path
+import environ
 
 BASE_DIR = Path(__file__).resolve().parent.parent
 
-SECRET_KEY = "django-insecure-s)jv^rezs#!*0d427()-u7t$ki$6)^#shf(ck&#!3rw2=kic1t"
+# Initialize environ
+env = environ.Env()
+# Read env file if it exists
+environ.Env.read_env(BASE_DIR / '.env')
 
-DEBUG = True
+SECRET_KEY = env('SECRET_KEY', default="django-insecure-s)jv^rezs#!*0d427()-u7t$ki$6)^#shf(ck&#!3rw2=kic1t")
 
-ALLOWED_HOSTS = []
+DEBUG = env.bool('DEBUG', default=True)
+
+ALLOWED_HOSTS = env.list('ALLOWED_HOSTS', default=[])
 
 # Application definition
 INSTALLED_APPS = [
@@ -69,10 +75,7 @@ TEMPLATES = [
 WSGI_APPLICATION = "Journal.wsgi.application"
 
 DATABASES = {
-    "default": {
-        "ENGINE": "django.db.backends.sqlite3",
-        "NAME": BASE_DIR / "db.sqlite3",
-    }
+    "default": env.db('DATABASE_URL', default=f"sqlite:///{BASE_DIR / 'db.sqlite3'}")
 }
 
 AUTH_PASSWORD_VALIDATORS = [
@@ -90,10 +93,10 @@ USE_TZ = True
 # Static & Media
 STATIC_URL = "static/"
 STATICFILES_DIRS = [BASE_DIR / "static"]
-STATIC_ROOT = BASE_DIR / "staticfiles"
+STATIC_ROOT = env('STATIC_ROOT', default=str(BASE_DIR / "staticfiles"))
 
 MEDIA_URL = "media/"
-MEDIA_ROOT = BASE_DIR / "media"
+MEDIA_ROOT = env('MEDIA_ROOT', default=str(BASE_DIR / "media"))
 
 DEFAULT_AUTO_FIELD = "django.db.models.BigAutoField"
 

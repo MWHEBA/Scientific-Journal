@@ -59,25 +59,33 @@
         <th>القسم</th>
         <th>العدد</th>
         <th>تاريخ النشر</th>
-        <th>PDF</th>
       </tr>
     </thead>
     <tbody>
       {% for article in articles %}
-      <tr>
+      <tr style="cursor: pointer;" onclick="window.location='{% url 'dashboard:submission_detail' article.submission.pk %}'" onmouseover="this.style.backgroundColor='var(--color-surface-alt)'" onmouseout="this.style.backgroundColor='transparent'">
         <td class="text-muted text-sm">{{ article.pk }}</td>
         <td style="font-weight:600;">{{ article.title|truncatechars:70 }}</td>
         <td class="text-sm">{{ article.submission.author.get_full_name|default:article.submission.author.username }}</td>
-        <td class="text-sm">{{ article.section.name }}</td>
-        <td class="text-sm">{% if article.issue %}{{ article.issue }}{% else %}<span class="text-muted">غير معيّن</span>{% endif %}</td>
-        <td class="text-sm text-muted">{{ article.published_at|ar_datetime12 }}</td>
-        <td>
-          <a href="{{ article.pdf_file.url }}" target="_blank" class="btn btn-ghost btn-sm">تحميل</a>
+        <td class="text-sm">
+          <a href="{% url 'dashboard:admin_articles' %}?section={{ article.section.pk }}" onclick="event.stopPropagation();" style="color: var(--color-primary); text-decoration: none; font-weight: 500;" onmouseover="this.style.textDecoration='underline'" onmouseout="this.style.textDecoration='none'">
+            {{ article.section.name }}
+          </a>
         </td>
+        <td class="text-sm">
+          {% if article.issue %}
+            <a href="{% url 'dashboard:admin_articles' %}?issue={{ article.issue.pk }}" onclick="event.stopPropagation();" style="color: var(--color-primary); text-decoration: none; font-weight: 500;" onmouseover="this.style.textDecoration='underline'" onmouseout="this.style.textDecoration='none'">
+              {{ article.issue }}
+            </a>
+          {% else %}
+            <span class="text-muted">غير معيّن</span>
+          {% endif %}
+        </td>
+        <td class="text-sm text-muted">{{ article.published_at|date:"Y/m/d" }}</td>
       </tr>
       {% empty %}
       <tr>
-        <td colspan="7" style="padding:var(--space-8);">
+        <td colspan="6" style="padding:var(--space-8);">
           <div class="empty-state" style="padding:var(--space-4);">
             <h3 class="empty-state__title">لا توجد مقالات منشورة</h3>
             <p class="empty-state__message mb-0">لا توجد نتائج مطابقة للفلاتر الحالية.</p>

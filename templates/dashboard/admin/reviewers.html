@@ -1,105 +1,202 @@
 {% extends 'base_dashboard.html' %}
 {% load dashboard_extras %}
 
-{% block title %}إدارة المراجعين{% endblock %}
+{% block title %}إدارة الأعضاء{% endblock %}
 {% block nav_admin_reviewers %}active{% endblock %}
 {% block breadcrumb %}
     <span class="dash-breadcrumb__sep">/</span>
-    <span class="dash-breadcrumb__current">المراجعون</span>
+    <span class="dash-breadcrumb__current">إدارة الأعضاء</span>
 {% endblock %}
 
 {% block content %}
 <div class="page-header">
-    <h1 class="page-header__title">إدارة المراجعين</h1>
+    <h1 class="page-header__title">إدارة الأعضاء</h1>
+    <div class="page-header__actions">
+        <button class="btn btn-primary btn-sm btn-open-create">+ إضافة عضو</button>
+    </div>
 </div>
 
-{% if reviewers %}
-    {% for reviewer in reviewers %}
-    <div class="card mb-4">
-        <div style="display: flex; justify-content: space-between; align-items: flex-start; gap: var(--space-4);">
-            <div style="flex: 1;">
-                <div style="display: flex; align-items: center; gap: var(--space-3); margin-bottom: var(--space-2);">
-                    <h3 class="mb-0" style="font-size: var(--text-md);">
-                        {{ reviewer.get_full_name|default:reviewer.username }}
-                    </h3>
-                    {% if reviewer.reviewer_profile.is_available %}
-                        <span class="badge badge-published" style="font-size: 10px;">متاح</span>
-                    {% else %}
-                        <span class="badge badge-rejected" style="font-size: 10px;">غير متاح</span>
-                    {% endif %}
-                </div>
-                <p class="text-muted text-sm mb-3">
-                    {{ reviewer.email }}
-                    {% if reviewer.reviewer_profile.institution %}
-                        — {{ reviewer.reviewer_profile.institution }}
-                    {% endif %}
-                </p>
-                <div style="display: flex; gap: var(--space-6); font-size: var(--text-sm); margin-bottom: var(--space-3);">
-                    <span>مراجعات نشطة:
-                        <strong style="color: var(--color-warning);">
-                            {{ reviewer_stats|get_item:reviewer.pk|get_item:'active'|default:0 }}
-                        </strong>
-                    </span>
-                    <span>مراجعات مكتملة:
-                        <strong style="color: var(--color-success);">
-                            {{ reviewer_stats|get_item:reviewer.pk|get_item:'completed'|default:0 }}
-                        </strong>
-                    </span>
-                </div>
-                <div>
-                    {% for spec in reviewer.reviewer_profile.specialties.all %}
-                        <span class="badge badge-under-review" style="margin-left: var(--space-1); margin-bottom: var(--space-1);">
-                            {{ spec.name }}
-                        </span>
-                    {% empty %}
-                        <span class="text-muted text-sm">لا توجد تخصصات</span>
-                    {% endfor %}
-                </div>
-            </div>
-            <button class="btn btn-sm btn-ghost" onclick="toggleEdit({{ reviewer.pk }})">تعديل</button>
-        </div>
+<!-- التبويبات -->
+<div style="display: flex; gap: var(--space-1); border-bottom: 2px solid var(--color-border); margin-bottom: var(--space-6);">
+    <a href="{% url 'dashboard:admin_authors' %}" 
+       style="padding: var(--space-3) var(--space-6); text-decoration: none; font-weight: 600; color: var(--color-text-secondary); border-bottom: 2px solid transparent; margin-bottom: -2px; font-size: var(--text-base); transition: all var(--transition);">
+        المؤلفون
+    </a>
+    <a href="{% url 'dashboard:reviewers' %}" 
+       style="padding: var(--space-3) var(--space-6); text-decoration: none; font-weight: 600; color: var(--color-primary); border-bottom: 2px solid var(--color-primary); margin-bottom: -2px; font-size: var(--text-base); transition: all var(--transition);">
+        المراجعون
+    </a>
+    <a href="{% url 'dashboard:users' %}" 
+       style="padding: var(--space-3) var(--space-6); text-decoration: none; font-weight: 600; color: var(--color-text-secondary); border-bottom: 2px solid transparent; margin-bottom: -2px; font-size: var(--text-base); transition: all var(--transition);">
+        الإدارة
+    </a>
+</div>
 
-        <!-- نموذج التعديل -->
-        <div id="edit-{{ reviewer.pk }}" style="display: none; margin-top: var(--space-4);
-             border-top: 1px solid var(--color-border); padding-top: var(--space-4);">
-            <form method="post">
-                {% csrf_token %}
-                <input type="hidden" name="reviewer_id" value="{{ reviewer.pk }}">
-                <div class="form-group">
-                    <label class="form-label">التخصصات</label>
-                    <div style="display: flex; flex-wrap: wrap; gap: var(--space-3);">
-                        {% for section in sections %}
-                        <label style="display: flex; align-items: center; gap: var(--space-2); font-size: var(--text-sm); cursor: pointer;">
-                            <input type="checkbox" name="sections" value="{{ section.pk }}"
-                                {% if section in reviewer.reviewer_profile.specialties.all %}checked{% endif %}>
-                            {{ section.name }}
-                        </label>
+<!-- فلترة وبحث -->
+<div class="card mb-6">
+    <form method="get" class="filter-bar" style="--filter-cols: minmax(240px, 1.5fr) minmax(180px, 1fr) minmax(180px, 1fr) auto;">
+        <div class="form-group mb-0">
+            <label class="form-label">بحث</label>
+            <input type="text" name="q" class="form-input" placeholder="اسم أو بريد أو جهة عمل المراجع..."
+                   value="{{ current_search }}">
+        </div>
+        <div class="form-group mb-0">
+            <label class="form-label">القسم / التخصص</label>
+            <select name="section" class="form-select">
+                <option value="">كل التخصصات</option>
+                {% for sec in sections %}
+                <option value="{{ sec.pk }}" {% if current_section == sec.pk|stringformat:"s" %}selected{% endif %}>
+                    {{ sec.name }}
+                </option>
+                {% endfor %}
+            </select>
+        </div>
+        <div class="form-group mb-0">
+            <label class="form-label">حالة التوفر</label>
+            <select name="availability" class="form-select">
+                <option value="">كل الحالات</option>
+                <option value="available" {% if current_availability == 'available' %}selected{% endif %}>متاح للمراجعة</option>
+                <option value="unavailable" {% if current_availability == 'unavailable' %}selected{% endif %}>غير متاح للمراجعة</option>
+            </select>
+        </div>
+        <div class="form-group mb-0 filter-bar__actions-wrap">
+            <label class="form-label">إجراءات</label>
+            <div class="filter-bar__actions">
+                <button type="submit" class="btn btn-primary">بحث</button>
+                <a href="{% url 'dashboard:reviewers' %}" class="btn btn-ghost">إعادة تعيين</a>
+            </div>
+        </div>
+    </form>
+</div>
+
+<!-- جدول المراجعين -->
+<div class="card" style="padding:0;overflow:hidden;">
+    <table class="data-table">
+        <thead>
+            <tr>
+                <th style="width: 60px; text-align: center;">#</th>
+                <th>المراجع</th>
+                <th>الجهة الانتسابية</th>
+                <th>التخصصات</th>
+                <th style="text-align: center; width: 120px;">مراجعات نشطة</th>
+                <th style="text-align: center; width: 120px;">مراجعات مكتملة</th>
+                <th style="text-align: center; width: 100px;">الحالة</th>
+                <th style="text-align: center; width: 120px;">العمليات</th>
+            </tr>
+        </thead>
+        <tbody>
+            {% for reviewer in reviewers %}
+            <tr>
+                <td style="text-align: center; color: var(--color-text-muted); font-size: var(--text-sm);">
+                    {{ forloop.counter|add:page_obj.start_index|add:-1 }}
+                </td>
+                <td>
+                    <span style="font-weight: 600; display: block;">
+                        {{ reviewer.get_full_name|default:reviewer.username }}
+                    </span>
+                    <span class="text-xs text-muted" style="font-weight: normal; display: block; margin-top: 2px;">
+                        {{ reviewer.email }}
+                    </span>
+                </td>
+                <td class="text-sm">
+                    {{ reviewer.reviewer_profile.institution|default:"—" }}
+                </td>
+                <td>
+                    <div style="display: flex; flex-wrap: wrap; gap: 4px;">
+                        {% for spec in reviewer.reviewer_profile.specialties.all %}
+                            <span class="badge badge-under-review" style="font-size: 10px; padding: 2px 6px; font-weight: normal;">
+                                {{ spec.name }}
+                            </span>
+                        {% empty %}
+                            <span class="text-muted text-xs">لا توجد تخصصات</span>
                         {% endfor %}
                     </div>
-                </div>
-                <div class="form-group">
-                    <label style="display: flex; align-items: center; gap: var(--space-2); font-size: var(--text-sm); cursor: pointer;">
-                        <input type="checkbox" name="is_available" id="avail-{{ reviewer.pk }}"
-                               {% if reviewer.reviewer_profile.is_available %}checked{% endif %}>
-                        متاح للمراجعة
-                    </label>
-                </div>
-                <div style="display: flex; gap: var(--space-2);">
-                    <button type="submit" class="btn btn-primary btn-sm">حفظ</button>
-                    <button type="button" class="btn btn-ghost btn-sm" onclick="toggleEdit({{ reviewer.pk }})">إلغاء</button>
-                </div>
-            </form>
-        </div>
-    </div>
-    {% endfor %}
-{% else %}
-    <div class="card">
-        <div class="empty-state">
-            <div class="empty-state__icon"><svg class="icon icon-xl icon-muted"><use href="#icon-user"/></svg></div>
-            <h3 class="empty-state__title">لا يوجد مراجعون مسجّلون بعد</h3>
-            <p class="empty-state__message">سيظهر هنا المراجعون المسجّلون في النظام.</p>
-        </div>
-    </div>
+                </td>
+                <td style="text-align: center; font-weight: bold; color: var(--color-warning);">
+                    {{ reviewer_stats|get_item:reviewer.pk|get_item:'active'|default:0 }}
+                </td>
+                <td style="text-align: center; font-weight: bold; color: var(--color-success);">
+                    {{ reviewer_stats|get_item:reviewer.pk|get_item:'completed'|default:0 }}
+                </td>
+                <td style="text-align: center;">
+                    {% if reviewer.reviewer_profile.is_available %}
+                        <span class="badge badge-published" style="font-size: 11px;">متاح</span>
+                    {% else %}
+                        <span class="badge badge-rejected" style="font-size: 11px;">غير متاح</span>
+                    {% endif %}
+                </td>
+                <td style="text-align: center;">
+                    <button class="btn btn-sm btn-ghost" onclick="toggleEdit({{ reviewer.pk }})">تعديل</button>
+                </td>
+            </tr>
+            <!-- نموذج التعديل المدمج -->
+            <tr id="edit-{{ reviewer.pk }}" style="display: none; background-color: var(--color-surface-alt);">
+                <td colspan="8" style="padding: var(--space-5); border-top: 1px solid var(--color-border); border-bottom: 1px solid var(--color-border);">
+                    <form method="post">
+                        {% csrf_token %}
+                        <input type="hidden" name="reviewer_id" value="{{ reviewer.pk }}">
+                        
+                        <div style="display: flex; flex-direction: column; gap: var(--space-4);">
+                            <div>
+                                <label class="form-label" style="font-weight: 600; margin-bottom: var(--space-2); display: block;">
+                                    تعديل تخصصات المراجع: {{ reviewer.get_full_name|default:reviewer.username }}
+                                </label>
+                                <div style="display: flex; flex-wrap: wrap; gap: var(--space-3) var(--space-5); background: var(--color-surface); padding: var(--space-3); border: 1px solid var(--color-border); border-radius: var(--radius-md);">
+                                    {% for section in sections %}
+                                    <label style="display: flex; align-items: center; gap: var(--space-2); font-size: var(--text-sm); cursor: pointer; user-select: none;">
+                                        <input type="checkbox" name="sections" value="{{ section.pk }}"
+                                            {% if section in reviewer.reviewer_profile.specialties.all %}checked{% endif %}>
+                                        {{ section.name }}
+                                    </label>
+                                    {% endfor %}
+                                </div>
+                            </div>
+                            
+                            <div style="display: flex; align-items: center; justify-content: space-between; flex-wrap: wrap; gap: var(--space-3);">
+                                <label style="display: flex; align-items: center; gap: var(--space-2); font-size: var(--text-sm); cursor: pointer; user-select: none; font-weight: 600;">
+                                    <input type="checkbox" name="is_available" id="avail-{{ reviewer.pk }}"
+                                           {% if reviewer.reviewer_profile.is_available %}checked{% endif %}>
+                                    متاح لتلقي طلبات مراجعة جديدة
+                                </label>
+                                
+                                <div style="display: flex; gap: var(--space-2);">
+                                    <button type="submit" class="btn btn-primary btn-sm">حفظ التغييرات</button>
+                                    <button type="button" class="btn btn-ghost btn-sm" onclick="toggleEdit({{ reviewer.pk }})">إلغاء</button>
+                                </div>
+                            </div>
+                        </div>
+                    </form>
+                </td>
+            </tr>
+            {% empty %}
+            <tr>
+                <td colspan="8" style="text-align: center; padding: var(--space-8);">
+                    <div class="empty-state">
+                        <div class="empty-state__icon" style="font-size: 2rem;"><svg class="icon icon-xl icon-muted"><use href="#icon-user"/></svg></div>
+                        <p class="empty-state__message mb-0">لا يوجد مراجعون مطابقون لمعايير البحث.</p>
+                    </div>
+                </td>
+            </tr>
+            {% endfor %}
+        </tbody>
+    </table>
+</div>
+
+<!-- Pagination -->
+{% if is_paginated %}
+<div style="display:flex;gap:var(--space-2);justify-content:center;margin-top:var(--space-6);">
+    {% if page_obj.has_previous %}
+        <a href="?page={{ page_obj.previous_page_number }}{% if current_search %}&q={{ current_search }}{% endif %}{% if current_section %}&section={{ current_section }}{% endif %}{% if current_availability %}&availability={{ current_availability }}{% endif %}"
+           class="btn btn-sm btn-ghost">السابق</a>
+    {% endif %}
+    <span style="padding:var(--space-2) var(--space-4);color:var(--color-text-muted);font-size:var(--text-sm);">
+        {{ page_obj.number }} / {{ paginator.num_pages }}
+    </span>
+    {% if page_obj.has_next %}
+        <a href="?page={{ page_obj.next_page_number }}{% if current_search %}&q={{ current_search }}{% endif %}{% if current_section %}&section={{ current_section }}{% endif %}{% if current_availability %}&availability={{ current_availability }}{% endif %}"
+           class="btn btn-sm btn-ghost">التالي</a>
+    {% endif %}
+</div>
 {% endif %}
 {% endblock %}
 
@@ -107,7 +204,7 @@
 <script>
 function toggleEdit(pk) {
     const el = document.getElementById('edit-' + pk);
-    el.style.display = el.style.display === 'none' ? 'block' : 'none';
+    el.style.display = el.style.display === 'none' ? 'table-row' : 'none';
 }
 </script>
 {% endblock %}

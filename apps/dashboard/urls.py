@@ -29,6 +29,13 @@ from apps.dashboard.views import (
     ReviewerManagementView,
     AdminImpersonateStartView,
     AdminImpersonateStopView,
+    AdminSectionManagementView,
+    AdminSectionUpdateView,
+    AdminSectionDeleteView,
+    AdminTagManagementView,
+    AdminTagUpdateView,
+    AdminTagDeleteView,
+    AdminAuthorsView,
 )
 
 app_name = 'dashboard'
@@ -74,6 +81,9 @@ urlpatterns = [
     # المشرف — المراجعون
     path('admin/reviewers/',                ReviewerManagementView.as_view(),     name='reviewers'),
 
+    # المشرف — المؤلفون
+    path('admin/authors/',                  AdminAuthorsView.as_view(),           name='admin_authors'),
+
     # المشرف — المستخدمون
     path('admin/users/',                    UserManagementView.as_view(),         name='users'),
     path('admin/users/<int:pk>/impersonate/', AdminImpersonateStartView.as_view(), name='impersonate_start'),
@@ -81,4 +91,14 @@ urlpatterns = [
 
     # المشرف — الإعدادات
     path('admin/settings/',                 SiteSettingsView.as_view(),           name='settings'),
+
+    # المشرف — التصنيفات
+    path('admin/sections/',                 AdminSectionManagementView.as_view(), name='sections'),
+    path('admin/sections/<int:pk>/edit/',   AdminSectionUpdateView.as_view(),     name='section_update'),
+    path('admin/sections/<int:pk>/delete/', AdminSectionDeleteView.as_view(),     name='section_delete'),
+
+    # المشرف — الوسوم
+    path('admin/tags/',                     AdminTagManagementView.as_view(),     name='tags'),
+    path('admin/tags/<int:pk>/edit/',       AdminTagUpdateView.as_view(),         name='tag_update'),
+    path('admin/tags/<int:pk>/delete/',     AdminTagDeleteView.as_view(),         name='tag_delete'),
 ]

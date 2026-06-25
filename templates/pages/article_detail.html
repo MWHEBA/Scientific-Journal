@@ -32,8 +32,8 @@
         <div class="article-layout__main">
 
             <!-- القسم -->
-            <span class="article-header__section" style="color:{{ object.section.color }};">
-                <span class="article-header__section-dot" style="background:{{ object.section.color }};"></span>
+            <span class="article-header__section" style="color:var(--color-primary);">
+                <span class="article-header__section-dot" style="background:var(--color-primary);"></span>
                 {{ object.section.name }}
             </span>
 
@@ -99,7 +99,7 @@
                 {% for art in related_articles %}
                 <a href="{% url 'pages:article_detail' art.slug %}" class="article-related__card">
                     <div class="article-related__body">
-                        <span class="article-related__section" style="color:{{ art.section.color }};">{{ art.section.name }}</span>
+                        <span class="article-related__section" style="color:var(--color-primary);">{{ art.section.name }}</span>
                         <h4 class="article-related__title">{{ art.title|truncatechars:100 }}</h4>
                         <span class="article-related__author">{{ art.submission.author.get_full_name|default:art.submission.author.username }}</span>
                     </div>

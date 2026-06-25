@@ -1,64 +1,44 @@
 {% extends 'base_dashboard.html' %}
 
-{% block title %}إدارة المستخدمين{% endblock %}
+{% block title %}إدارة الأعضاء{% endblock %}
 {% block nav_admin_users %}active{% endblock %}
 {% block breadcrumb %}
     <span class="dash-breadcrumb__sep">/</span>
-    <span class="dash-breadcrumb__current">المستخدمون</span>
+    <span class="dash-breadcrumb__current">إدارة الأعضاء</span>
 {% endblock %}
 
 {% block content %}
 <div class="page-header">
-    <h1 class="page-header__title">إدارة المستخدمين</h1>
+    <h1 class="page-header__title">إدارة الأعضاء</h1>
     <div class="page-header__actions">
-        <button class="btn btn-primary btn-sm" id="btn-open-create">+ إضافة مستخدم</button>
+        <button class="btn btn-primary btn-sm btn-open-create" id="btn-open-create">+ إضافة عضو</button>
     </div>
 </div>
 
-<!-- إحصائيات -->
-<div style="display:grid;grid-template-columns:repeat(auto-fit,minmax(130px,1fr));gap:var(--space-4);margin-bottom:var(--space-8);">
-    <div class="card card-stat">
-        <span class="card-stat__number">{{ stats.total }}</span>
-        <span class="card-stat__label">إجمالي</span>
-    </div>
-    <div class="card card-stat">
-        <span class="card-stat__number" style="color:var(--color-info);">{{ stats.authors }}</span>
-        <span class="card-stat__label">مؤلفون</span>
-    </div>
-    <div class="card card-stat">
-        <span class="card-stat__number" style="color:var(--color-warning);">{{ stats.reviewers }}</span>
-        <span class="card-stat__label">مراجعون</span>
-    </div>
-    <div class="card card-stat">
-        <span class="card-stat__number" style="color:var(--color-primary);">{{ stats.admins }}</span>
-        <span class="card-stat__label">مشرفون</span>
-    </div>
-    <div class="card card-stat">
-        <span class="card-stat__number" style="color:var(--color-success);">{{ stats.active }}</span>
-        <span class="card-stat__label">نشطون</span>
-    </div>
-    <div class="card card-stat">
-        <span class="card-stat__number" style="color:var(--color-danger);">{{ stats.inactive }}</span>
-        <span class="card-stat__label">معطّلون</span>
-    </div>
+<!-- التبويبات -->
+<div style="display: flex; gap: var(--space-1); border-bottom: 2px solid var(--color-border); margin-bottom: var(--space-6);">
+    <a href="{% url 'dashboard:admin_authors' %}" 
+       style="padding: var(--space-3) var(--space-6); text-decoration: none; font-weight: 600; color: var(--color-text-secondary); border-bottom: 2px solid transparent; margin-bottom: -2px; font-size: var(--text-base); transition: all var(--transition);">
+        المؤلفون
+    </a>
+    <a href="{% url 'dashboard:reviewers' %}" 
+       style="padding: var(--space-3) var(--space-6); text-decoration: none; font-weight: 600; color: var(--color-text-secondary); border-bottom: 2px solid transparent; margin-bottom: -2px; font-size: var(--text-base); transition: all var(--transition);">
+        المراجعون
+    </a>
+    <a href="{% url 'dashboard:users' %}" 
+       style="padding: var(--space-3) var(--space-6); text-decoration: none; font-weight: 600; color: var(--color-primary); border-bottom: 2px solid var(--color-primary); margin-bottom: -2px; font-size: var(--text-base); transition: all var(--transition);">
+        الإدارة
+    </a>
 </div>
+
 
 <!-- فلترة وبحث -->
 <div class="card mb-6">
-    <form method="get" class="filter-bar" style="--filter-cols:minmax(240px,1.6fr) minmax(180px,1fr) auto;">
+    <form method="get" class="filter-bar" style="--filter-cols:minmax(240px,1.6fr) auto;">
         <div class="form-group mb-0">
             <label class="form-label">بحث</label>
             <input type="text" name="q" class="form-input" placeholder="اسم أو بريد إلكتروني..."
                    value="{{ current_search }}">
-        </div>
-        <div class="form-group mb-0">
-            <label class="form-label">الدور</label>
-            <select name="role" class="form-select">
-                <option value="">جميع الأدوار</option>
-                {% for val, label in role_choices %}
-                    <option value="{{ val }}" {% if current_role == val %}selected{% endif %}>{{ label }}</option>
-                {% endfor %}
-            </select>
         </div>
         <div class="form-group mb-0 filter-bar__actions-wrap">
             <label class="form-label">إجراءات</label>
@@ -75,27 +55,28 @@
     <table class="data-table">
         <thead>
             <tr>
-                <th>#</th>
+                <th style="width: 80px; text-align: center;">#</th>
                 <th>الاسم</th>
-                <th>اسم المستخدم</th>
                 <th>البريد الإلكتروني</th>
                 <th>الدور</th>
-                <th>الحالة</th>
+                <th style="text-align: center;">الحالة</th>
                 <th>تاريخ التسجيل</th>
-                <th>إجراءات</th>
+                <th style="text-align: center; width: 240px;">إجراءات الإدارة</th>
             </tr>
         </thead>
         <tbody>
             {% for u in users %}
             <tr>
-                <td class="text-muted text-sm">{{ u.pk }}</td>
-                <td style="font-weight:500;">
-                    {{ u.get_full_name|default:"—" }}
+                <td style="text-align: center; color: var(--color-text-muted); font-size: var(--text-sm);">{{ forloop.counter|add:page_obj.start_index|add:-1 }}</td>
+                <td style="font-weight: 600;">
+                    {{ u.get_full_name|default:u.username }}
                     {% if u == request.user %}
                         <span class="badge badge-published" style="font-size:10px;margin-right:4px;">أنت</span>
                     {% endif %}
+                    {% if u.get_full_name %}
+                        <br><span class="text-xs text-muted" dir="ltr" style="font-weight: normal;">{{ u.username }}</span>
+                    {% endif %}
                 </td>
-                <td class="text-sm text-muted">{{ u.username }}</td>
                 <td class="text-sm">{{ u.email|default:"—" }}</td>
                 <td>
                     {% if u != request.user %}
@@ -119,44 +100,48 @@
                         <span class="badge badge-under-review">{{ u.get_role_display }}</span>
                     {% endif %}
                 </td>
-                <td>
+                <td style="text-align: center;">
                     {% if u.is_active %}
-                        <span class="badge badge-published">نشط</span>
+                        <span class="badge badge-published" style="font-size: 11px;">نشط</span>
                     {% else %}
-                        <span class="badge badge-rejected">معطّل</span>
+                        <span class="badge badge-rejected" style="font-size: 11px;">معطّل</span>
                     {% endif %}
                 </td>
                 <td class="text-sm text-muted">{{ u.date_joined|date:"Y/m/d" }}</td>
                 <td>
+                    <div style="display: flex; gap: var(--space-2); justify-content: center;">
                     {% if u != request.user %}
-                    {% if request.user.is_superuser %}
-                    <form method="post" action="{% url 'dashboard:impersonate_start' u.pk %}" style="display:inline;">
-                        {% csrf_token %}
-                        <button type="submit" class="btn btn-sm btn-ghost" style="margin-inline-end:6px;">
-                            الدخول
-                        </button>
-                    </form>
-                    {% endif %}
-                    {% if not u.is_superuser %}
-                    <form method="post" style="display:inline;" id="toggle-form-{{ u.pk }}">
-                        {% csrf_token %}
-                        <input type="hidden" name="user_id" value="{{ u.pk }}">
-                        <input type="hidden" name="action" value="toggle_active">
-                        <button type="button"
-                                class="btn btn-sm {% if u.is_active %}btn-danger{% else %}btn-success{% endif %}"
-                                onclick="confirmToggle({{ u.pk }}, '{{ u.get_full_name|default:u.username }}', {{ u.is_active|yesno:'true,false' }})">
-                            {% if u.is_active %}تعطيل{% else %}تفعيل{% endif %}
-                        </button>
-                    </form>
-                    {% endif %}
+                        {% if request.user.is_superuser %}
+                        <form method="post" action="{% url 'dashboard:impersonate_start' u.pk %}" style="display:inline;">
+                            {% csrf_token %}
+                            <button type="submit" class="btn btn-sm btn-ghost" style="color: var(--color-info);">
+                                تقمص الحساب
+                            </button>
+                        </form>
+                        {% endif %}
+                        
+                        {% if not u.is_superuser %}
+                        <form method="post" style="display:inline;" id="toggle-form-{{ u.pk }}">
+                            {% csrf_token %}
+                            <input type="hidden" name="user_id" value="{{ u.pk }}">
+                            <input type="hidden" name="action" value="toggle_active">
+                            <button type="button"
+                                    class="btn btn-sm btn-ghost"
+                                    style="{% if u.is_active %}color: var(--color-danger);{% else %}color: var(--color-success);{% endif %}"
+                                    onclick="confirmToggle({{ u.pk }}, '{{ u.get_full_name|default:u.username }}', {{ u.is_active|yesno:'true,false' }})">
+                                {% if u.is_active %}تعطيل{% else %}تفعيل{% endif %}
+                            </button>
+                        </form>
+                        {% endif %}
                     {% else %}
                         <span class="text-muted text-sm">—</span>
                     {% endif %}
+                    </div>
                 </td>
             </tr>
             {% empty %}
             <tr>
-                <td colspan="8" style="padding:var(--space-8);">
+                <td colspan="7" style="padding:var(--space-8);">
                     <div class="empty-state" style="padding:var(--space-6);">
                         <div class="empty-state__icon"><svg class="icon icon-xl icon-muted"><use href="#icon-user"/></svg></div>
                         <p class="empty-state__message mb-0">لا يوجد مستخدمون يطابقون البحث.</p>
@@ -172,122 +157,22 @@
 {% if is_paginated %}
 <div style="display:flex;gap:var(--space-2);justify-content:center;margin-top:var(--space-6);">
     {% if page_obj.has_previous %}
-        <a href="?page={{ page_obj.previous_page_number }}&role={{ current_role }}&q={{ current_search }}"
+        <a href="?page={{ page_obj.previous_page_number }}{% if current_search %}&q={{ current_search }}{% endif %}"
            class="btn btn-sm btn-ghost">السابق</a>
     {% endif %}
     <span style="padding:var(--space-2) var(--space-4);color:var(--color-text-muted);font-size:var(--text-sm);">
         {{ page_obj.number }} / {{ paginator.num_pages }}
     </span>
     {% if page_obj.has_next %}
-        <a href="?page={{ page_obj.next_page_number }}&role={{ current_role }}&q={{ current_search }}"
+        <a href="?page={{ page_obj.next_page_number }}{% if current_search %}&q={{ current_search }}{% endif %}"
            class="btn btn-sm btn-ghost">التالي</a>
     {% endif %}
 </div>
 {% endif %}
-
-<!-- ===== Modal إضافة مستخدم ===== -->
-<div id="modal-create-user" style="
-    display:none; position:fixed; inset:0; z-index:1000;
-    background:rgba(0,0,0,0.5); align-items:center; justify-content:center;">
-    <div style="background:var(--color-surface); width:100%; max-width:520px;
-                border-radius:var(--radius-md); padding:var(--space-8);
-                margin:var(--space-4); max-height:90vh; overflow-y:auto;">
-        <div style="display:flex; justify-content:space-between; align-items:center; margin-bottom:var(--space-6);">
-            <h2 style="font-size:var(--text-xl); margin:0;">إضافة مستخدم جديد</h2>
-            <button id="btn-close-modal" style="background:none;border:none;cursor:pointer;font-size:1.5rem;color:var(--color-text-muted);">×</button>
-        </div>
-        <form method="post" id="form-create-user">
-            {% csrf_token %}
-            <input type="hidden" name="action" value="create_user">
-
-            <div style="display:grid; grid-template-columns:1fr 1fr; gap:var(--space-4);">
-                <div class="form-group">
-                    <label class="form-label">الاسم الأول <span style="color:var(--color-danger)">*</span></label>
-                    <input type="text" name="first_name" class="form-input"
-                           value="{{ create_form.first_name.value|default:'' }}" required>
-                    {% if create_form.first_name.errors %}<p class="text-sm" style="color:var(--color-danger)">{{ create_form.first_name.errors.0 }}</p>{% endif %}
-                </div>
-                <div class="form-group">
-                    <label class="form-label">اسم العائلة <span style="color:var(--color-danger)">*</span></label>
-                    <input type="text" name="last_name" class="form-input"
-                           value="{{ create_form.last_name.value|default:'' }}" required>
-                    {% if create_form.last_name.errors %}<p class="text-sm" style="color:var(--color-danger)">{{ create_form.last_name.errors.0 }}</p>{% endif %}
-                </div>
-            </div>
-
-            <div class="form-group">
-                <label class="form-label">اسم المستخدم <span style="color:var(--color-danger)">*</span></label>
-                <input type="text" name="username" class="form-input"
-                       value="{{ create_form.username.value|default:'' }}" required>
-                {% if create_form.username.errors %}<p class="text-sm" style="color:var(--color-danger)">{{ create_form.username.errors.0 }}</p>{% endif %}
-            </div>
-
-            <div class="form-group">
-                <label class="form-label">البريد الإلكتروني <span style="color:var(--color-danger)">*</span></label>
-                <input type="email" name="email" class="form-input"
-                       value="{{ create_form.email.value|default:'' }}" required>
-                {% if create_form.email.errors %}<p class="text-sm" style="color:var(--color-danger)">{{ create_form.email.errors.0 }}</p>{% endif %}
-            </div>
-
-            <div style="display:grid; grid-template-columns:1fr 1fr; gap:var(--space-4);">
-                <div class="form-group">
-                    <label class="form-label">الدور <span style="color:var(--color-danger)">*</span></label>
-                    <select name="role" class="form-select" required>
-                        {% for val, label in role_choices %}
-                            <option value="{{ val }}" {% if create_form.role.value == val %}selected{% endif %}>{{ label }}</option>
-                        {% endfor %}
-                    </select>
-                </div>
-                <div class="form-group">
-                    <label class="form-label">المؤسسة</label>
-                    <input type="text" name="institution" class="form-input"
-                           value="{{ create_form.institution.value|default:'' }}">
-                </div>
-            </div>
-
-            <div style="display:grid; grid-template-columns:1fr 1fr; gap:var(--space-4);">
-                <div class="form-group">
-                    <label class="form-label">كلمة المرور <span style="color:var(--color-danger)">*</span></label>
-                    <input type="password" name="password1" class="form-input" required>
-                    {% if create_form.password1.errors %}<p class="text-sm" style="color:var(--color-danger)">{{ create_form.password1.errors.0 }}</p>{% endif %}
-                </div>
-                <div class="form-group">
-                    <label class="form-label">تأكيد كلمة المرور <span style="color:var(--color-danger)">*</span></label>
-                    <input type="password" name="password2" class="form-input" required>
-                    {% if create_form.password2.errors %}<p class="text-sm" style="color:var(--color-danger)">{{ create_form.password2.errors.0 }}</p>{% endif %}
-                </div>
-            </div>
-
-            <div style="display:flex; gap:var(--space-3); margin-top:var(--space-4);">
-                <button type="submit" class="btn btn-primary">إنشاء الحساب</button>
-                <button type="button" class="btn btn-ghost" id="btn-cancel-modal">إلغاء</button>
-            </div>
-        </form>
-    </div>
-</div>
 {% endblock %}
 
 {% block extra_js %}
 <script>
-const modal = document.getElementById('modal-create-user');
-
-document.getElementById('btn-open-create').addEventListener('click', () => {
-    modal.style.display = 'flex';
-});
-document.getElementById('btn-close-modal').addEventListener('click', () => {
-    modal.style.display = 'none';
-});
-document.getElementById('btn-cancel-modal').addEventListener('click', () => {
-    modal.style.display = 'none';
-});
-modal.addEventListener('click', (e) => {
-    if (e.target === modal) modal.style.display = 'none';
-});
-
-{% if show_modal %}
-modal.style.display = 'flex';
-{% endif %}
-
 function confirmToggle(userId, name, isActive) {
     const action = isActive ? 'تعطيل' : 'تفعيل';
     const icon   = isActive ? 'warning' : 'question';

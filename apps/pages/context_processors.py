@@ -13,7 +13,7 @@ def public_context(request):
     """يُضاف لكل الصفحات — خفيف ومُخزَّن في الـ queryset cache."""
     latest_issues = Issue.objects.select_related('volume').prefetch_related(
         'articles'
-    ).order_by('-volume__number', '-number')[:5]
+    ).order_by('-published_at', '-volume__number', '-number')[:5]
 
     sections = JournalSection.objects.all()
 

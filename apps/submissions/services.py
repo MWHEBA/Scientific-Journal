@@ -102,6 +102,14 @@ class SubmissionService:
                 sub.assigned_reviewer = sub.original_reviewer
                 sub.save(update_fields=['assigned_reviewer', 'updated_at'])
 
+            if sub.assigned_reviewer:
+                from apps.reviews.models import Review
+                Review.objects.get_or_create(
+                    submission=sub,
+                    reviewer=sub.assigned_reviewer,
+                    revision_round=sub.revision_count + 1,
+                )
+
             SubmissionStateMachine.transition(
                 sub,
                 SubmissionStatus.UNDER_REVIEW,

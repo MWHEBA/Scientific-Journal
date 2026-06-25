@@ -15,7 +15,7 @@
   .vol-grid {
     display: grid;
     gap: var(--space-6);
-    grid-template-columns: 1.2fr 1.8fr;
+    grid-template-columns: 1fr;
     align-items: start;
   }
   .vol-kpis {
@@ -50,7 +50,7 @@
   .vol-table-title { font-weight: 700; font-size: var(--text-sm); margin: 0; }
   .vol-table-caption { color: var(--color-text-muted); font-size: var(--text-xs); margin: 0; }
   .modal-backdrop {
-    position: fixed; inset: 0; background: rgba(15,23,42,.45); z-index: 200;
+    position: fixed; inset: 0; background: var(--color-backdrop); z-index: 200;
     display: none; align-items: center; justify-content: center; padding: var(--space-4);
   }
   .modal-backdrop.show { display: flex; }
@@ -84,6 +84,7 @@
 <div class="page-header">
   <h1 class="page-header__title">إدارة المجلدات</h1>
   <div class="page-header__actions">
+    <button type="button" class="btn btn-primary btn-sm" id="btn-open-create-volume">إضافة مجلد جديد</button>
     <a href="{% url 'dashboard:issues' %}" class="btn btn-ghost btn-sm">العودة إلى الأعداد</a>
   </div>
 </div>
@@ -103,29 +104,37 @@
   </article>
 </section>
 
-<section class="vol-grid">
-  <article class="card">
-    <h2 class="mb-4" style="font-size:var(--text-lg);">إضافة مجلد جديد</h2>
-    <form method="post" class="filter-bar vol-form-row" novalidate>
-      {% csrf_token %}
-      <div class="form-group mb-0">
-        <label class="form-label" for="id_number">رقم المجلد</label>
-        <input id="id_number" type="number" name="number" class="form-input" min="1" value="{{ defaults.number }}" required>
-      </div>
-      <div class="form-group mb-0">
-        <label class="form-label" for="id_year">السنة</label>
-        <input id="id_year" type="number" name="year" class="form-input" min="1900" max="2100" value="{{ defaults.year }}" required>
-      </div>
-      <div class="form-group mb-0 filter-bar__actions-wrap">
-        <label class="form-label">إجراءات</label>
-        <div class="filter-bar__actions">
-          <button type="submit" class="btn btn-primary">إنشاء</button>
+<!-- ===== Modal إضافة مجلد ===== -->
+<div id="volume-create-modal" class="modal-backdrop" aria-hidden="true">
+  <div class="modal-card" role="dialog" aria-modal="true" aria-labelledby="volume-create-modal-title">
+    <div class="modal-head">
+      <h3 id="volume-create-modal-title" class="modal-title">إضافة مجلد جديد</h3>
+      <button type="button" class="modal-close js-close-create-volume-modal" aria-label="إغلاق">×</button>
+    </div>
+    <div class="modal-body">
+      <form method="post" action="{% url 'dashboard:volumes' %}" novalidate>
+        {% csrf_token %}
+        <div style="display:grid; grid-template-columns: 1fr 1fr; gap:var(--space-4);">
+          <div class="form-group mb-0">
+            <label class="form-label" for="id_number">رقم المجلد</label>
+            <input id="id_number" type="number" name="number" class="form-input" min="1" value="{{ defaults.number }}" required>
+          </div>
+          <div class="form-group mb-0">
+            <label class="form-label" for="id_year">السنة</label>
+            <input id="id_year" type="number" name="year" class="form-input" min="1900" max="2100" value="{{ defaults.year }}" required>
+          </div>
         </div>
-      </div>
-      <p class="vol-note">يتم منع تكرار رقم المجلد تلقائياً.</p>
-    </form>
-  </article>
+        <p class="vol-note mb-4">يتم منع تكرار رقم المجلد تلقائياً.</p>
+        <div style="display:flex; gap:var(--space-3); justify-content:flex-end; border-top:1px solid var(--color-border-light); padding-top:var(--space-4); margin-top:var(--space-6);">
+          <button type="button" class="btn btn-ghost js-close-create-volume-modal">إلغاء</button>
+          <button type="submit" class="btn btn-primary">إنشاء المجلد</button>
+        </div>
+      </form>
+    </div>
+  </div>
+</div>
 
+<section class="vol-grid">
   <article class="vol-table-wrap">
     <header class="vol-table-meta">
       <div>
@@ -203,31 +212,52 @@
 {% block extra_js %}
 <script>
 (() => {
-  const modal = document.getElementById('volume-edit-modal');
-  const form = document.getElementById('volume-edit-form');
-  if (!modal || !form) return;
+  // Edit modal logic
+  const editModal = document.getElementById('volume-edit-modal');
+  const editForm = document.getElementById('volume-edit-form');
+  if (editModal && editForm) {
+    const openBtns = document.querySelectorAll('.js-open-volume-modal');
+    const closeBtns = document.querySelectorAll('.js-close-volume-modal');
+    const number = document.getElementById('volume_modal_number');
+    const year = document.getElementById('volume_modal_year');
 
-  const openBtns = document.querySelectorAll('.js-open-volume-modal');
-  const closeBtns = document.querySelectorAll('.js-close-volume-modal');
-  const number = document.getElementById('volume_modal_number');
-  const year = document.getElementById('volume_modal_year');
+    const open = (btn) => {
+      editForm.action = btn.dataset.action;
+      number.value = btn.dataset.number;
+      year.value = btn.dataset.year;
+      editModal.classList.add('show');
+      editModal.setAttribute('aria-hidden', 'false');
+    };
+    const close = () => {
+      editModal.classList.remove('show');
+      editModal.setAttribute('aria-hidden', 'true');
+    };
 
-  const open = (btn) => {
-    form.action = btn.dataset.action;
-    number.value = btn.dataset.number;
-    year.value = btn.dataset.year;
-    modal.classList.add('show');
-    modal.setAttribute('aria-hidden', 'false');
-  };
-  const close = () => {
-    modal.classList.remove('show');
-    modal.setAttribute('aria-hidden', 'true');
-  };
+    openBtns.forEach((btn) => btn.addEventListener('click', () => open(btn)));
+    closeBtns.forEach((btn) => btn.addEventListener('click', close));
+    editModal.addEventListener('click', (e) => { if (e.target === editModal) close(); });
+    document.addEventListener('keydown', (e) => { if (e.key === 'Escape' && editModal.classList.contains('show')) close(); });
+  }
 
-  openBtns.forEach((btn) => btn.addEventListener('click', () => open(btn)));
-  closeBtns.forEach((btn) => btn.addEventListener('click', close));
-  modal.addEventListener('click', (e) => { if (e.target === modal) close(); });
-  document.addEventListener('keydown', (e) => { if (e.key === 'Escape') close(); });
+  // Create modal logic
+  const createModal = document.getElementById('volume-create-modal');
+  const btnOpenCreate = document.getElementById('btn-open-create-volume');
+  const closeCreateBtns = document.querySelectorAll('.js-close-create-volume-modal');
+  if (createModal) {
+    const openCreate = () => {
+      createModal.classList.add('show');
+      createModal.setAttribute('aria-hidden', 'false');
+    };
+    const closeCreate = () => {
+      createModal.classList.remove('show');
+      createModal.setAttribute('aria-hidden', 'true');
+    };
+
+    if (btnOpenCreate) btnOpenCreate.addEventListener('click', openCreate);
+    closeCreateBtns.forEach((btn) => btn.addEventListener('click', closeCreate));
+    createModal.addEventListener('click', (e) => { if (e.target === createModal) closeCreate(); });
+    document.addEventListener('keydown', (e) => { if (e.key === 'Escape' && createModal.classList.contains('show')) closeCreate(); });
+  }
 })();
 </script>
 {% endblock %}

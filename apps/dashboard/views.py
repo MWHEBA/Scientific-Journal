@@ -1211,13 +1211,11 @@ class UserManagementView(AdminRequiredMixin, ListView):
 
     def get_queryset(self):
         from apps.accounts.models import User
-        qs = User.objects.order_by('-date_joined')
+        from django.db import models as django_models
+        # نجلب فقط الإداريين
+        qs = User.objects.filter(role=User.ROLE_ADMIN).order_by('-date_joined')
 
-        role   = self.request.GET.get('role')
         search = self.request.GET.get('q', '').strip()
-
-        if role:
-            qs = qs.filter(role=role)
         if search:
             qs = qs.filter(
                 django_models.Q(username__icontains=search) |
@@ -1231,18 +1229,16 @@ class UserManagementView(AdminRequiredMixin, ListView):
         ctx = super().get_context_data(**kwargs)
         from apps.accounts.models import User
         from apps.accounts.forms import AdminCreateUserForm
+        
         ctx['role_choices']   = User.ROLE_CHOICES
-        ctx['current_role']   = self.request.GET.get('role', '')
         ctx['current_search'] = self.request.GET.get('q', '')
-        ctx['create_form']    = ctx.get('create_form', AdminCreateUserForm())
-        ctx['stats'] = {
-            'total':     User.objects.count(),
-            'authors':   User.objects.filter(role=User.ROLE_AUTHOR).count(),
-            'reviewers': User.objects.filter(role=User.ROLE_REVIEWER).count(),
-            'admins':    User.objects.filter(role=User.ROLE_ADMIN).count(),
-            'active':    User.objects.filter(is_active=True).count(),
-            'inactive':  User.objects.filter(is_active=False).count(),
-        }
+        
+        # تحديث خيارات النموذج ديناميكياً
+        form = ctx.get('create_form')
+        if not form:
+            form = AdminCreateUserForm()
+        ctx['create_form']    = form
+        
         return ctx
 
     def post(self, request):
@@ -1256,9 +1252,13 @@ class UserManagementView(AdminRequiredMixin, ListView):
             if form.is_valid():
                 user = form.save()
                 messages.success(request, f'تم إنشاء حساب {user.get_full_name() or user.username} بنجاح.')
+                referer = request.META.get('HTTP_REFERER')
+                if referer:
+                    return redirect(referer)
                 return redirect(reverse('dashboard:users'))
             # إعادة العرض مع الأخطاء
-            context = self.get_context_data(object_list=self.get_queryset())
+            self.object_list = self.get_queryset()
+            context = self.get_context_data(object_list=self.object_list)
             context['create_form'] = form
             context['show_modal']  = True
             return self.render_to_response(context)
@@ -1278,7 +1278,7 @@ class UserManagementView(AdminRequiredMixin, ListView):
                 return redirect(reverse('dashboard:users'))
             
             new_role = request.POST.get('role')
-            if new_role in dict(User.ROLE_CHOICES):
+            if new_role in dict(User.ROLE_CHOICES) and new_role != User.ROLE_AUTHOR:
                 user.role = new_role
                 user.save(update_fields=['role'])
                 if new_role == User.ROLE_REVIEWER:
@@ -1306,18 +1306,53 @@ class ReviewerManagementView(AdminRequiredMixin, ListView):
     """إدارة المراجعين — عرض وتعديل بياناتهم وأقسامهم."""
     template_name       = 'dashboard/admin/reviewers.html'
     context_object_name = 'reviewers'
+    paginate_by         = 20
 
     def get_queryset(self):
         from apps.accounts.models import User
-        return User.objects.filter(role=User.ROLE_REVIEWER).select_related(
+        from django.db import models as django_models
+        
+        qs = User.objects.filter(role=User.ROLE_REVIEWER).select_related(
             'reviewer_profile'
-        ).prefetch_related('reviewer_profile__specialties')
+        ).prefetch_related('reviewer_profile__specialties').order_by('-date_joined')
+
+        # 1. Search filter (q)
+        search = self.request.GET.get('q', '').strip()
+        if search:
+            qs = qs.filter(
+                django_models.Q(username__icontains=search) |
+                django_models.Q(first_name__icontains=search) |
+                django_models.Q(last_name__icontains=search) |
+                django_models.Q(email__icontains=search) |
+                django_models.Q(reviewer_profile__institution__icontains=search)
+            )
+
+        # 2. Section filter (section)
+        section_id = self.request.GET.get('section', '').strip()
+        if section_id:
+            qs = qs.filter(reviewer_profile__specialties__id=section_id)
+
+        # 3. Availability filter (availability)
+        availability = self.request.GET.get('availability', '').strip()
+        if availability == 'available':
+            qs = qs.filter(reviewer_profile__is_available=True)
+        elif availability == 'unavailable':
+            qs = qs.filter(reviewer_profile__is_available=False)
+
+        return qs
 
     def get_context_data(self, **kwargs):
         ctx = super().get_context_data(**kwargs)
+        from apps.accounts.models import User
         from apps.submissions.models import JournalSection
         from apps.reviews.models import Review
+        
         ctx['sections'] = JournalSection.objects.all()
+        ctx['current_search'] = self.request.GET.get('q', '')
+        ctx['current_section'] = self.request.GET.get('section', '')
+        ctx['current_availability'] = self.request.GET.get('availability', '')
+
+        # Active & completed stats per reviewer shown on the current page
         reviewer_stats = {}
         for reviewer in ctx['reviewers']:
             reviewer_stats[reviewer.pk] = {
@@ -1325,6 +1360,12 @@ class ReviewerManagementView(AdminRequiredMixin, ListView):
                 'completed': Review.objects.filter(reviewer=reviewer, is_submitted=True).count(),
             }
         ctx['reviewer_stats'] = reviewer_stats
+
+        from apps.accounts.forms import AdminCreateUserForm
+        from apps.accounts.models import User
+        ctx['role_choices']   = User.ROLE_CHOICES
+        ctx['create_form']    = AdminCreateUserForm()
+
         return ctx
 
     def post(self, request):
@@ -1345,7 +1386,68 @@ class ReviewerManagementView(AdminRequiredMixin, ListView):
         except Exception as e:
             messages.error(request, f'خطأ: {e}')
 
+        # Preserve search and page filters if referrer is available
+        referer = request.META.get('HTTP_REFERER')
+        if referer:
+            return redirect(referer)
         return redirect(reverse('dashboard:reviewers'))
+
+
+class AdminAuthorsView(AdminRequiredMixin, ListView):
+    """إدارة المؤلفين — عرض قائمة المؤلفين مع إحصائيات المقالات وإجراءات تفعيل/تعطيل الحساب."""
+    template_name       = 'dashboard/admin/authors.html'
+    context_object_name = 'authors'
+    paginate_by         = 20
+
+    def get_queryset(self):
+        from apps.accounts.models import User
+        from django.db import models as django_models
+        from django.db.models import Count
+        
+        # نجلب فقط المؤلفين
+        qs = User.objects.filter(role=User.ROLE_AUTHOR).order_by('-date_joined')
+        
+        # البحث بالاسم أو البريد أو اسم المستخدم
+        search = self.request.GET.get('q', '').strip()
+        if search:
+            qs = qs.filter(
+                django_models.Q(username__icontains=search) |
+                django_models.Q(first_name__icontains=search) |
+                django_models.Q(last_name__icontains=search) |
+                django_models.Q(email__icontains=search)
+            )
+            
+        # نقوم بـ annotation لحساب المقالات الكلية والمنشورة
+        qs = qs.annotate(
+            total_submissions_count=Count('submissions'),
+            published_articles_count=Count('submissions__published')
+        )
+        return qs
+    def get_context_data(self, **kwargs):
+        ctx = super().get_context_data(**kwargs)
+        from apps.accounts.forms import AdminCreateUserForm
+        from apps.accounts.models import User
+        ctx['current_search'] = self.request.GET.get('q', '')
+        ctx['role_choices']   = User.ROLE_CHOICES
+        ctx['create_form']    = AdminCreateUserForm()
+        return ctx
+
+    def post(self, request):
+        """تفعيل/تعطيل حساب المؤلف."""
+        from apps.accounts.models import User
+        user_id = request.POST.get('user_id')
+        user    = get_object_or_404(User, pk=user_id, role=User.ROLE_AUTHOR)
+        
+        if user == request.user:
+            messages.error(request, 'لا يمكنك تعديل حسابك من هنا.')
+            return redirect(reverse('dashboard:admin_authors'))
+            
+        user.is_active = not user.is_active
+        user.save(update_fields=['is_active'])
+        status_text = 'تفعيل' if user.is_active else 'تعطيل'
+        messages.success(request, f'تم {status_text} حساب {user.get_full_name() or user.username}.')
+        
+        return redirect(reverse('dashboard:admin_authors'))
 
 
 class AdminImpersonateStartView(SuperUserRequiredMixin, View):
@@ -1402,3 +1504,136 @@ class AdminImpersonateStopView(LoginRequiredMixin, View):
         
         messages.success(request, 'تمت العودة إلى حسابك.')
         return redirect(reverse('dashboard:users'))
+
+
+class AdminSectionManagementView(AdminRequiredMixin, ListView):
+    """إدارة التصنيفات/الأقسام — عرضها وإضافتها."""
+    template_name       = 'dashboard/admin/sections.html'
+    context_object_name = 'sections'
+
+    def get_queryset(self):
+        from django.db.models import Count
+        from apps.submissions.models import JournalSection
+        return JournalSection.objects.annotate(
+            articles_count=Count('publishedarticle')
+        ).order_by('name')
+
+    def get_context_data(self, **kwargs):
+        ctx = super().get_context_data(**kwargs)
+        from apps.dashboard.forms import JournalSectionForm
+        ctx['form'] = ctx.get('form', JournalSectionForm())
+        return ctx
+
+    def post(self, request):
+        from apps.dashboard.forms import JournalSectionForm
+        form = JournalSectionForm(request.POST)
+        if form.is_valid():
+            form.save()
+            messages.success(request, 'تم إضافة التصنيف الجديد بنجاح.')
+            return redirect(reverse('dashboard:sections'))
+        
+        self.object_list = self.get_queryset()
+        context = self.get_context_data(object_list=self.object_list)
+        context['form'] = form
+        context['show_modal'] = True
+        return self.render_to_response(context)
+
+
+class AdminSectionUpdateView(AdminRequiredMixin, View):
+    """تعديل بيانات تصنيف."""
+    def get(self, request, pk):
+        from apps.submissions.models import JournalSection
+        from apps.dashboard.forms import JournalSectionForm
+        section = get_object_or_404(JournalSection, pk=pk)
+        form = JournalSectionForm(instance=section)
+        return render(request, 'dashboard/admin/section_form.html', {'form': form, 'section': section})
+
+    def post(self, request, pk):
+        from apps.submissions.models import JournalSection
+        from apps.dashboard.forms import JournalSectionForm
+        section = get_object_or_404(JournalSection, pk=pk)
+        form = JournalSectionForm(request.POST, instance=section)
+        if form.is_valid():
+            form.save()
+            messages.success(request, 'تم تحديث بيانات التصنيف بنجاح.')
+            return redirect(reverse('dashboard:sections'))
+        return render(request, 'dashboard/admin/section_form.html', {'form': form, 'section': section})
+
+
+class AdminSectionDeleteView(AdminRequiredMixin, View):
+    """حذف تصنيف."""
+    def post(self, request, pk):
+        from apps.submissions.models import JournalSection
+        section = get_object_or_404(JournalSection, pk=pk)
+        if section.publishedarticle_set.exists() or section.articlesubmission_set.exists():
+            messages.error(request, 'لا يمكن حذف هذا التصنيف لأنه يحتوي على مقالات أو تقديمات مرتبطة به.')
+        else:
+            section.delete()
+            messages.success(request, 'تم حذف التصنيف بنجاح.')
+        return redirect(reverse('dashboard:sections'))
+
+
+class AdminTagManagementView(AdminRequiredMixin, ListView):
+    """إدارة الوسوم/الكلمات المفتاحية — عرضها وإضافتها."""
+    template_name       = 'dashboard/admin/tags.html'
+    context_object_name = 'tags'
+    paginate_by         = 30
+
+    def get_queryset(self):
+        from django.db.models import Count
+        from taggit.models import Tag
+        return Tag.objects.annotate(
+            articles_count=Count('articlesubmission__published')
+        ).order_by('-articles_count', 'name')
+
+    def get_context_data(self, **kwargs):
+        ctx = super().get_context_data(**kwargs)
+        from apps.dashboard.forms import TagForm
+        ctx['form'] = ctx.get('form', TagForm())
+        return ctx
+
+    def post(self, request):
+        from apps.dashboard.forms import TagForm
+        form = TagForm(request.POST)
+        if form.is_valid():
+            form.save()
+            messages.success(request, 'تم إضافة الوسم الجديد بنجاح.')
+            return redirect(reverse('dashboard:tags'))
+        
+        self.object_list = self.get_queryset()
+        context = self.get_context_data(object_list=self.object_list)
+        context['form'] = form
+        context['show_modal'] = True
+        return self.render_to_response(context)
+
+
+class AdminTagUpdateView(AdminRequiredMixin, View):
+    """تعديل بيانات وسم."""
+    def get(self, request, pk):
+        from taggit.models import Tag
+        from apps.dashboard.forms import TagForm
+        tag = get_object_or_404(Tag, pk=pk)
+        form = TagForm(instance=tag)
+        return render(request, 'dashboard/admin/tag_form.html', {'form': form, 'tag': tag})
+
+    def post(self, request, pk):
+        from taggit.models import Tag
+        from apps.dashboard.forms import TagForm
+        tag = get_object_or_404(Tag, pk=pk)
+        form = TagForm(request.POST, instance=tag)
+        if form.is_valid():
+            form.save()
+            messages.success(request, 'تم تحديث بيانات الوسم بنجاح.')
+            return redirect(reverse('dashboard:tags'))
+        return render(request, 'dashboard/admin/tag_form.html', {'form': form, 'tag': tag})
+
+
+class AdminTagDeleteView(AdminRequiredMixin, View):
+    """حذف وسم."""
+    def post(self, request, pk):
+        from taggit.models import Tag
+        tag = get_object_or_404(Tag, pk=pk)
+        tag.delete()
+        messages.success(request, 'تم حذف الوسم بنجاح.')
+        return redirect(reverse('dashboard:tags'))
+

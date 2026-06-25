@@ -11,6 +11,19 @@ from apps.pages.views import (
     article_views_api,
 )
 
+from django.urls import path
+from apps.pages.views import (
+    HomeView,
+    ArticleListView,
+    ArticleDetailView,
+    CurrentIssueView,
+    ArchiveView,
+    SearchView,
+    SectionArticlesView,
+    StaticPageView,
+    article_views_api,
+)
+
 app_name = 'pages'
 
 urlpatterns = [
@@ -19,7 +32,7 @@ urlpatterns = [
 
     # المقالات
     path('articles/',              ArticleListView.as_view(),   name='article_list'),
-    path('articles/<slug:slug>/views/', article_views_api,       name='article_views'),
+    path('articles/<str:slug>/views/', article_views_api,       name='article_views'),
 
     # العدد الحالي والأرشيف
     path('current-issue/',         CurrentIssueView.as_view(),  name='current_issue'),
@@ -27,7 +40,7 @@ urlpatterns = [
 
     # البحث والأقسام
     path('search/',                SearchView.as_view(),        name='search'),
-    path('section/<slug:slug>/',   SectionArticlesView.as_view(), name='section_articles'),
+    path('section/<str:slug>/',   SectionArticlesView.as_view(), name='section_articles'),
 
     # الصفحات الثابتة
     path('about/',              StaticPageView.as_view(), kwargs={'slug': 'about'},             name='about'),
@@ -41,5 +54,5 @@ urlpatterns = [
     path('topics/',             StaticPageView.as_view(), kwargs={'slug': 'topics'},            name='topics'),
     path('blog/',               StaticPageView.as_view(), kwargs={'slug': 'blog'},              name='blog'),
     path('conferences/',        StaticPageView.as_view(), kwargs={'slug': 'conferences'},       name='conferences'),
-    path('<slug:slug>/',        ArticleDetailView.as_view(), name='article_detail'),
+    path('<str:slug>/',        ArticleDetailView.as_view(), name='article_detail'),
 ]
