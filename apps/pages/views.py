@@ -149,6 +149,7 @@ class StaticPageView(TemplateView):
         'topics': ('pages/static/topics.html', 'مواضيع المجلة'),
         'blog': ('pages/static/blog.html', 'المدونة'),
         'conferences': ('pages/static/conferences.html', 'المؤتمرات العلمية'),
+        'design-system': ('pages/static/design_system.html', 'Design System'),
     }
 
     def get_template_names(self):

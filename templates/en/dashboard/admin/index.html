@@ -1,0 +1,148 @@
+{% extends 'base_dashboard.html' %}
+
+{% block title %}Admin Dashboard{% endblock %}
+{% block nav_admin_home %}active{% endblock %}
+
+{% block content %}
+<div class="page-header">
+    <h1 class="page-header__title">Dashboard</h1>
+    <div class="page-header__actions">
+        <a href="{% url 'dashboard:admin_submissions' %}" class="btn btn-primary btn-sm">Manage Submissions</a>
+        <a href="{% url 'dashboard:settings' %}" class="btn btn-ghost btn-sm">Settings</a>
+    </div>
+</div>
+
+<!-- Stats -->
+<div style="display: grid; grid-template-columns: repeat(auto-fit, minmax(160px, 1fr)); gap: var(--space-4); margin-bottom: var(--space-8);">
+    <div class="card card-stat">
+        <span class="card-stat__number">{{ total_submissions }}</span>
+        <span class="card-stat__label">Total Submissions</span>
+    </div>
+    <div class="card card-stat">
+        <span class="card-stat__number" style="color: var(--color-warning);">
+            {{ status_counts.under_initial_check|default:0 }}
+        </span>
+        <span class="card-stat__label">Initial Checking</span>
+    </div>
+    <div class="card card-stat">
+        <span class="card-stat__number" style="color: var(--color-info);">
+            {{ status_counts.under_review|default:0 }}
+        </span>
+        <span class="card-stat__label">Under Review</span>
+    </div>
+    <div class="card card-stat">
+        <span class="card-stat__number" style="color: var(--color-warning);">{{ pending_payments }}</span>
+        <span class="card-stat__label">Pending Payments</span>
+    </div>
+    <div class="card card-stat">
+        <span class="card-stat__number" style="color: var(--color-success);">{{ ready_to_publish }}</span>
+        <span class="card-stat__label">Ready to Publish</span>
+    </div>
+</div>
+
+<!-- Quick Links -->
+<div style="display: grid; grid-template-columns: repeat(auto-fit, minmax(220px, 1fr)); gap: var(--space-4); margin-bottom: var(--space-8);">
+    <a href="{% url 'dashboard:admin_submissions' %}?status=under_initial_check" class="card card-action">
+        <span class="card-action__icon"><svg class="icon icon-md"><use href="#icon-review"/></svg></span>
+        <div>
+            <div class="card-action__title">Initial Check</div>
+            <div class="card-action__desc">{{ status_counts.under_initial_check|default:0 }} submission(s) pending</div>
+        </div>
+    </a>
+    <a href="{% url 'dashboard:admin_submissions' %}?status=under_review" class="card card-action">
+        <span class="card-action__icon"><svg class="icon icon-md"><use href="#icon-review"/></svg></span>
+        <div>
+            <div class="card-action__title">Under Review</div>
+            <div class="card-action__desc">{{ status_counts.under_review|default:0 }} submission(s)</div>
+        </div>
+    </a>
+    <a href="{% url 'dashboard:reviewers' %}" class="card card-action">
+        <span class="card-action__icon"><svg class="icon icon-md"><use href="#icon-user"/></svg></span>
+        <div>
+            <div class="card-action__title">Manage Reviewers</div>
+            <div class="card-action__desc">View and edit reviewer profiles</div>
+        </div>
+    </a>
+    <a href="{% url 'dashboard:admin_payments' %}" class="card card-action">
+        <span class="card-action__icon"><svg class="icon icon-md"><use href="#icon-payment"/></svg></span>
+        <div>
+            <div class="card-action__title">Manage Payments</div>
+            <div class="card-action__desc">{{ pending_payments }} pending payment(s)</div>
+        </div>
+    </a>
+    <a href="{% url 'dashboard:issues' %}" class="card card-action">
+        <span class="card-action__icon"><svg class="icon icon-md"><use href="#icon-issues"/></svg></span>
+        <div>
+            <div class="card-action__title">Issues & Volumes</div>
+            <div class="card-action__desc">Manage journal issues</div>
+        </div>
+    </a>
+</div>
+
+<!-- Recent Submissions -->
+<h2 class="mb-4" style="font-size: var(--text-xl); color: var(--color-primary);">Recent Submissions</h2>
+<div class="card" style="padding: 0; overflow: hidden;">
+    <table class="data-table">
+        <thead>
+            <tr>
+                <th>Title</th>
+                <th>Author</th>
+                <th>Section</th>
+                <th>Status</th>
+                <th>Date</th>
+                <th>Action</th>
+            </tr>
+        </thead>
+        <tbody>
+            {% for sub in recent_submissions %}
+            <tr>
+                <td style="font-weight: 500;">{{ sub.title|truncatechars:45 }}</td>
+                <td class="text-sm">{{ sub.author.get_full_name|default:sub.author.username }}</td>
+                <td class="text-sm">{{ sub.section.name }}</td>
+                <td>
+                    <span class="badge
+                        {% if sub.status == 'draft' %}badge-draft
+                        {% elif sub.status == 'under_initial_check' %}badge-initial-check
+                        {% elif sub.status == 'under_review' %}badge-under-review
+                        {% elif sub.status == 'revision_required' %}badge-revision
+                        {% elif sub.status == 'accepted_awaiting_payment' %}badge-accepted
+                        {% elif sub.status == 'payment_processing' %}badge-payment-processing
+                        {% elif sub.status == 'paid' %}badge-paid
+                        {% elif sub.status == 'published' %}badge-published
+                        {% elif sub.status == 'rejected' %}badge-rejected
+                        {% elif sub.status == 'expired' %}badge-expired
+                        {% elif sub.status == 'withdrawn' %}badge-withdrawn
+                        {% endif %}">
+                        {% if sub.status == 'draft' %}Draft
+                        {% elif sub.status == 'under_initial_check' %}Initial Checking
+                        {% elif sub.status == 'under_review' %}Under Review
+                        {% elif sub.status == 'revision_required' %}Revision Required
+                        {% elif sub.status == 'accepted_awaiting_payment' %}Accepted (Awaiting Payment)
+                        {% elif sub.status == 'payment_processing' %}Payment Processing
+                        {% elif sub.status == 'paid' %}Paid
+                        {% elif sub.status == 'published' %}Published
+                        {% elif sub.status == 'rejected' %}Rejected
+                        {% elif sub.status == 'expired' %}Expired
+                        {% elif sub.status == 'withdrawn' %}Withdrawn
+                        {% else %}{{ sub.get_status_display }}{% endif %}
+                    </span>
+                </td>
+                <td class="text-muted text-sm">{{ sub.created_at|date:"Y/m/d" }}</td>
+                <td>
+                    <a href="{% url 'dashboard:submission_detail' sub.pk %}" class="btn btn-sm btn-ghost">View</a>
+                </td>
+            </tr>
+            {% empty %}
+            <tr>
+                <td colspan="6" style="text-align: center; padding: var(--space-8);">
+                    <div class="empty-state" style="padding: var(--space-6);">
+                        <div class="empty-state__icon" style="font-size: 2rem;"><svg class="icon icon-xl icon-muted"><use href="#icon-articles"/></svg></div>
+                        <p class="empty-state__message mb-0">No submissions yet.</p>
+                    </div>
+                </td>
+            </tr>
+            {% endfor %}
+        </tbody>
+    </table>
+</div>
+{% endblock %}

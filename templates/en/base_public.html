@@ -1,0 +1,317 @@
+{% load static dashboard_extras %}
+<!DOCTYPE html>
+<html lang="en" dir="ltr">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>{% block title %}Scientific Journal{% endblock %} — Marcil</title>
+    <link rel="preconnect" href="https://fonts.googleapis.com">
+    <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+    <link href="https://fonts.googleapis.com/css2?family=Outfit:wght@400;500;600;700&family=Inter:wght@400;500;600&display=swap" rel="stylesheet">
+    <link rel="stylesheet" href="{% static 'css/en/tokens.css' %}">
+    <link rel="stylesheet" href="{% static 'css/en/base.css' %}">
+    <link rel="stylesheet" href="{% static 'css/en/components.css' %}">
+    <link rel="stylesheet" href="{% static 'css/en/layout-public.css' %}">
+    {% block extra_css %}{% endblock %}
+</head>
+<body>
+{% include "icons.svg" %}
+
+<div class="pub-topbar">
+    <div class="pub-topbar__inner">
+        <div class="pub-topbar__info">
+            <a href="{% url 'pages:author_guidelines' %}" class="pub-topbar__info-item pub-topbar__info-link">Author Guidelines</a>
+            <a href="{% url 'pages:ethics' %}" class="pub-topbar__info-item pub-topbar__info-link">Publication Ethics</a>
+            <a href="{% url 'pages:apc' %}" class="pub-topbar__info-item pub-topbar__info-link">Publishing Fees (APC)</a>
+        </div>
+        <form method="get" action="{% url 'pages:search' %}" class="pub-topbar__search">
+            <svg class="pub-topbar__search-icon icon icon-xs"><use href="#icon-search"/></svg>
+            <input type="text" name="q" placeholder="Search articles..." class="pub-topbar__search-input" autocomplete="off">
+            <button type="submit" class="pub-topbar__search-btn">Search</button>
+        </form>
+        <div class="pub-topbar__user">
+            {% if user.is_authenticated %}
+                <a href="{% url 'dashboard:home' %}" class="pub-topbar__user-link">
+                    <svg class="icon icon-xs" style="margin-right:var(--space-1);"><use href="#icon-dashboard"/></svg> Dashboard
+                </a>
+            {% else %}
+                <a href="{% url 'accounts:login' %}" class="pub-topbar__user-link">Login</a>
+                <span class="pub-topbar__user-sep">|</span>
+                <a href="{% url 'accounts:register' %}" class="pub-topbar__user-link">Register</a>
+            {% endif %}
+        </div>
+    </div>
+</div>
+
+<nav class="pub-navbar">
+    <div class="pub-navbar__inner">
+        <a href="/" class="pub-navbar__logo">
+            <img src="{% static 'img/Logo_en.png' %}" alt="Marcil" style="height:50px;">
+        </a>
+        <ul class="pub-navbar__links">
+            <li><a href="/" class="pub-navbar__link {% block nav_home %}{% endblock %}">Home</a></li>
+            <li><a href="{% url 'pages:about' %}" class="pub-navbar__link {% block nav_about %}{% endblock %}">About the Journal</a></li>
+            <li><a href="{% url 'pages:topics' %}" class="pub-navbar__link {% block nav_topics %}{% endblock %}">Topics</a></li>
+            <li><a href="{% url 'pages:blog' %}" class="pub-navbar__link {% block nav_blog %}{% endblock %}">Blog</a></li>
+            <li><a href="{% url 'pages:conferences' %}" class="pub-navbar__link {% block nav_conferences %}{% endblock %}">Conferences</a></li>
+            <li><a href="{% url 'pages:archive' %}" class="pub-navbar__link {% block nav_archive %}{% endblock %}">Archive</a></li>
+            <li><a href="{% url 'pages:contact' %}" class="pub-navbar__link {% block nav_contact %}{% endblock %}">Contact Us</a></li>
+        </ul>
+        <div class="pub-navbar__user">
+            {% if user.is_authenticated %}
+                <a href="{% url 'dashboard:home' %}" class="pub-navbar__dash-btn">
+                    <svg class="icon icon-sm"><use href="#icon-dashboard"/></svg>
+                    Dashboard
+                </a>
+                <div class="pub-navbar__notif" id="notif-menu-wrap" data-unread-count="{{ unread_notifications_count }}">
+                    <button type="button" class="pub-navbar__notif-btn" id="notif-menu-toggle" title="Notifications"
+                            aria-label="Notifications" aria-haspopup="true" aria-expanded="false" aria-controls="notif-menu-panel">
+                        <svg class="icon icon-md"><use href="#icon-bell"/></svg>
+                        <span class="pub-navbar__notif-badge" id="notif-badge" {% if unread_notifications_count == 0 %}hidden{% endif %}>{{ unread_notifications_count }}</span>
+                    </button>
+                    <div class="pub-navbar__notif-menu" id="notif-menu-panel" role="menu" aria-label="Notification menu" hidden>
+                        <div class="pub-navbar__notif-menu-head">
+                            <strong>Notifications</strong>
+                            <span class="pub-navbar__notif-menu-count" id="notif-menu-count" {% if unread_notifications_count == 0 %}hidden{% endif %}>{{ unread_notifications_count }} new</span>
+                        </div>
+                        <div class="pub-navbar__notif-menu-list">
+                            {% for notif in latest_notifications %}
+                                <div class="pub-navbar__notif-item {% if not notif.is_read %}is-unread{% endif %}" data-notif-item data-notif-id="{{ notif.pk }}" role="menuitem">
+                                    <a href="{% if notif.target_url %}{{ notif.target_url }}{% else %}{% url 'notifications:list' %}{% endif %}" class="pub-navbar__notif-item-link">
+                                        <div class="pub-navbar__notif-item-head">
+                                            <span class="pub-navbar__notif-item-icon">
+                                                {% if notif.type == 'submission_confirmed' %}<svg class="icon icon-sm"><use href="#icon-submit"/></svg>
+                                                {% elif notif.type == 'initial_check_result' %}<svg class="icon icon-sm"><use href="#icon-review"/></svg>
+                                                {% elif notif.type == 'review_decision' %}<svg class="icon icon-sm"><use href="#icon-review"/></svg>
+                                                {% elif notif.type == 'payment_required' %}<svg class="icon icon-sm"><use href="#icon-payment"/></svg>
+                                                {% elif notif.type == 'payment_reminder' %}<svg class="icon icon-sm"><use href="#icon-payment"/></svg>
+                                                {% elif notif.type == 'article_published' %}<svg class="icon icon-sm"><use href="#icon-publish"/></svg>
+                                                {% elif notif.type == 'reviewer_assigned' %}<svg class="icon icon-sm"><use href="#icon-review"/></svg>
+                                                {% elif notif.type == 'new_submission' %}<svg class="icon icon-sm"><use href="#icon-submit"/></svg>
+                                                {% elif notif.type == 'review_completed' %}<svg class="icon icon-sm"><use href="#icon-review"/></svg>
+                                                {% else %}<svg class="icon icon-sm"><use href="#icon-bell"/></svg>{% endif %}
+                                            </span>
+                                            <p class="pub-navbar__notif-item-title">{{ notif.title }}</p>
+                                        </div>
+                                        <p class="pub-navbar__notif-item-time">{{ notif.created_at|date:"Y/m/d H:i" }}</p>
+                                    </a>
+                                    {% if not notif.is_read %}
+                                        <button type="button" class="pub-navbar__notif-mark-read" data-mark-read-url="{% url 'notifications:mark_read' notif.pk %}">
+                                            Mark as read
+                                        </button>
+                                    {% endif %}
+                                </div>
+                            {% empty %}
+                                <p class="pub-navbar__notif-empty">No notifications currently.</p>
+                            {% endfor %}
+                        </div>
+                        <a href="{% url 'notifications:list' %}" class="pub-navbar__notif-menu-footer" role="menuitem">View all notifications</a>
+                    </div>
+                </div>
+            {% else %}
+                <a href="{% url 'submissions:create' %}" class="btn btn-accent btn-navbar-cta">
+                    <svg class="icon icon-sm"><use href="#icon-guidelines"/></svg>
+                    Submit Manuscript
+                </a>
+            {% endif %}
+        </div>
+        <button class="pub-navbar__hamburger" id="nav-toggle" aria-label="Menu">☰</button>
+    </div>
+    <div class="pub-navbar__mobile-menu" id="mobile-menu">
+        <a href="/" class="pub-navbar__mobile-link">Home</a>
+        <a href="{% url 'pages:about' %}" class="pub-navbar__mobile-link">About the Journal</a>
+        <a href="{% url 'pages:topics' %}" class="pub-navbar__mobile-link">Topics</a>
+        <a href="{% url 'pages:blog' %}" class="pub-navbar__mobile-link">Blog</a>
+        <a href="{% url 'pages:conferences' %}" class="pub-navbar__mobile-link">Conferences</a>
+        <a href="{% url 'pages:archive' %}" class="pub-navbar__mobile-link">Archive</a>
+        <a href="{% url 'pages:contact' %}" class="pub-navbar__mobile-link">Contact Us</a>
+        {% if not user.is_authenticated %}
+            <a href="{% url 'accounts:login' %}" class="pub-navbar__mobile-link">Login</a>
+            <a href="{% url 'accounts:register' %}" class="pub-navbar__mobile-link">Register</a>
+        {% endif %}
+    </div>
+</nav>
+
+{% block above_layout %}{% endblock %}
+
+<div class="pub-layout {% block layout_class %}{% endblock %}">
+    <aside class="pub-sidebar-right">
+        {% block sidebar_right %}
+        <div class="pub-widget">
+            <div class="pub-widget__header"><svg class="icon icon-sm icon-inverse"><use href="#icon-search"/></svg> Search</div>
+            <div class="pub-widget__body">
+                <form method="get" action="{% url 'pages:search' %}">
+                    <div class="search-row">
+                        <input type="text" name="q" placeholder="Search..." class="form-input form-input--sm">
+                        <button type="submit" class="btn btn-primary btn-sm">Search</button>
+                    </div>
+                </form>
+            </div>
+        </div>
+
+        {% if not user.is_authenticated %}
+        <div class="pub-widget">
+            <div class="pub-widget__header"><svg class="icon icon-sm icon-inverse"><use href="#icon-submit"/></svg> Submit Article</div>
+            <div class="pub-widget__body pub-widget__body--center">
+                <p class="text-secondary text-sm mb-4">Join our journal community and start submitting your academic papers.</p>
+                <a href="{% url 'accounts:register' %}" class="btn btn-accent btn-full btn-sm">Submit Article</a>
+            </div>
+        </div>
+        {% else %}
+        <div class="pub-widget">
+            <div class="pub-widget__header"><svg class="icon icon-sm icon-inverse"><use href="#icon-user"/></svg> My Account</div>
+            <div class="pub-widget__body">
+                <p class="text-sm mb-3"><strong>{{ user.get_full_name|default:user.username }}</strong></p>
+                <a href="{% url 'dashboard:home' %}" class="btn btn-primary btn-full btn-sm">Dashboard</a>
+            </div>
+        </div>
+        {% endif %}
+
+        <div class="pub-widget">
+            <div class="pub-widget__header"><svg class="icon icon-sm icon-inverse"><use href="#icon-folder"/></svg> Sections</div>
+            <div class="pub-widget__body pub-widget__body--flush">
+                <ul class="pub-widget__list">
+                    {% for section in sections %}
+                    <li class="pub-widget__list-item"><a href="{% url 'pages:section_articles' section.slug %}">{{ section.name }}</a></li>
+                    {% endfor %}
+                </ul>
+            </div>
+        </div>
+        {% endblock %}
+    </aside>
+
+    <main class="pub-layout__main">
+        {% if messages %}
+            {% for message in messages %}
+                <div class="inline-alert inline-alert--{% if message.tags == 'error' %}danger{% elif message.tags == 'success' %}success{% elif message.tags == 'warning' %}warning{% else %}info{% endif %} mb-6">
+                    <span class="inline-alert__icon">
+                        {% if message.tags == 'error' %}
+                            <svg class="icon icon-md" style="color:var(--color-danger)"><use href="#icon-warning"/></svg>
+                        {% elif message.tags == 'success' %}
+                            <svg class="icon icon-md" style="color:var(--color-success)"><use href="#icon-check"/></svg>
+                        {% elif message.tags == 'warning' %}
+                            <svg class="icon icon-md" style="color:var(--color-warning)"><use href="#icon-warning"/></svg>
+                        {% else %}
+                            <svg class="icon icon-md" style="color:var(--color-info)"><use href="#icon-info"/></svg>
+                        {% endif %}
+                    </span>
+                    <div class="inline-alert__content"><p class="inline-alert__message">{{ message }}</p></div>
+                </div>
+            {% endfor %}
+        {% endif %}
+        {% block content %}{% endblock %}
+    </main>
+
+    <aside class="pub-sidebar-left">
+        {% block sidebar_left %}
+        <div class="pub-widget">
+            <div class="pub-widget__header"><svg class="icon icon-sm icon-inverse"><use href="#icon-issues"/></svg> Latest Issues</div>
+            <div class="pub-widget__body pub-widget__body--flush">
+                <ul class="pub-widget__list">
+                    {% for issue in latest_issues %}
+                    <li class="pub-widget__list-item">
+                        <a href="{% url 'pages:article_list' %}?issue={{ issue.pk }}">
+                            {{ issue }}
+                            {% if issue.is_current %}<span class="badge badge-published" style="font-size:9px;margin-left:var(--space-1);">Current</span>{% endif %}
+                        </a>
+                        <div class="text-muted text-xs">{{ issue.articles.count }} articles</div>
+                    </li>
+                    {% empty %}
+                    <li class="pub-widget__list-item"><span class="text-muted text-sm">No issues published yet</span></li>
+                    {% endfor %}
+                </ul>
+            </div>
+        </div>
+        {% endblock %}
+    </aside>
+</div>
+
+{% block stats_bar %}{% endblock %}
+
+<footer class="pub-footer" style="background-color: #f7f9fb; border: none; padding-top: 0; padding-bottom: 0; margin-top: var(--space-10);">
+    <!-- Top Slanted Red Bar -->
+    <div style="height: 16px; background-color: var(--color-primary); width: 100%; clip-path: polygon(0 0, 100% 0, 100% 33%, 20% 33%, 15% 100%, 0 100%); margin-bottom: var(--space-4);"></div>
+    
+    <div style="max-width: var(--container-max); margin: 0 auto; padding: 0 var(--space-6); text-align: center; display: flex; flex-direction: column; align-items: center; justify-content: center;">
+        
+        <!-- Logo -->
+        <div style="margin-bottom: var(--space-4);">
+            <img src="{% static 'img/Logo_en.png' %}" alt="JCMIT Logo" style="height: 55px; width: auto; display: block; margin: 0 auto;">
+        </div>
+
+        <!-- Description -->
+        <p style="font-size: 13px; line-height: 1.5; color: #191c1e; max-width: 900px; margin: 0 auto var(--space-4) auto; font-family: 'Inter', sans-serif; text-align: center;">
+            International Journal of Contemporary Management and Information Technology (IJCMIT) (e-ISSN: : 2773-5036) is an open access peer reviewed International Journal published by Sciences Gates SDN BHD, Malaysia. The journal aims to publish high quality articles dedicated to management and information technology in the field of management information system (MIS) and management information technology (MIT). Its scope encompasses the applications of management, HRM, Marketing, Finance, IT adoption, MIS, MIT, and others.
+        </p>
+
+        <!-- Contact Info -->
+        <div style="display: flex; justify-content: center; gap: var(--space-6); flex-wrap: wrap; margin-bottom: var(--space-4); font-size: 13px; color: #191c1e; font-family: 'Inter', sans-serif;">
+            <div style="display: flex; align-items: center; gap: var(--space-2);">
+                <svg style="width: 16px; height: 16px; color: var(--color-primary);" viewBox="0 0 24 24" fill="currentColor">
+                    <path d="M6.62 10.79c1.44 2.83 3.76 5.14 6.59 6.59l2.2-2.2c.27-.27.67-.36 1.02-.24 1.12.37 2.33.57 3.57.57.55 0 1 .45 1 1V20c0 .55-.45 1-1 1-9.39 0-17-7.61-17-17 0-.55.45-1 1-1h3.5c.55 0 1 .45 1 1 0 1.25.2 2.45.57 3.57.11.35.03.74-.25 1.02l-2.2 2.2z"/>
+                </svg>
+                <span style="font-style: italic;">+60 11 2819 5437</span>
+            </div>
+            <div style="display: flex; align-items: center; gap: var(--space-2);">
+                <svg style="width: 16px; height: 16px; color: var(--color-primary);" viewBox="0 0 24 24" fill="currentColor">
+                    <path d="M12 2C8.13 2 5 5.13 5 9c0 5.25 7 13 7 13s7-7.75 7-13c0-3.87-3.13-7-7-7zm0 9.5c-1.38 0-2.5-1.12-2.5-2.5s1.12-2.5 2.5-2.5 2.5 1.12 2.5 2.5-1.12 2.5-2.5 2.5z"/>
+                </svg>
+                <span style="font-style: italic;">B , 408 , Cemara Apartment, Kajang Utama, Kajang, Selangor, Malaysia</span>
+            </div>
+        </div>
+
+        <!-- Social Icons -->
+        <div style="display: flex; justify-content: center; gap: var(--space-3); margin-bottom: var(--space-4);">
+            <!-- Facebook -->
+            <a href="#" style="color: var(--color-primary); display: inline-flex; align-items: center; justify-content: center; width: 28px; height: 28px; border-radius: 50%; border: 1px solid var(--color-border); background-color: var(--color-surface); transition: all 0.2s ease;">
+                <svg style="width: 14px; height: 14px;" viewBox="0 0 24 24" fill="currentColor">
+                    <path d="M12 2.04c-5.5 0-10 4.49-10 10.02 0 5 3.66 9.15 8.44 9.9v-7H7.9v-2.9h2.54V9.85c0-2.51 1.49-3.89 3.78-3.89 1.09 0 2.23.19 2.23.19v2.46h-1.26c-1.24 0-1.63.77-1.63 1.56v1.88h2.78l-.45 2.9h-2.33v7C18.34 21.21 22 17.06 22 12.06c0-5.53-4.5-10.02-10-10.02z"/>
+                </svg>
+            </a>
+            <!-- Instagram -->
+            <a href="#" style="color: var(--color-primary); display: inline-flex; align-items: center; justify-content: center; width: 28px; height: 28px; border-radius: 50%; border: 1px solid var(--color-border); background-color: var(--color-surface); transition: all 0.2s ease;">
+                <svg style="width: 14px; height: 14px;" viewBox="0 0 24 24" fill="currentColor">
+                    <path d="M12 2.163c3.204 0 3.584.012 4.85.07 3.252.148 4.771 1.691 4.919 4.919.058 1.265.069 1.645.069 4.849 0 3.205-.012 3.584-.069 4.849-.149 3.225-1.664 4.771-4.919 4.919-1.266.058-1.644.07-4.85.07-3.204 0-3.584-.012-4.849-.07-3.26-.149-4.771-1.699-4.92-4.92-.058-1.265-.07-1.644-.07-4.849 0-3.204 0-3.583.07-4.849.149-3.227 1.664-4.771 4.919-4.919 1.266-.057 1.645-.069 4.849-.069zM12 0C8.741 0 8.333.014 7.053.072 2.695.272.273 2.69.073 7.051.014 8.333 0 8.741 0 12c0 3.259.014 3.668.072 4.948.2 4.358 2.618 6.78 6.98 6.98 1.281.058 1.689.072 4.948.072 3.259 0 3.668-.014 4.948-.072 4.354-.2 6.782-2.618 6.979-6.98.059-1.28.073-1.689.073-4.948 0-3.259-.014-3.667-.072-4.947-.196-4.354-2.617-6.78-6.979-6.98C15.668.014 15.259 0 12 0zm0 5.838a6.162 6.162 0 100 12.324 6.162 6.162 0 000-12.324zM12 16a4 4 0 110-8 4 4 0 010 8zm6.406-11.845a1.44 1.44 0 100 2.881 1.44 1.44 0 000-2.881z"/>
+                </svg>
+            </a>
+            <!-- Twitter -->
+            <a href="#" style="color: var(--color-primary); display: inline-flex; align-items: center; justify-content: center; width: 28px; height: 28px; border-radius: 50%; border: 1px solid var(--color-border); background-color: var(--color-surface); transition: all 0.2s ease;">
+                <svg style="width: 14px; height: 14px;" viewBox="0 0 24 24" fill="currentColor">
+                    <path d="M18.244 2.25h3.308l-7.227 8.26 8.502 11.24H16.17l-5.214-6.817L4.99 21.75H1.68l7.73-8.835L1.254 2.25H8.08l4.713 6.231zm-1.161 17.52h1.833L7.084 4.126H5.117z"/>
+                </svg>
+            </a>
+        </div>
+
+        <!-- License Info -->
+        <div style="text-align: center; margin-bottom: var(--space-3); font-family: 'Inter', sans-serif;">
+            <img src="{% static 'img/cc_by_nc.png' %}" alt="Creative Commons License" style="height: 26px; width: auto; margin-bottom: var(--space-2); display: block; margin: 0 auto var(--space-2) auto;">
+            <p style="color: var(--color-primary); font-size: 12px; margin: 0; font-weight: 500; line-height: 1.4; font-style: italic;">
+                IJCMIT By Sciences Gates Is Licensed Under A <a href="https://creativecommons.org/licenses/by-nc/4.0/" target="_blank" style="color: var(--color-primary); text-decoration: underline;">Creative Commons Attribution-NonCommercial 4.0 International License</a>.
+            </p>
+            <p style="color: var(--color-primary); font-size: 12px; margin: var(--space-1) 0 0 0; font-weight: 500; font-style: italic;">
+                Based On A Work At <a href="https://ijcmit.com" target="_blank" style="color: var(--color-primary); text-decoration: underline;">Ijcmit.Com</a>.
+            </p>
+        </div>
+
+    </div>
+    <!-- Bottom Slanted Red Bar -->
+    <div style="height: 16px; background-color: var(--color-primary); width: 100%; clip-path: polygon(0 70%, 80% 70%, 85% 0, 100% 0, 100% 100%, 0 100%);"></div>
+</footer>
+
+{% block extra_js %}{% endblock %}
+<script src="{% static 'js/public.js' %}"></script>
+<link class="feed-toastr-css" rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/toastr.js/latest/toastr.min.css">
+<script src="https://cdnjs.cloudflare.com/ajax/libs/toastr.js/latest/toastr.min.js"></script>
+<script>
+  toastr.options = { positionClass: 'toast-top-left', timeOut: 2500, rtl: false };
+</script>
+
+<a href="https://wa.me/601128195437?text=Hello,%20I%20would%20like%20to%20contact%20the%20journal%20administration"
+   class="wa-float" target="_blank" rel="noopener" aria-label="Contact us via WhatsApp">
+    <span class="wa-float__tooltip">Contact Us</span>
+    <svg class="wa-float__icon" viewBox="0 0 24 24" xmlns="http://www.w3.org/2000/svg">
+        <path d="M17.472 14.382c-.297-.149-1.758-.867-2.03-.967-.273-.099-.471-.148-.67.15-.197.297-.767.966-.94 1.164-.173.199-.347.223-.644.075-.297-.15-1.255-.463-2.39-1.475-.883-.788-1.48-1.761-1.653-2.059-.173-.297-.018-.458.13-.606.134-.133.298-.347.446-.52.149-.174.198-.298.298-.497.099-.198.05-.371-.025-.52-.075-.149-.669-1.612-.916-2.207-.242-.579-.487-.5-.669-.51-.173-.008-.371-.01-.57-.01-.198 0-.52.074-.792.372-.272.297-1.04 1.016-1.04 2.479 0 1.462 1.065 2.875 1.213 3.074.149.198 2.096 3.2 5.077 4.487.709.306 1.262.489 1.694.625.712.227 1.36.195 1.871.118.571-.085 1.758-.719 2.006-1.413.248-.694.248-1.289.173-1.413-.074-.124-.272-.198-.57-.347m-5.421 7.403h-.004a9.87 9.87 0 01-5.031-1.378l-.361-.214-3.741.982.998-3.648-.235-.374a9.86 9.86 0 01-1.51-5.26c.001-5.45 4.436-9.884 9.888-9.884 2.64 0 5.122 1.03 6.988 2.898a9.825 9.825 0 012.893 6.994c-.003 5.45-4.437 9.884-9.885 9.884m8.413-18.297A11.815 11.815 0 0012.05 0C5.495 0 .16 5.335.157 11.892c0 2.096.547 4.142 1.588 5.945L.057 24l6.305-1.654a11.882 11.882 0 005.683 1.448h.005c6.554 0 11.89-5.335 11.893-11.893a11.821 11.821 0 00-3.48-8.413z"/>
+    </svg>
+</a>
+</body>
+</html>

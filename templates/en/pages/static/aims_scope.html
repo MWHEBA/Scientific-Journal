@@ -1,0 +1,121 @@
+{% extends 'base_public.html' %}
+
+{% block title %}Aims & Scope{% endblock %}
+
+{% block content %}
+<div class="page-header">
+    <h1 class="page-header__title">Aims & Scope</h1>
+</div>
+
+<!-- Journal Aims -->
+<div class="card mb-4">
+    <h3 class="mb-4" style="color:var(--color-primary);">Journal Aims</h3>
+    <p class="text-secondary mb-4">
+        The primary goals of the Journal of Marcil for Social Science include:
+    </p>
+    <ul style="line-height:var(--leading-loose);padding-left:var(--space-6);">
+        <li>Publishing high-quality peer-reviewed articles across various disciplines.</li>
+        <li>Providing open access to scientific knowledge for both academic and public communities.</li>
+        <li>Fostering research collaboration among scholars from diverse backgrounds and regions.</li>
+        <li>Supporting authors by ensuring rapid, efficient, and thorough review and publication cycles.</li>
+        <li>Upholding rigorous academic standards via our specialized reviewer network.</li>
+    </ul>
+</div>
+
+<!-- Journal Scope -->
+<div class="card mb-4">
+    <h3 class="mb-5" style="color:var(--color-primary);">Journal Scope</h3>
+
+    <!-- Management & Business Administration -->
+    <div class="scope-category">
+        <h4 class="scope-category__title">Management & Business Administration</h4>
+        <div class="scope-tags">
+            <span class="scope-tag">Management</span>
+            <span class="scope-tag">Strategic Management</span>
+            <span class="scope-tag">Knowledge Management</span>
+            <span class="scope-tag">Human Resource Management</span>
+            <span class="scope-tag">Electronic HRM (E-HRM)</span>
+            <span class="scope-tag">Marketing</span>
+            <span class="scope-tag">Management Information Systems</span>
+        </div>
+    </div>
+
+    <!-- Accounting & Governance -->
+    <div class="scope-category">
+        <h4 class="scope-category__title">Accounting & Governance</h4>
+        <div class="scope-tags">
+            <span class="scope-tag">Accounting</span>
+            <span class="scope-tag">Accounting Information Systems</span>
+            <span class="scope-tag">Governance</span>
+            <span class="scope-tag">Corporate Governance</span>
+            <span class="scope-tag">Islamic Corporate Governance</span>
+        </div>
+    </div>
+
+    <!-- Information Technology -->
+    <div class="scope-category">
+        <h4 class="scope-category__title">Information Technology</h4>
+        <div class="scope-tags">
+            <span class="scope-tag">Management Information Technology</span>
+            <span class="scope-tag">E-Government</span>
+            <span class="scope-tag">E-Commerce</span>
+            <span class="scope-tag">Social Commerce</span>
+            <span class="scope-tag">Technology Adoption</span>
+        </div>
+    </div>
+
+    <!-- Cloud Computing -->
+    <div class="scope-category">
+        <h4 class="scope-category__title">Cloud Computing</h4>
+        <div class="scope-tags">
+            <span class="scope-tag">Cloud Computing</span>
+            <span class="scope-tag">Cloud Computing Adoption</span>
+            <span class="scope-tag">Cloud-Based E-Learning</span>
+            <span class="scope-tag">Cloud-Based E-Government</span>
+            <span class="scope-tag">Cloud-Based E-Commerce</span>
+        </div>
+    </div>
+
+    <!-- E-Learning -->
+    <div class="scope-category">
+        <h4 class="scope-category__title">E-Learning</h4>
+        <div class="scope-tags">
+            <span class="scope-tag">E-Learning</span>
+            <span class="scope-tag">Gamified Learning Systems</span>
+            <span class="scope-tag">Cloud-Mediated Learning</span>
+            <span class="scope-tag">IoT Adoption</span>
+        </div>
+    </div>
+
+    <!-- Other Disciplines -->
+    <div class="scope-category">
+        <h4 class="scope-category__title">Other Disciplines</h4>
+        <div class="scope-tags">
+            <span class="scope-tag">Legal Sciences</span>
+            <span class="scope-tag">Social Sciences</span>
+            <span class="scope-tag">Health Sciences</span>
+            <span class="scope-tag">Engineering Sciences</span>
+        </div>
+    </div>
+
+</div>
+
+<!-- Sections -->
+{% if sections %}
+<div class="card mb-4">
+    <h3 class="mb-4" style="color:var(--color-primary);">Browse by Section</h3>
+    <div style="display:grid;grid-template-columns:repeat(auto-fill,minmax(200px,1fr));gap:var(--space-3);">
+        {% for section in sections %}
+        <a href="{% url 'pages:section_articles' section.slug %}"
+           style="display:flex;align-items:center;gap:var(--space-2);padding:var(--space-3) var(--space-4);border:1px solid var(--color-border);text-decoration:none;color:var(--color-text);transition:all var(--transition);"
+           onmouseover="this.style.borderColor='var(--color-primary)';this.style.background='var(--color-surface-alt)'"
+           onmouseout="this.style.borderColor='var(--color-border)';this.style.background='transparent'">
+            <span style="width:8px;height:8px;border-radius:50%;background:var(--color-primary);flex-shrink:0;"></span>
+            {{ section.name }}
+        </a>
+        {% endfor %}
+    </div>
+</div>
+{% endif %}
+
+{% endblock %}

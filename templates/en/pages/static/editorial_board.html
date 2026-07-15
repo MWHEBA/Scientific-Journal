@@ -1,0 +1,153 @@
+{% extends 'base_public.html' %}
+
+{% block title %}Editorial Board{% endblock %}
+
+{% block content %}
+<div class="page-header">
+    <h1 class="page-header__title">Editorial Board</h1>
+</div>
+
+{% if board_members %}
+    {# ─── Dynamic Data from the Database ─── #}
+    {% regroup board_members by role as role_groups %}
+
+    {# Leadership Roles #}
+    {% for group in role_groups %}
+        {% if group.grouper == 'editor_in_chief' or group.grouper == 'deputy_editor' or group.grouper == 'regional_editor' %}
+        {% if forloop.first or group.grouper == 'editor_in_chief' %}
+        <div class="card mb-4">
+            <h3 class="mb-4" style="color:var(--color-primary);">Journal Leadership</h3>
+            <div style="display:flex;flex-direction:column;gap:var(--space-3);">
+        {% endif %}
+                {% for member in group.list %}
+                <div style="display:flex;align-items:center;gap:var(--space-5);padding:var(--space-5);background:var(--color-surface-alt);border-left:4px solid var(--color-primary);">
+                    <div>
+                        <p style="font-weight:700;font-size:var(--text-lg);margin-bottom:var(--space-1);">{{ member.name }}</p>
+                        <p class="text-muted text-sm mb-0">
+                            {% if member.role == 'editor_in_chief' %}Editor-in-Chief{% elif member.role == 'deputy_editor' %}Deputy Editor-in-Chief{% elif member.role == 'regional_editor' %}Regional Editor{% endif %}
+                            {% if member.institution %} — {{ member.institution }}{% endif %}
+                            {% if member.country %} ({{ member.country }}){% endif %}
+                        </p>
+                    </div>
+                </div>
+                {% endfor %}
+        {% if group.grouper == 'regional_editor' or forloop.last %}
+            </div>
+        </div>
+        {% endif %}
+        {% endif %}
+    {% endfor %}
+
+    {# Supervisory Committee #}
+    {% for group in role_groups %}
+        {% if group.grouper == 'supervisory' %}
+        <div class="card mb-4">
+            <h3 class="mb-4" style="color:var(--color-primary);">Supervisory Committee</h3>
+            <div style="display:grid;grid-template-columns:repeat(auto-fill,minmax(240px,1fr));gap:var(--space-3);">
+                {% for member in group.list %}
+                <div style="padding:var(--space-4) var(--space-5);border:1px solid var(--color-border);">
+                    <p style="font-weight:700;font-size:var(--text-base);margin-bottom:2px;">{{ member.name }}</p>
+                    <p class="text-muted text-xs mb-0">
+                        Supervisory Committee Member
+                        {% if member.institution %} — {{ member.institution }}{% endif %}
+                    </p>
+                </div>
+                {% endfor %}
+            </div>
+        </div>
+        {% endif %}
+    {% endfor %}
+
+    {# Editorial Board Members #}
+    {% for group in role_groups %}
+        {% if group.grouper == 'editorial' %}
+        <div class="card mb-4">
+            <h3 class="mb-4" style="color:var(--color-primary);">Editorial Board Members</h3>
+            <div style="display:grid;grid-template-columns:repeat(auto-fill,minmax(240px,1fr));gap:var(--space-3);">
+                {% for member in group.list %}
+                <div style="padding:var(--space-4) var(--space-5);border:1px solid var(--color-border);">
+                    <p style="font-weight:700;font-size:var(--text-base);margin-bottom:2px;">{{ member.name }}</p>
+                    <p class="text-muted text-xs mb-0">
+                        {% if member.institution %}{{ member.institution }}{% endif %}
+                        {% if member.country %} — {{ member.country }}{% endif %}
+                    </p>
+                </div>
+                {% endfor %}
+            </div>
+        </div>
+        {% endif %}
+    {% endfor %}
+
+{% else %}
+    {# ─── Fallback Static Data ─── #}
+
+    <!-- Leadership -->
+    <div class="card mb-4">
+        <h3 class="mb-4" style="color:var(--color-primary);">Journal Leadership</h3>
+        <div style="display:flex;flex-direction:column;gap:var(--space-3);">
+            <div style="display:flex;align-items:center;gap:var(--space-5);padding:var(--space-5);background:var(--color-surface-alt);border-left:4px solid var(--color-primary);">
+                <div>
+                    <p style="font-weight:700;font-size:var(--text-lg);margin-bottom:var(--space-1);">Dr. Saad Al-Aaraj</p>
+                    <p class="text-muted text-sm mb-0">Editor-in-Chief</p>
+                </div>
+            </div>
+            <div style="display:flex;align-items:center;gap:var(--space-5);padding:var(--space-5);background:var(--color-surface-alt);border-left:4px solid var(--color-primary-light);">
+                <div>
+                    <p style="font-weight:700;font-size:var(--text-lg);margin-bottom:var(--space-1);">Dr. Mohamed Kayali</p>
+                    <p class="text-muted text-sm mb-0">Deputy Editor-in-Chief</p>
+                </div>
+            </div>
+            <div style="display:flex;align-items:center;gap:var(--space-5);padding:var(--space-5);background:var(--color-surface-alt);border-left:4px solid var(--color-neutral);">
+                <div>
+                    <p style="font-weight:700;font-size:var(--text-lg);margin-bottom:var(--space-1);">Dr. Murad Al-Zaqiba</p>
+                    <p class="text-muted text-sm mb-0">Regional Editor — Middle East</p>
+                </div>
+            </div>
+        </div>
+    </div>
+
+    <!-- Supervisory Committee -->
+    <div class="card mb-4">
+        <h3 class="mb-4" style="color:var(--color-primary);">Supervisory Committee</h3>
+        <div style="display:grid;grid-template-columns:repeat(auto-fill,minmax(240px,1fr));gap:var(--space-3);">
+            <div style="padding:var(--space-4) var(--space-5);border:1px solid var(--color-border);">
+                <p style="font-weight:700;font-size:var(--text-base);margin-bottom:2px;">Prof. Dr. Noureddine Hizam</p>
+                <p class="text-muted text-xs mb-0">Chairman of the Committee</p>
+            </div>
+            <div style="padding:var(--space-4) var(--space-5);border:1px solid var(--color-border);">
+                <p style="font-weight:700;font-size:var(--text-base);margin-bottom:2px;">Dr. Mohamed Awadat</p>
+                <p class="text-muted text-xs mb-0">Member</p>
+            </div>
+            <div style="padding:var(--space-4) var(--space-5);border:1px solid var(--color-border);">
+                <p style="font-weight:700;font-size:var(--text-base);margin-bottom:2px;">Dr. Basel Ali</p>
+                <p class="text-muted text-xs mb-0">Member</p>
+            </div>
+            <div style="padding:var(--space-4) var(--space-5);border:1px solid var(--color-border);">
+                <p style="font-weight:700;font-size:var(--text-base);margin-bottom:2px;">Dr. Mohiuddin Mousa</p>
+                <p class="text-muted text-xs mb-0">Member</p>
+            </div>
+            <div style="padding:var(--space-4) var(--space-5);border:1px solid var(--color-border);">
+                <p style="font-weight:700;font-size:var(--text-base);margin-bottom:2px;">Dr. Salem Attallah</p>
+                <p class="text-muted text-xs mb-0">Member</p>
+            </div>
+            <div style="padding:var(--space-4) var(--space-5);border:1px solid var(--color-border);">
+                <p style="font-weight:700;font-size:var(--text-base);margin-bottom:2px;">Dr. Munther Al-Daya</p>
+                <p class="text-muted text-xs mb-0">Member</p>
+            </div>
+        </div>
+    </div>
+
+{% endif %}
+
+<!-- Join Editorial Board -->
+<div class="card">
+    <p class="text-muted text-sm mb-0">
+        To join our editorial or review board, or for any editorial inquiries, please contact us at: 
+        {% if settings.contact_email %}
+            <a href="mailto:{{ settings.contact_email }}">{{ settings.contact_email }}</a>
+        {% else %}
+            the journal's official email address.
+        {% endif %}
+    </p>
+</div>
+{% endblock %}

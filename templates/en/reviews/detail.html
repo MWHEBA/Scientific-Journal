@@ -1,0 +1,288 @@
+{% extends 'base_dashboard.html' %}
+{% load dashboard_extras %}
+
+{% block title %}Review: {{ object.submission.title }}{% endblock %}
+{% block nav_reviewer_home %}active{% endblock %}
+{% block breadcrumb %}
+  <span class="dash-breadcrumb__sep">/</span>
+  <a href="{% url 'dashboard:reviewer_submissions' %}">Submissions</a>
+  <span class="dash-breadcrumb__sep">/</span>
+  <span class="dash-breadcrumb__current">Review</span>
+{% endblock %}
+
+{% block extra_css %}
+<style>
+  .review-layout { display: grid; gap: var(--space-5); }
+  .review-split { display: grid; grid-template-columns: 1fr 1.25fr; gap: var(--space-5); align-items: start; }
+  .stack { display: grid; gap: var(--space-5); }
+  .card { border: 1px solid var(--color-border); background: var(--color-surface); padding: var(--space-5); }
+  .title { margin: 0 0 var(--space-3); color: var(--color-primary); font-size: var(--text-xl); }
+  .section-title { margin: 0 0 var(--space-3); font-size: var(--text-lg); color: var(--color-primary); }
+  .meta-grid { display: grid; gap: var(--space-3); }
+  .meta-item { font-size: var(--text-sm); }
+  .meta-label { color: var(--color-text-muted); margin-right: var(--space-1); }
+  .meta-value { color: var(--color-text); font-weight: 600; word-break: break-word; }
+  .text-block { border-top: 1px solid var(--color-border-light); padding-top: var(--space-4); margin-top: var(--space-4); }
+  .abstract-box { background: var(--color-surface-alt); border: 1px solid var(--color-border); border-left: 4px solid var(--color-primary); padding: var(--space-4); line-height: var(--leading-loose); }
+  .badges { display: flex; flex-wrap: wrap; gap: var(--space-2); }
+  .badge-pill { display: inline-flex; align-items: center; padding: var(--space-1) var(--space-3); border: 1px solid var(--color-border); background: var(--color-surface-alt); font-size: var(--text-sm); font-weight: 600; }
+  .manuscript-link { display: inline-flex; align-items: center; padding: var(--space-2) var(--space-3); background: var(--color-primary); color: #fff; text-decoration: none; font-weight: 600; }
+  .scores-grid { display: grid; grid-template-columns: repeat(2, minmax(0, 1fr)); gap: var(--space-3); }
+  .score-card { border: 1px solid var(--color-border); background: var(--color-surface-alt); padding: var(--space-4); border-left: 3px solid var(--color-primary); text-align: center; }
+  .score-value { font-size: var(--text-2xl); font-weight: 700; color: var(--color-primary); margin: 0 0 var(--space-1); }
+  .comments-box { border: 1px solid var(--color-border); border-left: 4px solid var(--color-primary); background: var(--color-surface-alt); padding: var(--space-4); white-space: pre-wrap; }
+  .form-grid { display: grid; grid-template-columns: repeat(2, minmax(0, 1fr)); gap: var(--space-3); }
+  .score-field { display: grid; gap: var(--space-2); }
+  .score-stars {
+    font-size: 16px;
+    color: #d4a017;
+    letter-spacing: 2px;
+    min-height: 30px;
+    line-height: 1.2;
+  }
+  .score-stars.is-empty { color: var(--color-text-muted); letter-spacing: 0; }
+  .card select, .card textarea, .card input[type="text"] {
+    width: 100%;
+    border: 1px solid var(--color-border);
+    background: var(--color-surface);
+    padding: var(--space-2) var(--space-3);
+    font-size: var(--text-base);
+  }
+  .card textarea { min-height: 130px; resize: vertical; }
+  .decision-options { display: grid; gap: var(--space-2); margin-top: var(--space-2); }
+  .form-actions { margin-top: var(--space-4); display: flex; gap: var(--space-2); flex-wrap: wrap; }
+  @media (max-width: 980px) { .review-split { grid-template-columns: 1fr; } .scores-grid, .form-grid { grid-template-columns: 1fr; } }
+</style>
+{% endblock %}
+
+{% block content %}
+<div class="page-header">
+  <h1 class="page-header__title">Review: {{ object.submission.title|truncatechars:90 }}</h1>
+  <span class="badge {% if object.submission.status == 'under_review' %}badge-under-review{% elif object.submission.status == 'revision_required' %}badge-revision{% else %}badge-draft{% endif %}">
+    {% if object.submission.status == 'draft' %}Draft
+    {% elif object.submission.status == 'under_initial_check' %}Initial Checking
+    {% elif object.submission.status == 'under_review' %}Under Review
+    {% elif object.submission.status == 'revision_required' %}Revision Required
+    {% elif object.submission.status == 'accepted_awaiting_payment' %}Accepted (Awaiting Payment)
+    {% elif object.submission.status == 'payment_processing' %}Payment Processing
+    {% elif object.submission.status == 'paid' %}Paid
+    {% elif object.submission.status == 'published' %}Published
+    {% elif object.submission.status == 'rejected' %}Rejected
+    {% elif object.submission.status == 'expired' %}Expired
+    {% elif object.submission.status == 'withdrawn' %}Withdrawn
+    {% else %}{{ object.submission.get_status_display }}{% endif %}
+  </span>
+</div>
+
+<div class="review-layout">
+  <div class="review-split">
+    <aside class="stack">
+      <section class="card">
+        <h2 class="title">{{ object.submission.title }}</h2>
+        <div class="meta-grid">
+          <div class="meta-item"><span class="meta-label">Author:</span><span class="meta-value">{{ object.submission.author.get_full_name|default:object.submission.author.username }}</span></div>
+          <div class="meta-item"><span class="meta-label">Section:</span><span class="meta-value">{{ object.submission.section.name }}</span></div>
+          <div class="meta-item"><span class="meta-label">Review Round:</span><span class="meta-value">#{{ object.revision_round }}</span></div>
+          <div class="meta-item"><span class="meta-label">Submission Date:</span><span class="meta-value">{{ object.submission.created_at|date:"Y-m-d H:i" }}</span></div>
+        </div>
+      </section>
+      {% if manuscript %}
+      <section class="card">
+        <h3 class="section-title">Manuscript</h3>
+        <a href="{{ manuscript.file.url }}" target="_blank" class="manuscript-link">Download Manuscript</a>
+      </section>
+      {% endif %}
+    </aside>
+
+    <div class="stack">
+      <section class="card">
+        <h3 class="section-title">Abstract</h3>
+        <div class="abstract-box">{{ object.submission.abstract }}</div>
+        {% if object.submission.keywords.all %}
+        <div class="text-block">
+          <h3 class="section-title">Keywords</h3>
+          <div class="badges">{% for keyword in object.submission.keywords.all %}<span class="badge-pill">{{ keyword.name }}</span>{% endfor %}</div>
+        </div>
+        {% endif %}
+        {% with co_authors=object.submission.co_authors.all %}
+        {% if co_authors %}
+        <div class="text-block">
+          <h3 class="section-title">Co-Authors</h3>
+          <div class="badges">{% for co in co_authors %}<span class="badge-pill">{{ co.full_name }}{% if co.institution %} — {{ co.institution }}{% endif %}</span>{% endfor %}</div>
+        </div>
+        {% endif %}
+        {% endwith %}
+      </section>
+
+      {% if object.is_submitted %}
+      <section class="card">
+        <h3 class="section-title">Review Submitted</h3>
+        <p class="text-muted text-sm">
+          {% if object.decision == 'accept' %}Accept
+          {% elif object.decision == 'reject' %}Reject
+          {% elif object.decision == 'revision' %}Revision Required
+          {% else %}{{ object.get_decision_display }}{% endif %}
+        </p>
+        <div class="scores-grid">
+          {% if object.score_originality %}<div class="score-card"><p class="score-value">{{ object.score_originality }}/5</p><p class="text-sm">Originality</p></div>{% endif %}
+          {% if object.score_relevance %}<div class="score-card"><p class="score-value">{{ object.score_relevance }}/5</p><p class="text-sm">Relevance</p></div>{% endif %}
+          {% if object.score_clarity %}<div class="score-card"><p class="score-value">{{ object.score_clarity }}/5</p><p class="text-sm">Clarity</p></div>{% endif %}
+          {% if object.score_language %}<div class="score-card"><p class="score-value">{{ object.score_language }}/5</p><p class="text-sm">Language</p></div>{% endif %}
+        </div>
+        {% if object.comments %}
+        <div class="text-block">
+          <h3 class="section-title">Comments</h3>
+          <div class="comments-box">{{ object.comments }}</div>
+        </div>
+        {% endif %}
+      </section>
+      {% elif form %}
+      <section class="card">
+        <h3 class="section-title">Evaluation Form</h3>
+        <form method="post" action="{% url 'reviews:submit' object.pk %}" id="review-form">
+          {% csrf_token %}
+          <div class="form-grid">
+            <div class="score-field">
+              <label class="form-label" for="id_score_originality">Originality and Innovation *</label>
+              <select name="score_originality" id="id_score_originality" class="form-control" required>
+                <option value="">-- Select --</option>
+                <option value="1" {% if form.score_originality.value == 1 or form.score_originality.value == '1' %}selected{% endif %}>1</option>
+                <option value="2" {% if form.score_originality.value == 2 or form.score_originality.value == '2' %}selected{% endif %}>2</option>
+                <option value="3" {% if form.score_originality.value == 3 or form.score_originality.value == '3' %}selected{% endif %}>3</option>
+                <option value="4" {% if form.score_originality.value == 4 or form.score_originality.value == '4' %}selected{% endif %}>4</option>
+                <option value="5" {% if form.score_originality.value == 5 or form.score_originality.value == '5' %}selected{% endif %}>5</option>
+              </select>
+              {% if form.score_originality.errors %}
+                <p class="text-sm mt-1" style="color: var(--color-danger);">{{ form.score_originality.errors.0 }}</p>
+              {% endif %}
+              <div class="score-stars is-empty" data-for="id_score_originality">Select rating</div>
+            </div>
+
+            <div class="score-field">
+              <label class="form-label" for="id_score_relevance">Relevance to Subject *</label>
+              <select name="score_relevance" id="id_score_relevance" class="form-control" required>
+                <option value="">-- Select --</option>
+                <option value="1" {% if form.score_relevance.value == 1 or form.score_relevance.value == '1' %}selected{% endif %}>1</option>
+                <option value="2" {% if form.score_relevance.value == 2 or form.score_relevance.value == '2' %}selected{% endif %}>2</option>
+                <option value="3" {% if form.score_relevance.value == 3 or form.score_relevance.value == '3' %}selected{% endif %}>3</option>
+                <option value="4" {% if form.score_relevance.value == 4 or form.score_relevance.value == '4' %}selected{% endif %}>4</option>
+                <option value="5" {% if form.score_relevance.value == 5 or form.score_relevance.value == '5' %}selected{% endif %}>5</option>
+              </select>
+              {% if form.score_relevance.errors %}
+                <p class="text-sm mt-1" style="color: var(--color-danger);">{{ form.score_relevance.errors.0 }}</p>
+              {% endif %}
+              <div class="score-stars is-empty" data-for="id_score_relevance">Select rating</div>
+            </div>
+
+            <div class="score-field">
+              <label class="form-label" for="id_score_clarity">Clarity and Organization *</label>
+              <select name="score_clarity" id="id_score_clarity" class="form-control" required>
+                <option value="">-- Select --</option>
+                <option value="1" {% if form.score_clarity.value == 1 or form.score_clarity.value == '1' %}selected{% endif %}>1</option>
+                <option value="2" {% if form.score_clarity.value == 2 or form.score_clarity.value == '2' %}selected{% endif %}>2</option>
+                <option value="3" {% if form.score_clarity.value == 3 or form.score_clarity.value == '3' %}selected{% endif %}>3</option>
+                <option value="4" {% if form.score_clarity.value == 4 or form.score_clarity.value == '4' %}selected{% endif %}>4</option>
+                <option value="5" {% if form.score_clarity.value == 5 or form.score_clarity.value == '5' %}selected{% endif %}>5</option>
+              </select>
+              {% if form.score_clarity.errors %}
+                <p class="text-sm mt-1" style="color: var(--color-danger);">{{ form.score_clarity.errors.0 }}</p>
+              {% endif %}
+              <div class="score-stars is-empty" data-for="id_score_clarity">Select rating</div>
+            </div>
+
+            <div class="score-field">
+              <label class="form-label" for="id_score_language">Language and Presentation *</label>
+              <select name="score_language" id="id_score_language" class="form-control" required>
+                <option value="">-- Select --</option>
+                <option value="1" {% if form.score_language.value == 1 or form.score_language.value == '1' %}selected{% endif %}>1</option>
+                <option value="2" {% if form.score_language.value == 2 or form.score_language.value == '2' %}selected{% endif %}>2</option>
+                <option value="3" {% if form.score_language.value == 3 or form.score_language.value == '3' %}selected{% endif %}>3</option>
+                <option value="4" {% if form.score_language.value == 4 or form.score_language.value == '4' %}selected{% endif %}>4</option>
+                <option value="5" {% if form.score_language.value == 5 or form.score_language.value == '5' %}selected{% endif %}>5</option>
+              </select>
+              {% if form.score_language.errors %}
+                <p class="text-sm mt-1" style="color: var(--color-danger);">{{ form.score_language.errors.0 }}</p>
+              {% endif %}
+              <div class="score-stars is-empty" data-for="id_score_language">Select rating</div>
+            </div>
+          </div>
+
+          <div class="text-block">
+            <label class="form-label" for="id_comments">Comments and Feedback</label>
+            <textarea name="comments" id="id_comments" class="form-control" rows="6">{{ form.comments.value|default:'' }}</textarea>
+            {% if form.comments.errors %}
+              <p class="text-sm mt-1" style="color: var(--color-danger);">{{ form.comments.errors.0 }}</p>
+            {% endif %}
+          </div>
+
+          <div class="text-block">
+            <h3 class="section-title">Final Decision</h3>
+            <div class="decision-options">
+              <label class="form-label" for="id_decision">Final Decision *</label>
+              <select name="decision" id="id_decision" class="form-control" required>
+                <option value="">-- Select Decision --</option>
+                <option value="accept" {% if form.decision.value == 'accept' %}selected{% endif %}>Accept</option>
+                <option value="revision" {% if form.decision.value == 'revision' %}selected{% endif %}>Revision Required</option>
+                <option value="reject" {% if form.decision.value == 'reject' %}selected{% endif %}>Reject</option>
+              </select>
+              {% if form.decision.errors %}
+                <p class="text-sm mt-1" style="color: var(--color-danger);">{{ form.decision.errors.0 }}</p>
+              {% endif %}
+            </div>
+          </div>
+
+          <div class="form-actions">
+            <button type="button" class="btn btn-primary" id="btn-submit-review">Submit Review Decision</button>
+            <a href="{% url 'dashboard:reviewer_submissions' %}" class="btn btn-ghost">Back</a>
+          </div>
+        </form>
+      </section>
+      {% endif %}
+    </div>
+  </div>
+</div>
+{% endblock %}
+
+{% block extra_js %}
+<script>
+document.getElementById('btn-submit-review')?.addEventListener('click', function () {
+  Swal.fire({
+    title: 'Are you sure you want to submit your review decision?',
+    text: 'You will not be able to modify your decision after submission.',
+    icon: 'warning',
+    showCancelButton: true,
+    confirmButtonText: 'Yes, Submit',
+    cancelButtonText: 'Cancel',
+    confirmButtonColor: '#1e2d4a'
+  }).then((result) => {
+    if (result.isConfirmed) document.getElementById('review-form').submit();
+  });
+});
+
+function starsForValue(v) {
+  const n = parseInt(v, 10);
+  if (!n || n < 1) return '';
+  return '★'.repeat(n) + '☆'.repeat(5 - n);
+}
+
+['id_score_originality', 'id_score_relevance', 'id_score_clarity', 'id_score_language'].forEach((id) => {
+  const field = document.getElementById(id);
+  const starBox = document.querySelector(`.score-stars[data-for="${id}"]`);
+  if (!field || !starBox) return;
+
+  const render = () => {
+    const stars = starsForValue(field.value);
+    if (!stars) {
+      starBox.textContent = 'Select rating';
+      starBox.classList.add('is-empty');
+      return;
+    }
+    starBox.textContent = stars;
+    starBox.classList.remove('is-empty');
+  };
+
+  field.addEventListener('change', render);
+  render();
+});
+</script>
+{% endblock %}

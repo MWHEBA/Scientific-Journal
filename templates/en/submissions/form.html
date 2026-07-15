@@ -1,0 +1,563 @@
+{% extends 'base_dashboard.html' %}
+
+{% block title %}{% if is_edit %}Edit Submission{% else %}Submit New Article{% endif %}{% endblock %}
+{% block nav_author_create %}{% if is_create %}active{% endif %}{% endblock %}
+{% block nav_author_home %}{% if is_edit %}active{% endif %}{% endblock %}
+
+{% block breadcrumb %}
+    <span class="dash-breadcrumb__sep">/</span>
+    {% if is_edit %}
+    <a href="{% url 'dashboard:author' %}">My Submissions</a>
+    <span class="dash-breadcrumb__sep">/</span>
+    <span class="dash-breadcrumb__current">Edit</span>
+    {% else %}
+    <span class="dash-breadcrumb__current">Submit New Article</span>
+    {% endif %}
+{% endblock %}
+
+{% block content %}
+
+<!-- Tagify CSS -->
+<link rel="stylesheet" href="https://cdn.jsdelivr.net/npm/@yaireo/tagify@latest/dist/tagify.css">
+
+<!-- Page Header -->
+<div class="submit-page-header">
+    <div>
+        <h1 class="submit-page-header__title">{% if is_edit %}Edit Submission{% else %}Submit New Article{% endif %}</h1>
+        <p class="submit-page-header__subtitle">
+            {% if is_edit %}{{ object.title|truncatechars:70 }}{% else %}Complete all required fields then save as draft or submit directly{% endif %}
+        </p>
+    </div>
+    <a href="{% url 'dashboard:author' %}" class="btn btn-ghost btn-sm">
+        <svg class="icon icon-xs"><use href="#icon-home"/></svg>
+        Back to Dashboard
+    </a>
+</div>
+
+<!-- Steps Indicator -->
+<div class="submit-steps">
+    <div class="submit-step submit-step--active">
+        <div class="submit-step__num">1</div>
+        <span class="submit-step__label">Article Information</span>
+    </div>
+    <div class="submit-step__line"></div>
+    <div class="submit-step submit-step--active">
+        <div class="submit-step__num">2</div>
+        <span class="submit-step__label">Manuscript File</span>
+    </div>
+    <div class="submit-step__line"></div>
+    <div class="submit-step">
+        <div class="submit-step__num">3</div>
+        <span class="submit-step__label">Co-Authors</span>
+    </div>
+</div>
+
+<form method="post" enctype="multipart/form-data" novalidate class="submit-form" id="submissionForm">
+    {% csrf_token %}
+    <input type="hidden" name="action" id="formAction" value="save">
+
+    <div class="submit-layout">
+
+        <!-- ===== Main Content ===== -->
+        <div class="submit-main">
+
+            <!-- Section 1: Article Information -->
+            <div class="submit-section">
+                <div class="submit-section__header">
+                    <div class="submit-section__icon">
+                        <svg class="icon icon-md"><use href="#icon-articles"/></svg>
+                    </div>
+                    <div>
+                        <h2 class="submit-section__title">Article Information</h2>
+                        <p class="submit-section__desc">Basic scientific article metadata</p>
+                    </div>
+                </div>
+                <div class="submit-section__body">
+
+                    <div class="submit-field">
+                        <label class="submit-field__label" for="id_title">
+                            Article Title
+                            <span class="submit-field__required">*</span>
+                        </label>
+                        <input type="text" name="title" id="id_title"
+                               class="submit-field__input {% if form.title.errors %}submit-field__input--error{% endif %}"
+                               value="{{ form.title.value|default:'' }}"
+                               placeholder="Enter the full article title">
+                        {% if form.title.errors %}
+                        <span class="submit-field__error">{{ form.title.errors.0 }}</span>
+                        {% endif %}
+                    </div>
+
+                    <div class="submit-field">
+                        <label class="submit-field__label" for="id_abstract">
+                            Abstract
+                            <span class="submit-field__required">*</span>
+                        </label>
+                        <textarea name="abstract" id="id_abstract" rows="6"
+                                  class="submit-field__input submit-field__textarea {% if form.abstract.errors %}submit-field__input--error{% endif %}"
+                                  placeholder="Write a comprehensive abstract (150-300 words)">{{ form.abstract.value|default:'' }}</textarea>
+                        {% if form.abstract.errors %}
+                        <span class="submit-field__error">{{ form.abstract.errors.0 }}</span>
+                        {% endif %}
+                    </div>
+
+                    <div class="submit-field-row">
+                        <div class="submit-field">
+                            <label class="submit-field__label" for="id_keywords_input">
+                                Keywords <span class="submit-field__help">(Optional)</span>
+                            </label>
+                            <input type="text" id="id_keywords_input"
+                                   class="submit-field__input tagify-input {% if form.keywords.errors %}submit-field__input--error{% endif %}"
+                                   value="{{ form.keywords.initial|default:'' }}"
+                                   placeholder="Add keywords">
+                            <input type="hidden" name="keywords" id="id_keywords">
+                            <span class="submit-field__help">Separate words with commas or press Enter</span>
+                            {% if form.keywords.errors %}
+                            <span class="submit-field__error">{{ form.keywords.errors.0 }}</span>
+                            {% endif %}
+                        </div>
+
+                        <div class="submit-field">
+                            <label class="submit-field__label" for="id_section">
+                                Scientific Section <span class="submit-field__help">(Optional)</span>
+                            </label>
+                            <select name="section" id="id_section"
+                                    class="submit-field__input submit-field__select {% if form.section.errors %}submit-field__input--error{% endif %}">
+                                <option value="">— No section selected —</option>
+                                {% for val, label in form.section.field.choices %}
+                                    {% if val %}
+                                    <option value="{{ val }}" {% if form.section.value|stringformat:"s" == val|stringformat:"s" %}selected{% endif %}>
+                                        {{ label }}
+                                    </option>
+                                    {% endif %}
+                                {% endfor %}
+                            </select>
+                            {% if form.section.errors %}
+                            <span class="submit-field__error">{{ form.section.errors.0 }}</span>
+                            {% endif %}
+                        </div>
+
+                        <div class="submit-field">
+                            <label class="submit-field__label" for="id_corresponding_author_email">
+                                Corresponding Author Email
+                                <span class="submit-field__required">*</span>
+                            </label>
+                            <input type="email" name="corresponding_author_email" id="id_corresponding_author_email"
+                                   class="submit-field__input {% if form.corresponding_author_email.errors %}submit-field__input--error{% endif %}"
+                                   value="{{ form.corresponding_author_email.value|default:'' }}"
+                                   placeholder="email@example.com"
+                                   required>
+                            {% if form.corresponding_author_email.errors %}
+                            <span class="submit-field__error">{{ form.corresponding_author_email.errors.0 }}</span>
+                            {% endif %}
+                        </div>
+                    </div>
+
+                </div>
+            </div>
+
+            <!-- Section 2: Manuscript File -->
+            <div class="submit-section">
+                <div class="submit-section__header">
+                    <div class="submit-section__icon">
+                        <svg class="icon icon-md"><use href="#icon-pdf"/></svg>
+                    </div>
+                    <div>
+                        <h2 class="submit-section__title">Manuscript File</h2>
+                        <p class="submit-section__desc">
+                            {% if current_manuscript %}Current Version: {{ current_manuscript.version }}{% else %}Upload article file in PDF format{% endif %}
+                        </p>
+                    </div>
+                </div>
+                <div class="submit-section__body">
+
+                    {% if current_manuscript %}
+                    <div class="submit-current-file">
+                        <svg class="icon icon-md" style="color:var(--color-danger);flex-shrink:0;"><use href="#icon-pdf"/></svg>
+                        <div class="submit-current-file__info">
+                            <span class="submit-current-file__name">{{ current_manuscript.file.name|slice:"20:" }}</span>
+                            <span class="submit-current-file__meta">Version {{ current_manuscript.version }} — Current File</span>
+                        </div>
+                        <a href="{{ current_manuscript.file.url }}" target="_blank" class="btn btn-ghost btn-sm">
+                            <svg class="icon icon-xs"><use href="#icon-pdf"/></svg>
+                            View
+                        </a>
+                    </div>
+                    {% endif %}
+
+                    <div class="submit-upload-area" id="uploadArea" {% if current_manuscript %}style="margin-top:var(--space-4);"{% endif %}>
+                        <svg class="icon submit-upload-area__icon"><use href="#icon-pdf"/></svg>
+                        <p class="submit-upload-area__title">{% if current_manuscript %}Upload new file (Optional){% else %}Drag file here or click to select{% endif %}</p>
+                        <p class="submit-upload-area__hint">PDF only — Maximum size 20MB</p>
+                        <input type="file" name="manuscript" id="manuscriptFile"
+                               accept=".pdf" class="submit-upload-area__input" {% if not current_manuscript %}required{% endif %}>
+                        <label for="manuscriptFile" class="btn btn-primary btn-sm" style="margin-top:var(--space-3);">
+                            Choose PDF File
+                        </label>
+                    </div>
+                    <div class="submit-upload-preview" id="uploadPreview" style="display:none;">
+                        <svg class="icon icon-md" style="color:var(--color-danger)"><use href="#icon-pdf"/></svg>
+                        <span class="submit-upload-preview__name" id="uploadFileName"></span>
+                        <span class="submit-upload-preview__size" id="uploadFileSize"></span>
+                        <button type="button" class="submit-upload-preview__remove" id="removeFile">✕</button>
+                    </div>
+
+                </div>
+            </div>
+
+            <!-- Section 3: Co-Authors -->
+            <div class="submit-section">
+                <div class="submit-section__header">
+                    <div class="submit-section__icon">
+                        <svg class="icon icon-md"><use href="#icon-reviewers"/></svg>
+                    </div>
+                    <div>
+                        <h2 class="submit-section__title">Co-Authors</h2>
+                        <p class="submit-section__desc">Add co-authors participating in the article (optional)</p>
+                    </div>
+                </div>
+                <div class="submit-section__body">
+                    {{ coauthor_formset.management_form }}
+                    {% for coform in coauthor_formset %}
+                    <div class="submit-coauthor-row" data-form-idx="{{ forloop.counter0 }}">
+                        <div style="display: grid; grid-template-columns: 1fr 1fr auto; gap: var(--space-4); align-items: flex-end;">
+                            <div>
+                                <label class="submit-field__label">Full Name</label>
+                                <input type="text" name="{{ coform.full_name.html_name }}"
+                                       class="submit-field__input"
+                                       value="{{ coform.full_name.value|default:'' }}"
+                                       placeholder="">
+                            </div>
+                            <div>
+                                <label class="submit-field__label">Institution</label>
+                                <input type="text" name="{{ coform.institution.html_name }}"
+                                       class="submit-field__input"
+                                       value="{{ coform.institution.value|default:'' }}"
+                                       placeholder="">
+                            </div>
+                            <div style="display:flex;align-items:center;justify-content:flex-end;">
+                            </div>
+                        </div>
+                        {{ coform.order }}
+                    </div>
+                    {% endfor %}
+                    <template id="coauthorEmptyForm">
+                        <div class="submit-coauthor-row" data-form-idx="__prefix__">
+                            <div style="display: grid; grid-template-columns: 1fr 1fr auto; gap: var(--space-4); align-items: flex-end;">
+                                <div>
+                                    <label class="submit-field__label">Full Name</label>
+                                    <input type="text" name="{{ coauthor_formset.empty_form.full_name.html_name }}"
+                                           class="submit-field__input"
+                                           value=""
+                                           placeholder="">
+                                </div>
+                                <div>
+                                    <label class="submit-field__label">Institution</label>
+                                    <input type="text" name="{{ coauthor_formset.empty_form.institution.html_name }}"
+                                           class="submit-field__input"
+                                           value=""
+                                           placeholder="">
+                                </div>
+                                <div style="display:flex;align-items:center;justify-content:flex-end;"></div>
+                            </div>
+                            {{ coauthor_formset.empty_form.order }}
+                        </div>
+                    </template>
+                    <button type="button" class="btn btn-secondary btn-sm" id="addCoauthor" style="margin-top:var(--space-3);">
+                        <svg class="icon icon-xs"><use href="#icon-plus"/></svg>
+                        Add another author
+                    </button>
+                </div>
+            </div>
+
+        </div>
+
+        <!-- ===== Sidebar Summary ===== -->
+        <div class="submit-sidebar">
+
+            <!-- Guidelines -->
+            <div class="submit-guide">
+                <h3 class="submit-guide__title">
+                    <svg class="icon icon-xs"><use href="#icon-about"/></svg>
+                    {% if is_edit %}Editing Guidelines{% else %}Submission Guidelines{% endif %}
+                </h3>
+                <ul class="submit-guide__list">
+                    <li>Make sure the title is clear and accurate</li>
+                    <li>Abstract is between 150 and 300 words</li>
+                    <li>Keywords from 4 to 8 words</li>
+                    <li>File in PDF format only</li>
+                    <li>Maximum file size is 20MB</li>
+                </ul>
+            </div>
+
+            <!-- Actions -->
+            <div class="submit-actions">
+                <button type="submit" data-action="save" class="btn btn-secondary btn-full">
+                    <svg class="icon icon-sm"><use href="#icon-save"/></svg>
+                    {% if is_edit %}Save Changes{% else %}Save as Draft{% endif %}
+                </button>
+                {% if is_create or object.status == 'draft' %}
+                <button type="submit" data-action="submit" class="btn btn-primary btn-full">
+                    <svg class="icon icon-sm"><use href="#icon-send"/></svg>
+                    Submit Article
+                </button>
+                {% endif %}
+                <a href="{% url 'dashboard:author' %}" class="btn btn-ghost btn-full">
+                    {% if is_edit %}Back{% else %}Cancel{% endif %}
+                </a>
+            </div>
+
+            <!-- Note -->
+            <div class="submit-note">
+                <svg class="icon icon-xs" style="color:var(--color-info);flex-shrink:0;margin-top:2px;"><use href="#icon-about"/></svg>
+                <p>{% if is_edit %}You can edit the article and save changes before official submission{% else %}You can save the article as a draft and edit it later before submitting{% endif %}</p>
+            </div>
+
+        </div>
+
+    </div>
+</form>
+
+<!-- Tagify JS -->
+<script src="https://cdn.jsdelivr.net/npm/@yaireo/tagify@latest/dist/tagify.min.js"></script>
+<script>
+// Initialize Tagify
+const input = document.getElementById('id_keywords_input');
+const hiddenInput = document.getElementById('id_keywords');
+const tagify = new Tagify(input, {
+    whitelist: [],
+    maxTags: 8,
+    dropdown: {
+        maxItems: 20,
+        classname: "tagify__dropdown",
+        enabled: 0,
+        closeOnSelect: false,
+        searchByKey: true
+    },
+    placeholder: 'Add keywords...',
+    delimiters: ",",
+});
+
+// Update hidden input when tags change
+tagify.on('change', function() {
+    hiddenInput.value = tagify.value.map(tag => tag.value).join(', ');
+});
+
+// File upload preview
+const fileInput = document.getElementById('manuscriptFile');
+const area = document.getElementById('uploadArea');
+const preview = document.getElementById('uploadPreview');
+const fileName = document.getElementById('uploadFileName');
+const fileSize = document.getElementById('uploadFileSize');
+const removeBtn = document.getElementById('removeFile');
+
+const MAX_FILE_SIZE = 20 * 1024 * 1024; // 20MB
+const hasCurrentManuscript = "{{ current_manuscript|yesno:'true,false' }}" === "true";
+
+fileInput.addEventListener('change', function() {
+    if (this.files && this.files[0]) {
+        const file = this.files[0];
+        
+        // Validate file type
+        if (file.type !== 'application/pdf') {
+            toastr.error('The file must be in PDF format only');
+            this.value = '';
+            area.style.display = 'flex';
+            preview.style.display = 'none';
+            return;
+        }
+        
+        // Validate file size
+        if (file.size > MAX_FILE_SIZE) {
+            toastr.error('File size exceeds 20MB. Maximum allowed size is 20MB');
+            this.value = '';
+            area.style.display = 'flex';
+            preview.style.display = 'none';
+            return;
+        }
+        
+        // Show preview
+        fileName.textContent = file.name;
+        fileSize.textContent = (file.size / (1024*1024)).toFixed(2) + ' MB';
+        area.style.display = 'none';
+        preview.style.display = 'flex';
+        toastr.success('File selected successfully');
+    }
+});
+
+removeBtn.addEventListener('click', function() {
+    fileInput.value = '';
+    area.style.display = 'flex';
+    preview.style.display = 'none';
+});
+
+// Drag & drop
+area.addEventListener('dragover', e => { 
+    e.preventDefault(); 
+    area.classList.add('submit-upload-area--drag'); 
+});
+area.addEventListener('dragleave', () => area.classList.remove('submit-upload-area--drag'));
+area.addEventListener('drop', e => {
+    e.preventDefault();
+    area.classList.remove('submit-upload-area--drag');
+    const file = e.dataTransfer.files[0];
+    
+    if (!file) {
+        toastr.error('No file selected');
+        return;
+    }
+    
+    // Validate file type
+    if (file.type !== 'application/pdf') {
+        toastr.error('The file must be in PDF format only');
+        return;
+    }
+    
+    // Validate file size
+    if (file.size > MAX_FILE_SIZE) {
+        toastr.error('File size exceeds 20MB. Maximum allowed size is 20MB');
+        return;
+    }
+    
+    fileInput.files = e.dataTransfer.files;
+    fileInput.dispatchEvent(new Event('change'));
+});
+
+// Add co-author button
+const addCoauthorBtn = document.getElementById('addCoauthor');
+const coauthorEmptyForm = document.getElementById('coauthorEmptyForm');
+const totalForms = document.querySelector('input[name="co_authors-TOTAL_FORMS"]');
+const submissionForm = document.getElementById('submissionForm');
+
+// Function to check if all full_name fields are filled
+function checkAllNamesAreFilled() {
+    const nameInputs = document.querySelectorAll('input[name*="full_name"]');
+    return Array.from(nameInputs).every(input => input.value.trim() !== '');
+}
+
+// Function to update button state
+function updateAddCoauthorButtonState() {
+    const allFilled = checkAllNamesAreFilled();
+    if (addCoauthorBtn) {
+        addCoauthorBtn.disabled = !allFilled;
+        addCoauthorBtn.style.opacity = allFilled ? '1' : '0.5';
+        addCoauthorBtn.style.cursor = allFilled ? 'pointer' : 'not-allowed';
+        addCoauthorBtn.title = allFilled ? 'Add another author' : 'All author names must be filled first';
+    }
+}
+
+// Add event listeners to all name inputs
+function attachNameInputListeners() {
+    const nameInputs = document.querySelectorAll('input[name*="full_name"]');
+    nameInputs.forEach(input => {
+        input.addEventListener('input', updateAddCoauthorButtonState);
+        input.addEventListener('change', updateAddCoauthorButtonState);
+    });
+}
+
+// Initial check
+attachNameInputListeners();
+updateAddCoauthorButtonState();
+
+// Validate form before submit
+submissionForm.addEventListener('submit', function(e) {
+    const titleInput = document.getElementById('id_title');
+    const abstractInput = document.getElementById('id_abstract');
+    const emailInput = document.getElementById('id_corresponding_author_email');
+    const manuscriptInput = document.getElementById('manuscriptFile');
+    const formActionInput = document.getElementById('formAction');
+    
+    if (!titleInput.value.trim()) {
+        e.preventDefault();
+        toastr.error('Article title must be entered');
+        titleInput.focus();
+        return false;
+    }
+    
+    if (!abstractInput.value.trim()) {
+        e.preventDefault();
+        toastr.error('Article abstract must be entered');
+        abstractInput.focus();
+        return false;
+    }
+    
+    if (!emailInput.value.trim()) {
+        e.preventDefault();
+        toastr.error('Corresponding author email must be entered');
+        emailInput.focus();
+        return false;
+    }
+    
+    if (formActionInput.value === 'submit') {
+        if (!hasCurrentManuscript && (!manuscriptInput.files || manuscriptInput.files.length === 0)) {
+            e.preventDefault();
+            toastr.error('A PDF file must be selected for the manuscript');
+            return false;
+        }
+        
+        if (manuscriptInput.files && manuscriptInput.files.length > 0) {
+            const file = manuscriptInput.files[0];
+            if (file.type !== 'application/pdf') {
+                e.preventDefault();
+                toastr.error('The file must be in PDF format only');
+                return false;
+            }
+            
+            if (file.size > MAX_FILE_SIZE) {
+                e.preventDefault();
+                toastr.error('File size exceeds 20MB');
+                return false;
+            }
+        }
+        
+        e.preventDefault();
+        Swal.fire({
+            title: 'Are you sure you want to submit the article?',
+            text: 'You will not be able to edit the article after submission',
+            icon: 'warning',
+            showCancelButton: true,
+            confirmButtonText: 'Yes, Submit Article',
+            cancelButtonText: 'Cancel'
+        }).then((result) => {
+            if (result.isConfirmed) {
+                submissionForm.submit();
+            }
+        });
+        return false;
+    }
+});
+
+// Handle button clicks to set the action
+document.querySelectorAll('.submit-actions button[type="submit"]').forEach(button => {
+    button.addEventListener('click', function(e) {
+        const action = this.getAttribute('data-action');
+        document.getElementById('formAction').value = action;
+    });
+});
+
+if (addCoauthorBtn) {
+    addCoauthorBtn.addEventListener('click', function(e) {
+        e.preventDefault();
+        
+        if (!checkAllNamesAreFilled()) {
+            toastr.warning('All author names must be filled before adding a new author');
+            return;
+        }
+        
+        const formIdx = parseInt(totalForms.value);
+        const wrapper = document.createElement('div');
+        wrapper.innerHTML = coauthorEmptyForm.innerHTML.replace(/__prefix__/g, formIdx);
+        const newForm = wrapper.firstElementChild;
+        
+        const sectionBody = addCoauthorBtn.closest('.submit-section__body');
+        sectionBody.insertBefore(newForm, addCoauthorBtn);
+        
+        totalForms.value = formIdx + 1;
+        
+        attachNameInputListeners();
+        updateAddCoauthorButtonState();
+    });
+}
+</script>
+
+{% endblock %}

@@ -24,12 +24,12 @@
   flex-direction: column;
   position: fixed;
   top: 0;
-  right: 0;
+  left: 0;
   bottom: 0;
   z-index: 100;
   transition: transform var(--transition);
   overflow-y: auto;
-  border-left: 1px solid var(--color-border);
+  border-right: 1px solid var(--color-border);
   box-shadow: var(--shadow-sm);
 }
 
@@ -113,12 +113,12 @@
 .dash-nav-item.active::before {
   content: '';
   position: absolute;
-  right: 0;
+  left: 0;
   top: 0;
   bottom: 0;
   width: 3px;
   background-color: var(--color-accent);
-  border-radius: var(--radius-sm) 0 0 var(--radius-sm);
+  border-radius: 0 var(--radius-sm) var(--radius-sm) 0;
 }
 
 .dash-nav-item__icon {
@@ -131,7 +131,7 @@
 }
 
 .dash-nav-item__badge {
-  margin-right: auto;
+  margin-left: auto;
   background-color: var(--color-accent);
   color: var(--color-text-inverse);
   font-size: var(--text-xs);
@@ -215,7 +215,7 @@
 
 .dash-main {
   flex: 1;
-  margin-right: var(--sidebar-width);
+  margin-left: var(--sidebar-width);
   display: flex;
   flex-direction: column;
   min-height: 100vh;
@@ -237,7 +237,7 @@
   position: sticky;
   top: 0;
   z-index: 50;
-  border-right: 3px solid var(--color-accent);
+  border-left: 3px solid var(--color-accent);
 }
 
 .dash-topbar__right {
@@ -334,7 +334,7 @@
 .dash-topbar__notif-menu {
   position: absolute;
   top: calc(100% + var(--space-2));
-  left: 0;
+  right: 0;
   width: min(360px, 90vw);
   background: #fff;
   border: 1px solid rgba(24, 40, 72, 0.14);
@@ -464,7 +464,7 @@
 
 @media (max-width: 1024px) {
   .dash-sidebar {
-    transform: translateX(100%);
+    transform: translateX(-100%);
   }
 
   .dash-sidebar.open {
@@ -472,7 +472,7 @@
   }
 
   .dash-main {
-    margin-right: 0;
+    margin-left: 0;
   }
 
   .dash-topbar__hamburger {
@@ -499,7 +499,7 @@
    ======================================== */
 
 .notification--unread {
-  border-right: 4px solid var(--color-accent);
+  border-left: 4px solid var(--color-accent);
 }
 
 .notification--read {

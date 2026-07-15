@@ -1,0 +1,384 @@
+{% extends 'base_dashboard.html' %}
+{% load dashboard_extras %}
+
+{% block title %}Manage Submissions{% endblock %}
+{% block nav_admin_submissions %}active{% endblock %}
+{% block breadcrumb %}
+  <span class="dash-breadcrumb__sep">/</span>
+  <span class="dash-breadcrumb__current">Submissions</span>
+{% endblock %}
+
+{% block extra_css %}
+<style>
+  .submissions-shell { display: grid; gap: var(--space-5); }
+  .triage-panel {
+    border: 1px solid var(--color-border);
+    background: var(--color-surface);
+    padding: var(--space-4);
+  }
+  .triage-title {
+    margin: 0 0 var(--space-3);
+    font-size: var(--text-sm);
+    color: var(--color-text-muted);
+  }
+  .preset-row {
+    display: flex;
+    flex-wrap: wrap;
+    gap: var(--space-2);
+    margin-bottom: var(--space-4);
+  }
+  .preset-btn.active {
+    border-color: var(--color-primary);
+    color: var(--color-primary);
+    background: color-mix(in oklab, var(--color-primary) 8%, transparent);
+  }
+  .table-wrap {
+    border: 1px solid var(--color-border);
+    background: var(--color-surface);
+    overflow: hidden;
+  }
+  .table-wrap .data-table { border: 0; box-shadow: none; }
+  .table-wrap thead th { white-space: nowrap; }
+  .sub-title-link {
+    color: var(--color-text);
+    font-weight: 600;
+    text-decoration: none;
+  }
+  .sub-title-link:hover { color: var(--color-primary); }
+  .reviewer-cell {
+    max-width: 180px;
+    white-space: nowrap;
+    overflow: hidden;
+    text-overflow: ellipsis;
+  }
+  .age-cell {
+    white-space: nowrap;
+    color: var(--color-text-muted);
+    font-size: var(--text-sm);
+  }
+  .actions-cell {
+    display: flex;
+    flex-wrap: wrap;
+    gap: 6px;
+    align-items: center;
+  }
+  .pagination-row {
+    display: flex;
+    justify-content: center;
+    align-items: center;
+    gap: var(--space-2);
+  }
+  .modal-backdrop {
+    position: fixed;
+    inset: 0;
+    background: rgba(15, 23, 42, .42);
+    display: none;
+    align-items: center;
+    justify-content: center;
+    z-index: 200;
+    padding: var(--space-4);
+  }
+  .modal-backdrop.show { display: flex; }
+  .modal-card {
+    width: min(620px, 96vw);
+    background: var(--color-surface);
+    border: 1px solid var(--color-border);
+    box-shadow: var(--shadow-md);
+  }
+  .modal-head {
+    display: flex;
+    justify-content: space-between;
+    align-items: center;
+    padding: var(--space-4) var(--space-5);
+    border-bottom: 1px solid var(--color-border);
+  }
+  .modal-title {
+    margin: 0;
+    font-size: var(--text-lg);
+    font-weight: 700;
+    color: var(--color-primary);
+  }
+  .modal-close {
+    border: 0;
+    background: transparent;
+    color: var(--color-text-muted);
+    font-size: 20px;
+    line-height: 1;
+    cursor: pointer;
+  }
+  .modal-body { padding: var(--space-5); }
+  .modal-actions {
+    display: flex;
+    justify-content: flex-end;
+    gap: var(--space-2);
+  }
+  @media (max-width: 640px) {
+    .actions-cell { min-width: 170px; }
+  }
+</style>
+{% endblock %}
+
+{% block content %}
+<div class="page-header">
+  <h1 class="page-header__title">Manage Submissions</h1>
+</div>
+
+<div class="submissions-shell">
+  <section class="triage-panel">
+    <p class="triage-title">Quick Filters</p>
+    <div class="preset-row">
+      {% for item in preset_items %}
+      <a href="{{ base_submissions_url|default:default_submissions_url }}?preset={{ item.key }}{% if preset_query %}&{{ preset_query }}{% endif %}"
+         class="btn btn-sm btn-ghost preset-btn {% if current_filters.preset == item.key %}active{% endif %}">
+        {% if item.key == 'unassigned_review' %}Under Review (Unassigned)
+        {% elif item.key == 'status:under_initial_check' %}Initial Checking
+        {% elif item.key == 'status:under_review' %}Under Review
+        {% elif item.key == 'status:draft' %}Draft
+        {% elif item.key == 'status:revision_required' %}Revision Required
+        {% elif item.key == 'status:accepted_awaiting_payment' %}Accepted (Awaiting Payment)
+        {% elif item.key == 'status:payment_processing' %}Payment Processing
+        {% elif item.key == 'status:paid' %}Paid
+        {% elif item.key == 'status:published' %}Published
+        {% elif item.key == 'status:rejected' %}Rejected
+        {% elif item.key == 'status:expired' %}Expired
+        {% elif item.key == 'status:withdrawn' %}Withdrawn
+        {% else %}{{ item.label }}{% endif %} ({{ item.count }})
+      </a>
+      {% endfor %}
+    </div>
+
+    <form method="get" class="filter-bar" style="--filter-cols:minmax(240px,1.6fr) repeat(3,minmax(150px,1fr)) auto;">
+      <div class="form-group mb-0">
+        <label class="form-label">Search</label>
+        <input type="text" name="q" class="form-input" value="{{ current_filters.q }}" placeholder="ID / Title / Author">
+      </div>
+      <div class="form-group mb-0">
+        <label class="form-label">Section</label>
+        <select name="section" class="form-select">
+          <option value="">All Sections</option>
+          {% for sec in sections %}
+            <option value="{{ sec.pk }}" {% if current_filters.section == sec.pk|stringformat:"s" %}selected{% endif %}>{{ sec.name }}</option>
+          {% endfor %}
+        </select>
+      </div>
+      <div class="form-group mb-0">
+        <label class="form-label">From</label>
+        <input type="date" name="date_from" class="form-input" value="{{ current_filters.date_from }}">
+      </div>
+      <div class="form-group mb-0">
+        <label class="form-label">To</label>
+        <input type="date" name="date_to" class="form-input" value="{{ current_filters.date_to }}">
+      </div>
+      <input type="hidden" name="preset" value="{{ current_filters.preset }}">
+      <div class="form-group mb-0 filter-bar__actions-wrap">
+        <label class="form-label">Actions</label>
+        <div class="filter-bar__actions">
+          <button type="submit" class="btn btn-primary">Apply</button>
+          <a href="{{ base_submissions_url|default:default_submissions_url }}" class="btn btn-ghost">Clear</a>
+        </div>
+      </div>
+    </form>
+  </section>
+
+  <section class="table-wrap">
+    <table class="data-table">
+      <thead>
+        <tr>
+          <th>#</th>
+          <th>Title</th>
+          <th>Author</th>
+          <th>Section</th>
+          <th>Status</th>
+          <th>Reviewer</th>
+          <th>Age</th>
+          <th>Actions</th>
+        </tr>
+      </thead>
+      <tbody>
+        {% for sub in submissions %}
+        <tr>
+          <td class="text-muted text-sm">{{ sub.pk }}</td>
+          <td>
+            {% if user.role == 'reviewer' and is_post_review_page %}
+              {% with review=sub.reviews.first %}
+                {% if review %}
+                  <a href="{% url 'reviews:detail' review.pk %}" class="sub-title-link">{{ sub.title|truncatechars:62 }}</a>
+                {% else %}
+                  <span class="sub-title-link">{{ sub.title|truncatechars:62 }}</span>
+                {% endif %}
+              {% endwith %}
+            {% else %}
+              <a href="{% if user.role == 'reviewer' %}{% url 'dashboard:reviewer_submission_detail' sub.pk %}{% else %}{% url 'dashboard:submission_detail' sub.pk %}{% endif %}" class="sub-title-link">{{ sub.title|truncatechars:62 }}</a>
+            {% endif %}
+          </td>
+          <td class="text-sm">{{ sub.author.get_full_name|default:sub.author.username }}</td>
+          <td class="text-sm">{{ sub.section.name }}</td>
+          <td>
+            <span class="badge
+              {% if sub.status == 'draft' %}badge-draft
+              {% elif sub.status == 'under_initial_check' %}badge-initial-check
+              {% elif sub.status == 'under_review' %}badge-under-review
+              {% elif sub.status == 'revision_required' %}badge-revision
+              {% elif sub.status == 'accepted_awaiting_payment' %}badge-accepted
+              {% elif sub.status == 'payment_processing' %}badge-payment-processing
+              {% elif sub.status == 'paid' %}badge-paid
+              {% elif sub.status == 'published' %}badge-published
+              {% elif sub.status == 'rejected' %}badge-rejected
+              {% elif sub.status == 'expired' %}badge-expired
+              {% elif sub.status == 'withdrawn' %}badge-withdrawn
+              {% endif %}">
+              {% if sub.status == 'draft' %}Draft
+              {% elif sub.status == 'under_initial_check' %}Initial Checking
+              {% elif sub.status == 'under_review' %}Under Review
+              {% elif sub.status == 'revision_required' %}Revision Required
+              {% elif sub.status == 'accepted_awaiting_payment' %}Accepted (Awaiting Payment)
+              {% elif sub.status == 'payment_processing' %}Payment Processing
+              {% elif sub.status == 'paid' %}Paid
+              {% elif sub.status == 'published' %}Published
+              {% elif sub.status == 'rejected' %}Reject
+              {% elif sub.status == 'expired' %}Expired
+              {% elif sub.status == 'withdrawn' %}Withdrawn
+              {% else %}{{ sub.get_status_display }}{% endif %}
+            </span>
+          </td>
+          <td class="text-sm reviewer-cell">
+            {% if sub.assigned_reviewer %}
+              {{ sub.assigned_reviewer.get_full_name|default:sub.assigned_reviewer.username }}
+            {% else %}
+              <span class="text-muted">Not Assigned</span>
+            {% endif %}
+          </td>
+          <td class="age-cell">{{ sub.created_at|timesince }} ago</td>
+          <td>
+            <div class="actions-cell">
+              {% if user.role == 'reviewer' and is_post_review_page %}
+                {% with review=sub.reviews.first %}
+                  {% if review %}
+                    <a href="{% url 'reviews:detail' review.pk %}" class="btn btn-sm btn-primary">View Review</a>
+                  {% endif %}
+                {% endwith %}
+              {% else %}
+                <a href="{% if user.role == 'reviewer' %}{% url 'dashboard:reviewer_submission_detail' sub.pk %}{% else %}{% url 'dashboard:submission_detail' sub.pk %}{% endif %}" class="btn btn-sm btn-ghost">View</a>
+              {% endif %}
+
+              {% if user.role == 'admin' %}
+                {% if sub.status == 'under_initial_check' %}
+                  <form method="post" action="{% url 'dashboard:submission_detail' sub.pk %}">
+                    {% csrf_token %}
+                    <input type="hidden" name="action" value="pass">
+                    <button type="submit" class="btn btn-sm btn-primary">Accept</button>
+                  </form>
+                  <button type="button"
+                          class="btn btn-sm btn-danger js-open-reject-modal"
+                          data-action="{% url 'dashboard:submission_detail' sub.pk %}"
+                          data-title="{{ sub.title|escape }}">
+                    Reject
+                  </button>
+                {% endif %}
+
+                {% if sub.status == 'under_review' %}
+                  {% if not sub.assigned_reviewer %}
+                    <a href="{% url 'dashboard:assign_reviewer' sub.pk %}" class="btn btn-sm btn-accent">Assign Reviewer</a>
+                  {% else %}
+                    <a href="{% url 'dashboard:assign_reviewer' sub.pk %}" class="btn btn-sm btn-ghost">Change Reviewer</a>
+                  {% endif %}
+                {% endif %}
+              {% elif user.role == 'reviewer' and not is_post_review_page %}
+                {% if sub.status != 'under_initial_check' %}
+                  {% if not sub.assigned_reviewer %}
+                    <form method="post" action="{% url 'dashboard:reviewer_submission_detail' sub.pk %}">
+                      {% csrf_token %}
+                      <input type="hidden" name="action" value="self_assign">
+                      <button type="submit" class="btn btn-sm btn-accent">Assign Myself</button>
+                    </form>
+                  {% elif sub.assigned_reviewer.id == user.id %}
+                    {% with review=sub.reviews.first %}
+                      <a href="{% url 'reviews:detail' review.pk %}" class="btn btn-sm btn-primary">Review</a>
+                    {% endwith %}
+                  {% endif %}
+                {% endif %}
+              {% endif %}
+            </div>
+          </td>
+        </tr>
+        {% empty %}
+        <tr>
+          <td colspan="8" style="padding: var(--space-8);">
+            <div class="empty-state" style="padding: var(--space-4);">
+              <h3 class="empty-state__title">No results found</h3>
+              <p class="empty-state__message mb-0">Change or clear the filters to view all submissions.</p>
+            </div>
+          </td>
+        </tr>
+        {% endfor %}
+      </tbody>
+    </table>
+  </section>
+
+  {% if is_paginated %}
+  <div class="pagination-row">
+    {% if page_obj.has_previous %}
+      <a href="?page={{ page_obj.previous_page_number }}{% if page_query %}&{{ page_query }}{% endif %}" class="btn btn-sm btn-ghost">Previous</a>
+    {% endif %}
+    <span class="text-sm text-muted">{{ page_obj.number }} / {{ paginator.num_pages }}</span>
+    {% if page_obj.has_next %}
+      <a href="?page={{ page_obj.next_page_number }}{% if page_query %}&{{ page_query }}{% endif %}" class="btn btn-sm btn-ghost">Next</a>
+    {% endif %}
+  </div>
+  {% endif %}
+</div>
+
+<div id="reject-modal" class="modal-backdrop" aria-hidden="true">
+  <div class="modal-card" role="dialog" aria-modal="true" aria-labelledby="reject-modal-title">
+    <div class="modal-head">
+      <h3 id="reject-modal-title" class="modal-title">Reject Submission</h3>
+      <button type="button" class="modal-close js-close-reject-modal" aria-label="Close">×</button>
+    </div>
+    <div class="modal-body">
+      <p id="reject-modal-subtitle" class="text-sm text-muted" style="margin-top:0;"></p>
+      <form id="reject-form" method="post">
+        {% csrf_token %}
+        <input type="hidden" name="action" value="reject">
+        <div class="form-group">
+          <label class="form-label">Rejection Reason</label>
+          <textarea name="reason" class="form-input" rows="5" required></textarea>
+        </div>
+        <div class="modal-actions">
+          <button type="button" class="btn btn-ghost js-close-reject-modal">Cancel</button>
+          <button type="submit" class="btn btn-danger">Confirm</button>
+        </div>
+      </form>
+    </div>
+  </div>
+</div>
+{% endblock %}
+
+{% block extra_js %}
+<script>
+(() => {
+  const modal = document.getElementById('reject-modal');
+  const form = document.getElementById('reject-form');
+  const subtitle = document.getElementById('reject-modal-subtitle');
+  if (!modal || !form || !subtitle) return;
+
+  const openButtons = document.querySelectorAll('.js-open-reject-modal');
+  const closeButtons = document.querySelectorAll('.js-close-reject-modal');
+
+  const open = (button) => {
+    form.action = button.dataset.action;
+    subtitle.textContent = button.dataset.title || '';
+    modal.classList.add('show');
+    modal.setAttribute('aria-hidden', 'false');
+  };
+  const close = () => {
+    modal.classList.remove('show');
+    modal.setAttribute('aria-hidden', 'true');
+  };
+
+  openButtons.forEach((button) => button.addEventListener('click', () => open(button)));
+  closeButtons.forEach((button) => button.addEventListener('click', close));
+  modal.addEventListener('click', (event) => { if (event.target === modal) close(); });
+  document.addEventListener('keydown', (event) => { if (event.key === 'Escape') close(); });
+})();
+</script>
+{% endblock %}

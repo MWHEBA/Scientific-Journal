@@ -5,49 +5,49 @@
 
 :root {
   /* ── Colors: Primary ── */
-  --color-primary:        #045280;
-  --color-primary-dark:   #03446b;
-  --color-primary-light:  #056a9e;
+  --color-primary:        #cc0000;
+  --color-primary-dark:   #9e0000;
+  --color-primary-light:  #ffdad4;
 
   /* ── Colors: Neutral (structural chrome) ── */
-  --color-neutral:        #808080;   /* رصاصي نقي */
-  --color-neutral-dark:   #595959;   /* رصاصي داكن نقي */
-  --color-neutral-light:  #999999;   /* رصاصي فاتح نقي */
+  --color-neutral:        #505f76;   /* Metallic Gray */
+  --color-neutral-dark:   #38485d;
+  --color-neutral-light:  #b7c8e1;
 
   /* ── Colors: Accent ── */
-  --color-accent:         #b01116;
-  --color-accent-dark:    #8a0d11;
+  --color-accent:         #cc0000;
+  --color-accent-dark:    #9e0000;
 
   /* ── Colors: Special ── */
   --color-gold:           var(--color-accent);   /* CTA arrow في الـ hero */
-  --color-oa-bg:          #e3f4f4;   /* خلفية badge وصول مجاني */
-  --color-oa-text:        #0a5c5c;   /* نص badge وصول مجاني */
+  --color-oa-bg:          #d0e1fb;   /* خلفية badge وصول مجاني */
+  --color-oa-text:        #505f76;   /* نص badge وصول مجاني */
 
   /* ── Colors: Neutrals ── */
-  --color-bg:             #f4f6f9;
+  --color-bg:             #f7f9fb;
   --color-surface:        #ffffff;
-  --color-surface-alt:    #f0f2f5;
-  --color-border:         #e2e6ea;
-  --color-border-light:   #eef0f3;
+  --color-surface-alt:    #eceef0;
+  --color-border:         #e2e8f0;
+  --color-border-light:   #f2f4f6;
 
   /* ── Colors: Typography ── */
-  --color-text:           #1a1f2e;
-  --color-text-secondary: #4a5568;
-  --color-text-muted:     #8a94a6;
+  --color-text:           #191c1e;
+  --color-text-secondary: #505f76;
+  --color-text-muted:     #926e69;
   --color-text-inverse:   #ffffff;
 
   /* ── Colors: Semantic ── */
   --color-success:        #2d9e6b;
   --color-warning:        #e8a020;
-  --color-danger:         #b01116;
-  --color-info:           #045280;
+  --color-danger:         #ba1a1a;
+  --color-info:           #cc0000;
 
   /* ── Dashboard Sidebar ── */
   --sidebar-bg:           #ffffff;
-  --sidebar-text:         #64748b;
-  --sidebar-active-bg:    #f0f5fa;
-  --sidebar-active-text:  #045280;
-  --sidebar-hover-bg:     #f8fafc;
+  --sidebar-text:         #505f76;
+  --sidebar-active-bg:    #d0e1fb;
+  --sidebar-active-text:  #cc0000;
+  --sidebar-hover-bg:     #f7f9fb;
   --sidebar-width:        260px;
 
   /* ── Spacing ── */
@@ -64,7 +64,7 @@
   /* ── Border Radius ── */
   --radius-sm:   4px;    /* buttons, inputs, alerts, tags */
   --radius-md:   4px;    /* نفس الـ sm — نظام sharp موحّد */
-  --radius-lg:   0px;    /* cards, widgets, panels — sharp */
+  --radius-lg:   8px;    /* cards, widgets, panels — rounded-lg */
   --radius-full: 9999px; /* badges, pills فقط */
 
   /* ── Shadows ── */
@@ -74,12 +74,12 @@
 
   /* ── Typography Scale ── */
   --text-xs:   0.75rem;    /* 12px */
-  --text-sm:   0.8125rem;  /* 13px */
-  --text-base: 0.9375rem;  /* 15px */
-  --text-md:   1.0625rem;  /* 17px */
-  --text-lg:   1.1875rem;  /* 19px */
-  --text-xl:   1.375rem;   /* 22px */
-  --text-2xl:  1.6875rem;  /* 27px */
+  --text-sm:   0.875rem;   /* 14px */
+  --text-base: 1.0rem;     /* 16px */
+  --text-md:   1.125rem;   /* 18px */
+  --text-lg:   1.25rem;    /* 20px */
+  --text-xl:   1.5rem;     /* 24px */
+  --text-2xl:  1.75rem;    /* 28px */
   --text-3xl:  2.0rem;     /* 32px */
   --text-4xl:  2.5rem;     /* 40px */
 

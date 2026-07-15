@@ -1,0 +1,355 @@
+{% load static dashboard_extras %}
+<!DOCTYPE html>
+<html lang="en" dir="ltr">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>{% block title %}Dashboard{% endblock %} — Marcil</title>
+    <link rel="preconnect" href="https://fonts.googleapis.com">
+    <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+    <link href="https://fonts.googleapis.com/css2?family=Outfit:wght@400;500;600;700&family=Inter:wght@400;500;600&display=swap" rel="stylesheet">
+    <link rel="stylesheet" href="{% static 'css/en/tokens.css' %}">
+    <link rel="stylesheet" href="{% static 'css/en/base.css' %}">
+    <link rel="stylesheet" href="{% static 'css/en/components.css' %}">
+    <link rel="stylesheet" href="{% static 'css/en/layout-dash.css' %}">
+    <link rel="stylesheet" href="https://cdn.jsdelivr.net/npm/sweetalert2@11/dist/sweetalert2.min.css">
+    {% block extra_css %}{% endblock %}
+</head>
+<body>
+
+{% include "icons.svg" %}
+
+<div class="dash-shell">
+
+    <aside class="dash-sidebar" id="dash-sidebar">
+        <a href="/" class="dash-sidebar__brand">
+            <img src="{% static 'img/Logo_en.png' %}" alt="Marcil"
+                 style="height:48px;width:auto;filter:brightness(0) invert(1);">
+        </a>
+
+        <nav class="dash-sidebar__nav">
+            {% if user.role == 'admin' %}
+            <span class="dash-sidebar__section-label">Workspace</span>
+            <a href="{% url 'dashboard:admin' %}" class="dash-nav-item {% block nav_admin_home %}{% endblock %}">
+                <svg class="icon icon-sm dash-nav-item__icon"><use href="#icon-dashboard"/></svg>
+                Dashboard
+            </a>
+
+            <span class="dash-sidebar__section-label">Content Management</span>
+            <a href="{% url 'dashboard:admin_submissions' %}" class="dash-nav-item {% block nav_admin_submissions %}{% endblock %}">
+                <svg class="icon icon-sm dash-nav-item__icon"><use href="#icon-archive"/></svg>
+                Submissions
+            </a>
+            <a href="{% url 'dashboard:admin_articles' %}" class="dash-nav-item {% block nav_admin_articles %}{% endblock %}">
+                <svg class="icon icon-sm dash-nav-item__icon"><use href="#icon-articles"/></svg>
+                Articles
+            </a>
+            <a href="{% url 'dashboard:issues' %}" class="dash-nav-item {% block nav_admin_issues %}{% endblock %}">
+                <svg class="icon icon-sm dash-nav-item__icon"><use href="#icon-issues"/></svg>
+                Issues & Volumes
+            </a>
+            <a href="{% url 'dashboard:sections' %}" class="dash-nav-item {% block nav_admin_sections %}{% endblock %}">
+                <svg class="icon icon-sm dash-nav-item__icon"><use href="#icon-folder"/></svg>
+                Sections
+            </a>
+            <a href="{% url 'dashboard:tags' %}" class="dash-nav-item {% block nav_admin_tags %}{% endblock %}">
+                <svg class="icon icon-sm dash-nav-item__icon"><use href="#icon-topics"/></svg>
+                Tags
+            </a>
+
+            <span class="dash-sidebar__section-label">User Management</span>
+            <a href="{% url 'dashboard:users' %}" class="dash-nav-item {% block nav_admin_users %}{% endblock %}{% block nav_admin_reviewers %}{% endblock %}{% block nav_admin_authors %}{% endblock %}">
+                <svg class="icon icon-sm dash-nav-item__icon"><use href="#icon-user"/></svg>
+                Members
+            </a>
+
+            <span class="dash-sidebar__section-label">Operations & Finance</span>
+            <a href="{% url 'dashboard:admin_payments' %}" class="dash-nav-item {% block nav_admin_payments %}{% endblock %}">
+                <svg class="icon icon-sm dash-nav-item__icon"><use href="#icon-payment"/></svg>
+                Payments
+            </a>
+
+            <span class="dash-sidebar__section-label">System Settings</span>
+            <a href="{% url 'dashboard:settings' %}" class="dash-nav-item {% block nav_admin_settings %}{% endblock %}">
+                <svg class="icon icon-sm dash-nav-item__icon"><use href="#icon-settings"/></svg>
+                Settings
+            </a>
+
+            {% elif user.role == 'author' %}
+            <span class="dash-sidebar__section-label">Submissions</span>
+            <a href="{% url 'submissions:create' %}" class="dash-nav-item dash-nav-item--accent {% block nav_author_create %}{% endblock %}" style="font-weight: 600;">
+                <svg class="icon icon-sm dash-nav-item__icon"><use href="#icon-plus"/></svg>
+                Submit New Article
+            </a>
+            <a href="{% url 'dashboard:author' %}" class="dash-nav-item {% block nav_author_articles %}{% endblock %}">
+                <svg class="icon icon-sm dash-nav-item__icon"><use href="#icon-articles"/></svg>
+                Submissions
+            </a>
+            <a href="{% url 'dashboard:author_drafts' %}" class="dash-nav-item {% block nav_author_drafts %}{% endblock %}">
+                <svg class="icon icon-sm dash-nav-item__icon"><use href="#icon-save"/></svg>
+                Drafts
+            </a>
+
+            <span class="dash-sidebar__section-label">Articles</span>
+            <a href="{% url 'dashboard:author_published' %}" class="dash-nav-item {% block nav_author_published %}{% endblock %}">
+                <svg class="icon icon-sm dash-nav-item__icon"><use href="#icon-guidelines"/></svg>
+                Published Articles
+            </a>
+
+            <span class="dash-sidebar__section-label">Settings</span>
+            <a href="{% url 'accounts:profile' %}" class="dash-nav-item {% block nav_author_profile %}{% endblock %}">
+                <svg class="icon icon-sm dash-nav-item__icon"><use href="#icon-user"/></svg>
+                My Account
+            </a>
+
+            {% elif user.role == 'reviewer' %}
+            <span class="dash-sidebar__section-label">Reviewer</span>
+            <a href="{% url 'dashboard:reviewer' %}" class="dash-nav-item {% block nav_reviewer_home %}{% endblock %}">
+                <svg class="icon icon-sm dash-nav-item__icon"><use href="#icon-dashboard"/></svg>
+                Dashboard
+            </a>
+            <a href="{% url 'dashboard:reviewer_submissions' %}" class="dash-nav-item {% block nav_reviewer_submissions %}{% endblock %}">
+                <svg class="icon icon-sm dash-nav-item__icon"><use href="#icon-archive"/></svg>
+                Submissions
+            </a>
+            <a href="{% url 'dashboard:reviewer_post_review' %}" class="dash-nav-item {% block nav_reviewer_post_review %}{% endblock %}">
+                <svg class="icon icon-sm dash-nav-item__icon"><use href="#icon-review"/></svg>
+                My Reviews
+            </a>
+            <a href="{% url 'dashboard:reviewer_articles' %}" class="dash-nav-item {% block nav_reviewer_articles %}{% endblock %}">
+                <svg class="icon icon-sm dash-nav-item__icon"><use href="#icon-articles"/></svg>
+                Articles
+            </a>
+            {% endif %}
+        </nav>
+
+        <div class="dash-sidebar__footer">
+            <div class="dash-sidebar__user">
+                <div class="dash-sidebar__avatar">
+                    {{ user.get_full_name|default:user.username|first|upper }}
+                </div>
+                <div class="dash-sidebar__user-info">
+                    <div class="dash-sidebar__user-name">{{ user.get_full_name|default:user.username }}</div>
+                    <div class="dash-sidebar__user-role">
+                        {% if user.role == 'admin' %}Admin
+                        {% elif user.role == 'author' %}Author
+                        {% elif user.role == 'reviewer' %}Reviewer{% endif %}
+                    </div>
+                </div>
+            </div>
+            <form method="post" action="{% url 'accounts:logout' %}">
+                {% csrf_token %}
+                <button type="submit" class="dash-sidebar__logout">
+                    <svg class="icon icon-sm"><use href="#icon-logout"/></svg>
+                    Logout
+                </button>
+            </form>
+        </div>
+    </aside>
+
+    <div class="dash-main">
+        <header class="dash-topbar">
+            <div class="dash-topbar__right">
+                <button class="dash-topbar__hamburger" id="sidebar-toggle" aria-label="Menu">
+                    <svg class="icon icon-md"><use href="#icon-dashboard"/></svg>
+                </button>
+                <nav class="dash-breadcrumb">
+                    <a href="{% url 'dashboard:home' %}">
+                        Dashboard
+                    </a>
+                    {% block breadcrumb %}{% endblock %}
+                </nav>
+            </div>
+            <div class="dash-topbar__left">
+                {% if is_impersonating and request.user.is_authenticated %}
+                <form method="post" action="{% url 'dashboard:impersonate_stop' %}" style="display:flex;align-items:center;gap:8px;">
+                    {% csrf_token %}
+                    <span class="badge badge-under-review">You are in impersonating mode</span>
+                    <button type="submit" class="btn btn-sm btn-primary">Go Back</button>
+                </form>
+                {% endif %}
+                <a href="/" class="dash-topbar__notif" title="Public Site" aria-label="Public Site">
+                    <svg class="icon icon-md"><use href="#icon-publish"/></svg>
+                </a>
+                <div class="dash-topbar__notif-wrap" id="dash-notif-wrap" data-unread-count="{{ unread_notifications_count }}">
+                    <button type="button" class="dash-topbar__notif" id="dash-notif-toggle" title="Notifications" aria-label="Notifications" aria-haspopup="true" aria-expanded="false" aria-controls="dash-notif-menu">
+                        <svg class="icon icon-md"><use href="#icon-bell"/></svg>
+                        <span class="dash-topbar__notif-badge" id="dash-notif-badge" {% if unread_notifications_count == 0 %}hidden{% endif %}>{{ unread_notifications_count }}</span>
+                    </button>
+
+                    <div class="dash-topbar__notif-menu" id="dash-notif-menu" role="menu" aria-label="Notification menu" hidden>
+                        <div class="dash-topbar__notif-head">
+                            <strong>Notifications</strong>
+                            <span class="dash-topbar__notif-count" id="dash-notif-count" {% if unread_notifications_count == 0 %}hidden{% endif %}>{{ unread_notifications_count }} new</span>
+                        </div>
+                        <div class="dash-topbar__notif-list">
+                            {% for notif in latest_notifications %}
+                                <div class="dash-topbar__notif-item {% if not notif.is_read %}is-unread{% endif %}" data-dash-notif-item data-notif-id="{{ notif.pk }}" role="menuitem">
+                                    <a href="{% if notif.target_url %}{{ notif.target_url }}{% else %}{% url 'notifications:list' %}{% endif %}" class="dash-topbar__notif-link">
+                                        <p class="dash-topbar__notif-title">{{ notif.title }}</p>
+                                        <p class="dash-topbar__notif-time">{{ notif.created_at|date:"Y-m-d H:i" }}</p>
+                                    </a>
+                                    {% if not notif.is_read %}
+                                        <button type="button" class="dash-topbar__notif-read" data-mark-read-url="{% url 'notifications:mark_read' notif.pk %}">Mark as read</button>
+                                    {% endif %}
+                                </div>
+                            {% empty %}
+                                <p class="dash-topbar__notif-empty">No notifications at the moment.</p>
+                            {% endfor %}
+                        </div>
+                        <a href="{% url 'notifications:list' %}" class="dash-topbar__notif-footer" role="menuitem">View all notifications</a>
+                    </div>
+                </div>
+            </div>
+        </header>
+
+        <main class="dash-content">
+            {% if messages %}
+                {% for message in messages %}
+                    <div class="inline-alert inline-alert--{% if message.tags == 'error' %}danger{% elif message.tags == 'success' %}success{% elif message.tags == 'warning' %}warning{% else %}info{% endif %} mb-6">
+                        <span class="inline-alert__icon">
+                            {% if message.tags == 'error' %}
+                                <svg class="icon icon-md" style="color:var(--color-danger)"><use href="#icon-warning"/></svg>
+                            {% elif message.tags == 'success' %}
+                                <svg class="icon icon-md" style="color:var(--color-success)"><use href="#icon-check"/></svg>
+                            {% elif message.tags == 'warning' %}
+                                <svg class="icon icon-md" style="color:var(--color-warning)"><use href="#icon-warning"/></svg>
+                            {% else %}
+                                <svg class="icon icon-md" style="color:var(--color-info)"><use href="#icon-info"/></svg>
+                            {% endif %}
+                        </span>
+                        <div class="inline-alert__content">
+                            <p class="inline-alert__message">{{ message }}</p>
+                        </div>
+                    </div>
+                {% endfor %}
+            {% endif %}
+
+            {% block content %}{% endblock %}
+        </main>
+    </div>
+</div>
+
+<div class="dash-overlay" id="dash-overlay"></div>
+
+<script>
+  window.APP = { csrfToken: '{{ csrf_token }}' };
+</script>
+<script src="https://cdn.jsdelivr.net/npm/sweetalert2@11"></script>
+<script src="{% static 'js/dashboard.js' %}"></script>
+{% if user.role == 'admin' and create_form %}
+<!-- ===== Modal Add User ===== -->
+<div id="modal-create-user" style="
+    display:none; position:fixed; inset:0; z-index:1000;
+    background:var(--color-backdrop); align-items:center; justify-content:center;">
+    <div style="background:var(--color-surface); width:100%; max-width:520px;
+                border-radius:var(--radius-md); padding:var(--space-8);
+                margin:var(--space-4); max-height:90vh; overflow-y:auto;">
+        <div style="display:flex; justify-content:space-between; align-items:center; margin-bottom:var(--space-6);">
+            <h2 style="font-size:var(--text-xl); margin:0;">Add New Member</h2>
+            <button id="btn-close-modal" style="background:none;border:none;cursor:pointer;font-size:1.5rem;color:var(--color-text-muted);">×</button>
+        </div>
+        <form method="post" action="{% url 'dashboard:users' %}" id="form-create-user">
+            {% csrf_token %}
+            <input type="hidden" name="action" value="create_user">
+
+            <div style="display:grid; grid-template-columns:1fr 1fr; gap:var(--space-4);">
+                <div class="form-group">
+                    <label class="form-label">First Name <span style="color:var(--color-danger)">*</span></label>
+                    <input type="text" name="first_name" class="form-input"
+                           value="{{ create_form.first_name.value|default:'' }}" required>
+                    {% if create_form.first_name.errors %}<p class="text-sm" style="color:var(--color-danger)">{{ create_form.first_name.errors.0 }}</p>{% endif %}
+                </div>
+                <div class="form-group">
+                    <label class="form-label">Last Name <span style="color:var(--color-danger)">*</span></label>
+                    <input type="text" name="last_name" class="form-input"
+                           value="{{ create_form.last_name.value|default:'' }}" required>
+                    {% if create_form.last_name.errors %}<p class="text-sm" style="color:var(--color-danger)">{{ create_form.last_name.errors.0 }}</p>{% endif %}
+                </div>
+            </div>
+
+            <div class="form-group">
+                <label class="form-label">Username <span style="color:var(--color-danger)">*</span></label>
+                <input type="text" name="username" class="form-input"
+                       value="{{ create_form.username.value|default:'' }}" required>
+                {% if create_form.username.errors %}<p class="text-sm" style="color:var(--color-danger)">{{ create_form.username.errors.0 }}</p>{% endif %}
+            </div>
+
+            <div class="form-group">
+                <label class="form-label">Email Address <span style="color:var(--color-danger)">*</span></label>
+                <input type="email" name="email" class="form-input"
+                       value="{{ create_form.email.value|default:'' }}" required>
+                {% if create_form.email.errors %}<p class="text-sm" style="color:var(--color-danger)">{{ create_form.email.errors.0 }}</p>{% endif %}
+            </div>
+
+            <div style="display:grid; grid-template-columns:1fr 1fr; gap:var(--space-4);">
+                <div class="form-group">
+                    <label class="form-label">Role <span style="color:var(--color-danger)">*</span></label>
+                    <select name="role" class="form-select" required>
+                        {% for val, label in role_choices %}
+                            <option value="{{ val }}" {% if create_form.role.value == val %}selected{% endif %}>
+                                {% if val == 'author' %}Author
+                                {% elif val == 'reviewer' %}Reviewer
+                                {% elif val == 'admin' %}Admin
+                                {% else %}{{ label }}{% endif %}
+                            </option>
+                        {% endfor %}
+                    </select>
+                </div>
+                <div class="form-group">
+                    <label class="form-label">Institution</label>
+                    <input type="text" name="institution" class="form-input"
+                           value="{{ create_form.institution.value|default:'' }}">
+                </div>
+            </div>
+
+            <div style="display:grid; grid-template-columns:1fr 1fr; gap:var(--space-4);">
+                <div class="form-group">
+                    <label class="form-label">Password <span style="color:var(--color-danger)">*</span></label>
+                    <input type="password" name="password1" class="form-input" required>
+                    {% if create_form.password1.errors %}<p class="text-sm" style="color:var(--color-danger)">{{ create_form.password1.errors.0 }}</p>{% endif %}
+                </div>
+                <div class="form-group">
+                    <label class="form-label">Confirm Password <span style="color:var(--color-danger)">*</span></label>
+                    <input type="password" name="password2" class="form-input" required>
+                    {% if create_form.password2.errors %}<p class="text-sm" style="color:var(--color-danger)">{{ create_form.password2.errors.0 }}</p>{% endif %}
+                </div>
+            </div>
+
+            <div style="display:flex; gap:var(--space-3); margin-top:var(--space-4);">
+                <button type="submit" class="btn btn-primary">Create Account</button>
+                <button type="button" class="btn btn-ghost" id="btn-cancel-modal">Cancel</button>
+            </div>
+        </form>
+    </div>
+</div>
+
+<script>
+document.addEventListener('DOMContentLoaded', function() {
+    const modal = document.getElementById('modal-create-user');
+    if (modal) {
+        document.querySelectorAll('.btn-open-create').forEach(btn => {
+            btn.addEventListener('click', () => {
+                modal.style.display = 'flex';
+            });
+        });
+        document.getElementById('btn-close-modal').addEventListener('click', () => {
+            modal.style.display = 'none';
+        });
+        document.getElementById('btn-cancel-modal').addEventListener('click', () => {
+            modal.style.display = 'none';
+        });
+        modal.addEventListener('click', (e) => {
+            if (e.target === modal) modal.style.display = 'none';
+        });
+        if ("{{ show_modal }}" === "True") {
+            modal.style.display = 'flex';
+        }
+    }
+});
+</script>
+{% endif %}
+
+{% block extra_js %}{% endblock %}
+</body>
+</html>

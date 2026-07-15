@@ -1,0 +1,210 @@
+{% extends 'base_dashboard.html' %}
+{% load dashboard_extras %}
+
+{% block title %}Member Management{% endblock %}
+{% block nav_admin_users %}active{% endblock %}
+{% block breadcrumb %}
+    <span class="dash-breadcrumb__sep">/</span>
+    <span class="dash-breadcrumb__current">Member Management</span>
+{% endblock %}
+
+{% block content %}
+<div class="page-header">
+    <h1 class="page-header__title">Member Management</h1>
+    <div class="page-header__actions">
+        <button class="btn btn-primary btn-sm btn-open-create">+ Add Member</button>
+    </div>
+</div>
+
+<!-- Tabs -->
+<div style="display: flex; gap: var(--space-1); border-bottom: 2px solid var(--color-border); margin-bottom: var(--space-6);">
+    <a href="{% url 'dashboard:admin_authors' %}" 
+       style="padding: var(--space-3) var(--space-6); text-decoration: none; font-weight: 600; color: var(--color-text-secondary); border-bottom: 2px solid transparent; margin-bottom: -2px; font-size: var(--text-base); transition: all var(--transition);">
+        Authors
+    </a>
+    <a href="{% url 'dashboard:reviewers' %}" 
+       style="padding: var(--space-3) var(--space-6); text-decoration: none; font-weight: 600; color: var(--color-primary); border-bottom: 2px solid var(--color-primary); margin-bottom: -2px; font-size: var(--text-base); transition: all var(--transition);">
+        Reviewers
+    </a>
+    <a href="{% url 'dashboard:users' %}" 
+       style="padding: var(--space-3) var(--space-6); text-decoration: none; font-weight: 600; color: var(--color-text-secondary); border-bottom: 2px solid transparent; margin-bottom: -2px; font-size: var(--text-base); transition: all var(--transition);">
+        Staff/Admin
+    </a>
+</div>
+
+<!-- Filter and Search -->
+<div class="card mb-6">
+    <form method="get" class="filter-bar" style="--filter-cols: minmax(240px, 1.5fr) minmax(180px, 1fr) minmax(180px, 1fr) auto;">
+        <div class="form-group mb-0">
+            <label class="form-label">Search</label>
+            <input type="text" name="q" class="form-input" placeholder="Reviewer name, email or institution..."
+                   value="{{ current_search }}">
+        </div>
+        <div class="form-group mb-0">
+            <label class="form-label">Section / Specialty</label>
+            <select name="section" class="form-select">
+                <option value="">All Specialties</option>
+                {% for sec in sections %}
+                <option value="{{ sec.pk }}" {% if current_section == sec.pk|stringformat:"s" %}selected{% endif %}>
+                    {{ sec.name }}
+                </option>
+                {% endfor %}
+            </select>
+        </div>
+        <div class="form-group mb-0">
+            <label class="form-label">Availability Status</label>
+            <select name="availability" class="form-select">
+                <option value="">All Statuses</option>
+                <option value="available" {% if current_availability == 'available' %}selected{% endif %}>Available for review</option>
+                <option value="unavailable" {% if current_availability == 'unavailable' %}selected{% endif %}>Unavailable for review</option>
+            </select>
+        </div>
+        <div class="form-group mb-0 filter-bar__actions-wrap">
+            <label class="form-label">Actions</label>
+            <div class="filter-bar__actions">
+                <button type="submit" class="btn btn-primary">Search</button>
+                <a href="{% url 'dashboard:reviewers' %}" class="btn btn-ghost">Reset</a>
+            </div>
+        </div>
+    </form>
+</div>
+
+<!-- Reviewers Table -->
+<div class="card" style="padding:0;overflow:hidden;">
+    <table class="data-table">
+        <thead>
+            <tr>
+                <th style="width: 60px; text-align: center;">#</th>
+                <th>Reviewer</th>
+                <th>Institution</th>
+                <th>Specialties</th>
+                <th style="text-align: center; width: 120px;">Active Reviews</th>
+                <th style="text-align: center; width: 120px;">Completed Reviews</th>
+                <th style="text-align: center; width: 100px;">Status</th>
+                <th style="text-align: center; width: 120px;">Operations</th>
+            </tr>
+        </thead>
+        <tbody>
+            {% for reviewer in reviewers %}
+            <tr>
+                <td style="text-align: center; color: var(--color-text-muted); font-size: var(--text-sm);">
+                    {{ forloop.counter|add:page_obj.start_index|add:-1 }}
+                </td>
+                <td>
+                    <span style="font-weight: 600; display: block;">
+                        {{ reviewer.get_full_name|default:reviewer.username }}
+                    </span>
+                    <span class="text-xs text-muted" style="font-weight: normal; display: block; margin-top: 2px;">
+                        {{ reviewer.email }}
+                    </span>
+                </td>
+                <td class="text-sm">
+                    {{ reviewer.reviewer_profile.institution|default:"—" }}
+                </td>
+                <td>
+                    <div style="display: flex; flex-wrap: wrap; gap: 4px;">
+                        {% for spec in reviewer.reviewer_profile.specialties.all %}
+                            <span class="badge badge-under-review" style="font-size: 10px; padding: 2px 6px; font-weight: normal;">
+                                {{ spec.name }}
+                            </span>
+                        {% empty %}
+                            <span class="text-muted text-xs">No specialties</span>
+                        {% endfor %}
+                    </div>
+                </td>
+                <td style="text-align: center; font-weight: bold; color: var(--color-warning);">
+                    {{ reviewer_stats|get_item:reviewer.pk|get_item:'active'|default:0 }}
+                </td>
+                <td style="text-align: center; font-weight: bold; color: var(--color-success);">
+                    {{ reviewer_stats|get_item:reviewer.pk|get_item:'completed'|default:0 }}
+                </td>
+                <td style="text-align: center;">
+                    {% if reviewer.reviewer_profile.is_available %}
+                        <span class="badge badge-published" style="font-size: 11px;">Available</span>
+                    {% else %}
+                        <span class="badge badge-rejected" style="font-size: 11px;">Unavailable</span>
+                    {% endif %}
+                </td>
+                <td style="text-align: center;">
+                    <button class="btn btn-sm btn-ghost" onclick="toggleEdit({{ reviewer.pk }})">Edit</button>
+                </td>
+            </tr>
+            <!-- Inline Edit Form -->
+            <tr id="edit-{{ reviewer.pk }}" style="display: none; background-color: var(--color-surface-alt);">
+                <td colspan="8" style="padding: var(--space-5); border-top: 1px solid var(--color-border); border-bottom: 1px solid var(--color-border);">
+                    <form method="post">
+                        {% csrf_token %}
+                        <input type="hidden" name="reviewer_id" value="{{ reviewer.pk }}">
+                        
+                        <div style="display: flex; flex-direction: column; gap: var(--space-4);">
+                            <div>
+                                <label class="form-label" style="font-weight: 600; margin-bottom: var(--space-2); display: block;">
+                                    Edit specialties for reviewer: {{ reviewer.get_full_name|default:reviewer.username }}
+                                </label>
+                                <div style="display: flex; flex-wrap: wrap; gap: var(--space-3) var(--space-5); background: var(--color-surface); padding: var(--space-3); border: 1px solid var(--color-border); border-radius: var(--radius-md);">
+                                    {% for section in sections %}
+                                    <label style="display: flex; align-items: center; gap: var(--space-2); font-size: var(--text-sm); cursor: pointer; user-select: none;">
+                                        <input type="checkbox" name="sections" value="{{ section.pk }}"
+                                            {% if section in reviewer.reviewer_profile.specialties.all %}checked{% endif %}>
+                                        {{ section.name }}
+                                    </label>
+                                    {% endfor %}
+                                </div>
+                            </div>
+                            
+                            <div style="display: flex; align-items: center; justify-content: space-between; flex-wrap: wrap; gap: var(--space-3);">
+                                <label style="display: flex; align-items: center; gap: var(--space-2); font-size: var(--text-sm); cursor: pointer; user-select: none; font-weight: 600;">
+                                    <input type="checkbox" name="is_available" id="avail-{{ reviewer.pk }}"
+                                           {% if reviewer.reviewer_profile.is_available %}checked{% endif %}>
+                                    Available to receive new review requests
+                                </label>
+                                
+                                <div style="display: flex; gap: var(--space-2);">
+                                    <button type="submit" class="btn btn-primary btn-sm">Save Changes</button>
+                                    <button type="button" class="btn btn-ghost btn-sm" onclick="toggleEdit({{ reviewer.pk }})">Cancel</button>
+                                </div>
+                            </div>
+                        </div>
+                    </form>
+                </td>
+            </tr>
+            {% empty %}
+            <tr>
+                <td colspan="8" style="text-align: center; padding: var(--space-8);">
+                    <div class="empty-state">
+                        <div class="empty-state__icon" style="font-size: 2rem;"><svg class="icon icon-xl icon-muted"><use href="#icon-user"/></svg></div>
+                        <p class="empty-state__message mb-0">No reviewers matching the search criteria.</p>
+                    </div>
+                </td>
+            </tr>
+            {% endfor %}
+        </tbody>
+    </table>
+</div>
+
+<!-- Pagination -->
+{% if is_paginated %}
+<div style="display:flex;gap:var(--space-2);justify-content:center;margin-top:var(--space-6);">
+    {% if page_obj.has_previous %}
+        <a href="?page={{ page_obj.previous_page_number }}{% if current_search %}&q={{ current_search }}{% endif %}{% if current_section %}&section={{ current_section }}{% endif %}{% if current_availability %}&availability={{ current_availability }}{% endif %}"
+           class="btn btn-sm btn-ghost">Previous</a>
+    {% endif %}
+    <span style="padding:var(--space-2) var(--space-4);color:var(--color-text-muted);font-size:var(--text-sm);">
+        {{ page_obj.number }} / {{ paginator.num_pages }}
+    </span>
+    {% if page_obj.has_next %}
+        <a href="?page={{ page_obj.next_page_number }}{% if current_search %}&q={{ current_search }}{% endif %}{% if current_section %}&section={{ current_section }}{% endif %}{% if current_availability %}&availability={{ current_availability }}{% endif %}"
+           class="btn btn-sm btn-ghost">Next</a>
+    {% endif %}
+</div>
+{% endif %}
+{% endblock %}
+
+{% block extra_js %}
+<script>
+function toggleEdit(pk) {
+    const el = document.getElementById('edit-' + pk);
+    el.style.display = el.style.display === 'none' ? 'table-row' : 'none';
+}
+</script>
+{% endblock %}

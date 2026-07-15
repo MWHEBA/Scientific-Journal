@@ -1,0 +1,328 @@
+{% extends 'base_public.html' %}
+{% load static %}
+
+{% block title %}الصفحة الرئيسية{% endblock %}
+{% block nav_home %}active{% endblock %}
+
+{% block extra_css %}
+<link rel="stylesheet" href="{% static 'css/ar/pages.css' %}">
+{% endblock %}
+
+{# ===== HERO + FEATURES + TICKER ===== #}
+{% block above_layout %}
+
+<!-- HERO -->
+<div class="pub-hero">
+    <div class="pub-hero__main">
+        <div class="pub-hero__stripe"></div>
+        <div class="pub-hero__eyebrow">
+            <span class="pub-hero__eyebrow-line"></span>
+            مجلة علمية محكّمة — وصول مفتوح
+        </div>
+        <h1 class="pub-hero__title">{{ settings.journal_name|default:"مجلة IJCMIT للعلوم الاجتماعية" }}</h1>
+        <p class="pub-hero__desc">{{ settings.journal_desc|default:"منصة نشر علمي محكّم متخصصة في العلوم الاجتماعية والإنسانية والإدارية — تصدر من ماليزيا وتخدم الباحثين العرب حول العالم." }}</p>
+        <div class="pub-hero__actions">
+            <a href="{% url 'submissions:create' %}" class="pub-hero__cta">
+                <span class="pub-hero__cta-arrow">←</span>
+                <span class="pub-hero__cta-text">نشر مقالة جديدة</span>
+            </a>
+            <a href="{% url 'pages:article_list' %}" class="btn-ghost-white">تصفح المقالات</a>
+        </div>
+        <div class="pub-hero__stats">
+            <div class="pub-hero__stat">
+                <span class="pub-hero__stat-n">{{ stats.published|default:"0" }}</span>
+                <span class="pub-hero__stat-l">مقالة منشورة</span>
+            </div>
+            <div class="pub-hero__stat-sep"></div>
+            <div class="pub-hero__stat">
+                <span class="pub-hero__stat-n">{{ stats.reviewers|default:"0" }}</span>
+                <span class="pub-hero__stat-l">محكّم متخصص</span>
+            </div>
+            <div class="pub-hero__stat-sep"></div>
+            <div class="pub-hero__stat">
+                <span class="pub-hero__stat-n">3</span>
+                <span class="pub-hero__stat-l">أيام للقرار</span>
+            </div>
+            <div class="pub-hero__stat-sep"></div>
+            <div class="pub-hero__stat">
+                <span class="pub-hero__stat-n">E-ISSN</span>
+                <span class="pub-hero__stat-l" style="direction:ltr;">2785-8294</span>
+            </div>
+        </div>
+    </div>
+
+    <!-- Latest Article Panel -->
+    <div class="pub-hero__issue">
+        <div class="pub-hero__issue-corner"></div>
+
+        <!-- الجزء العلوي — هوية المجلة -->
+        <div class="pub-hero__issue-top">
+            <span class="pub-hero__issue-journal-name">{{ settings.journal_name|default:"IJCMIT" }}</span>
+            <span class="pub-hero__issue-journal-issn" dir="ltr">E-ISSN: 2785-8294</span>
+        </div>
+
+        <!-- الجزء السفلي — آخر مقال -->
+        <div>
+        {% if latest_articles %}
+            {% with article=latest_articles.0 %}
+            <span class="pub-hero__issue-pill">آخر مقالة منشورة</span>
+            <p class="pub-hero__issue-label">{{ article.section.name }}</p>
+            <h2 class="pub-hero__issue-title">{{ article.title|truncatechars:90 }}</h2>
+            <p class="pub-hero__issue-sub">
+                {{ article.submission.author.get_full_name|default:article.submission.author.username }}
+                &nbsp;·&nbsp; {{ article.published_at|date:"Y/m/d" }}
+            </p>
+            <a href="{% url 'pages:article_detail' article.slug %}" class="btn-ghost-white">← قراءة المقالة</a>
+            {% endwith %}
+        {% else %}
+            <span class="pub-hero__issue-pill">العدد الحالي</span>
+            <p class="pub-hero__issue-label">
+                {% if current_issue %}{{ current_issue }}{% else %}قريباً{% endif %}
+            </p>
+            <h2 class="pub-hero__issue-title">{{ settings.journal_name|default:"مجلة IJCMIT" }}</h2>
+            <p class="pub-hero__issue-sub">تصدر كل شهرين • وصول مفتوح</p>
+            <a href="{% url 'pages:archive' %}" class="btn-ghost-white">← تصفح الأرشيف</a>
+        {% endif %}
+        </div>
+    </div>
+</div>
+
+<!-- FEATURES STRIP -->
+<div class="features-strip">
+    <div class="features-strip__item">
+        <div class="features-strip__icon">
+            <svg viewBox="0 0 24 24"><circle cx="12" cy="12" r="9"/><polyline points="12 6 12 12 16 14"/></svg>
+        </div>
+        <div>
+            <div class="features-strip__title">سرعة الرد والنشر</div>
+            <div class="features-strip__desc">
+                رد أولي خلال <span class="features-strip__accent">٢٤ ساعة</span>
+                وقرار القبول خلال <span class="features-strip__accent">٣ أيام عمل</span>
+            </div>
+        </div>
+    </div>
+    <div class="features-strip__item">
+        <div class="features-strip__icon">
+            <svg viewBox="0 0 24 24"><path d="M12 2L2 7l10 5 10-5-10-5z"/><path d="M2 17l10 5 10-5"/><path d="M2 12l10 5 10-5"/></svg>
+        </div>
+        <div>
+            <div class="features-strip__title">وصول مفتوح كامل</div>
+            <div class="features-strip__desc">جميع المقالات متاحة فور القبول لأوسع شريحة من القراء والباحثين</div>
+        </div>
+    </div>
+    <div class="features-strip__item">
+        <div class="features-strip__icon">
+            <svg viewBox="0 0 24 24"><path d="M14 2H6a2 2 0 0 0-2 2v16a2 2 0 0 0 2 2h12a2 2 0 0 0 2-2V8z"/><polyline points="14 2 14 8 20 8"/><line x1="16" y1="13" x2="8" y2="13"/><line x1="16" y1="17" x2="8" y2="17"/></svg>
+        </div>
+        <div>
+            <div class="features-strip__title">إرسال سهل ومباشر</div>
+            <div class="features-strip__desc">تتبع حالة مقالتك لحظياً من لوحة التحكم الخاصة بك</div>
+        </div>
+    </div>
+</div>
+
+<!-- TICKER -->
+{% if latest_articles %}
+<div class="ticker">
+    <span class="ticker__label">أحدث المقالات</span>
+    <div class="ticker__wrap">
+        <div class="ticker__track" id="ticker-track">
+            {% for article in latest_articles %}<span>{{ article.title|truncatechars:80 }}</span>{% endfor %}
+            {% for article in latest_articles %}<span>{{ article.title|truncatechars:80 }}</span>{% endfor %}
+            {% for article in latest_articles %}<span>{{ article.title|truncatechars:80 }}</span>{% endfor %}
+            {% for article in latest_articles %}<span>{{ article.title|truncatechars:80 }}</span>{% endfor %}
+        </div>
+    </div>
+</div>
+{% endif %}
+
+{% endblock %}
+
+{# ===== RIGHT SIDEBAR — الرئيسية ===== #}
+{% block sidebar_right %}
+
+<!-- بحث -->
+<div class="pub-widget">
+    <div class="pub-widget__header"><svg class="icon icon-sm icon-inverse"><use href="#icon-search"/></svg> بحث في المقالات</div>
+    <div class="pub-widget__body">
+        <form method="get" action="{% url 'pages:search' %}">
+            <div style="display:flex;flex-direction:column;gap:var(--space-2);">
+                <input type="text" name="q" placeholder="ابحث بالعنوان أو الكلمات المفتاحية..." class="form-input form-input--sm">
+                <button type="submit" class="btn btn-primary btn-sm">بحث</button>
+            </div>
+        </form>
+    </div>
+</div>
+
+<!-- تصفح حسب القسم -->
+{% if sections %}
+<div class="pub-widget">
+    <div class="pub-widget__header"><svg class="icon icon-sm icon-inverse"><use href="#icon-folder"/></svg> تصفح حسب القسم</div>
+    <div class="pub-widget__body pub-widget__body--flush">
+        <ul class="pub-widget__list">
+            {% for section in sections %}
+            <li class="pub-widget__list-item">
+                <a href="{% url 'pages:section_articles' section.slug %}">
+                    <span class="pub-widget__section-dot" style="background-color:var(--color-primary);"></span>
+                    {{ section.name }}
+                </a>
+            </li>
+            {% endfor %}
+        </ul>
+    </div>
+</div>
+{% endif %}
+
+<!-- CTA للزوار الجدد -->
+{% if not user.is_authenticated %}
+<div class="pub-widget" style="overflow:hidden;">
+    <div class="sidebar-cta">
+        <p class="sidebar-cta__text">باحث؟ انشر مقالتك في مجلتنا المحكّمة</p>
+        <a href="{% url 'accounts:register' %}" class="sidebar-cta__btn">← إنشاء حساب مجاناً</a>
+        <a href="{% url 'pages:apc' %}" style="display:block;text-align:center;font-size:var(--text-xs);color:rgba(255,255,255,0.45);margin-top:var(--space-2);text-decoration:none;">تعرف على رسوم النشر</a>
+    </div>
+</div>
+{% else %}
+<div class="pub-widget" style="overflow:hidden;">
+    <div class="sidebar-cta">
+        <p class="sidebar-cta__text">مرحباً، {{ user.get_full_name|default:user.username }}</p>
+        <a href="{% url 'dashboard:home' %}" class="sidebar-cta__btn">← لوحة التحكم</a>
+    </div>
+</div>
+{% endif %}
+
+{% endblock %}
+
+{# ===== LEFT SIDEBAR — الرئيسية ===== #}
+{% block sidebar_left %}
+
+<!-- أحدث الأعداد -->
+<div class="pub-widget">
+    <div class="pub-widget__header"><svg class="icon icon-sm icon-inverse"><use href="#icon-issues"/></svg> أحدث الأعداد</div>
+    <div class="pub-widget__body pub-widget__body--flush">
+        <ul class="pub-widget__list">
+            {% for issue in latest_issues %}
+            <li class="pub-widget__list-item pub-widget__list-item--link">
+                <a href="{% url 'pages:article_list' %}?issue={{ issue.pk }}" class="pub-widget__issue-link">
+                    <span class="pub-widget__issue-name">
+                        <span style="flex:1;">{{ issue }}</span>
+                        {% if issue.is_current %}
+                            <span class="badge badge-published" style="font-size:9px;">حالي</span>
+                        {% endif %}
+                    </span>
+                    <span class="text-muted text-xs">{{ issue.articles.count }} مقال</span>
+                </a>
+            </li>
+            {% empty %}
+            <li class="pub-widget__list-item">
+                <span class="text-muted text-sm">لا توجد أعداد بعد</span>
+            </li>
+            {% endfor %}
+        </ul>
+        <div style="padding:var(--space-3) var(--space-5);border-top:1px solid var(--color-border-light);">
+            <a href="{% url 'pages:archive' %}" style="font-size:var(--text-sm);color:var(--color-primary-light);font-weight:600;text-decoration:none;">الأرشيف الكامل ←</a>
+        </div>
+    </div>
+</div>
+
+<!-- مفهرسة في -->
+<div class="pub-widget">
+    <div class="pub-widget__header"><svg class="icon icon-sm icon-inverse"><use href="#icon-partners"/></svg> مفهرسة في</div>
+    <div class="pub-widget__body" style="padding:var(--space-3);">
+        <a href="https://www.crossref.org" target="_blank" rel="noopener" class="partner-item">
+            <div class="partner-logo"><img src="{% static 'img/Crossref.png' %}" alt="Crossref"></div>
+        </a>
+        <a href="https://scholar.google.com" target="_blank" rel="noopener" class="partner-item">
+            <div class="partner-logo"><img src="{% static 'img/Google.png' %}" alt="Google Scholar"></div>
+        </a>
+        <a href="https://issuu.com" target="_blank" rel="noopener" class="partner-item">
+            <div class="partner-logo"><img src="{% static 'img/issuu.png' %}" alt="Issuu"></div>
+        </a>
+        <a href="https://www.scribd.com" target="_blank" rel="noopener" class="partner-item">
+            <div class="partner-logo"><img src="{% static 'img/Scribd.png' %}" alt="Scribd"></div>
+        </a>
+        <a href="https://www.academia.edu" target="_blank" rel="noopener" class="partner-item">
+            <div class="partner-logo"><img src="{% static 'img/academia.png' %}" alt="Academia.edu"></div>
+        </a>
+    </div>
+</div>
+
+{% endblock %}
+
+{# ===== MAIN CONTENT ===== #}
+{% block content %}
+
+<!-- أحدث المقالات -->
+<div class="section-header">
+    <span class="section-header__label">أحدث المقالات المنشورة</span>
+    <a href="{% url 'pages:article_list' %}" class="section-header__link">عرض الكل ←</a>
+</div>
+
+{% if latest_articles %}
+    {% for article in latest_articles %}
+    <div class="card card-article {% if forloop.first %}card-article--featured{% endif %} mb-4" style="position:relative;">
+        <a href="{% url 'pages:article_detail' article.slug %}" class="card-article__overlay-link" aria-label="{{ article.title }}"></a>
+        <div class="article-meta-row">
+            <span class="article-badge-type">{{ article.section.name }}</span>
+            <span class="article-badge-oa">وصول حر</span>
+        </div>
+        <h2 class="card-article__title">{{ article.title|truncatechars:100 }}</h2>
+        <p class="text-secondary text-sm mb-2">
+            {{ article.submission.author.get_full_name|default:article.submission.author.username }}
+        </p>
+        <p class="text-secondary text-sm mb-3">{{ article.abstract|truncatechars:120 }}</p>
+        <div class="card-article__meta">
+            <span>{{ article.published_at|date:"Y/m/d" }}</span>
+            {% if article.issue %}<span>{{ article.issue }}</span>{% endif %}
+            {% if article.manuscript_file %}
+            <a href="{{ article.manuscript_file.file.url }}"
+               class="btn btn-ghost btn-sm article-card-pdf-btn" target="_blank"
+               style="position:relative;z-index:2;">
+                <svg class="icon icon-sm" style="margin-left:var(--space-1)"><use href="#icon-pdf"/></svg>
+                تحميل PDF
+            </a>
+            {% endif %}
+        </div>
+    </div>
+    {% endfor %}
+{% else %}
+    <div class="card">
+        <div class="empty-state">
+            <div class="empty-state__icon"><svg class="icon icon-xl icon-muted"><use href="#icon-articles"/></svg></div>
+            <h3 class="empty-state__title">لا توجد مقالات منشورة بعد</h3>
+        </div>
+    </div>
+{% endif %}
+
+<!-- تصفح حسب القسم -->
+{% if sections %}
+<div class="section-header mt-8">
+    <span class="section-header__label">تصفح حسب القسم</span>
+</div>
+<div style="display:flex;flex-wrap:wrap;gap:var(--space-2);">
+    {% for section in sections %}
+        <a href="{% url 'pages:section_articles' section.slug %}" class="topic-tag">{{ section.name }}</a>
+    {% endfor %}
+</div>
+{% endif %}
+
+{% endblock %}
+
+{% block stats_bar %}
+<div class="pub-stats">
+    <div class="pub-stats__inner">
+        <div class="pub-stats__item">
+            <span class="pub-stats__number">{{ stats.published|default:"0" }}</span>
+            <span class="pub-stats__label">مقال منشور</span>
+        </div>
+        <div class="pub-stats__item">
+            <span class="pub-stats__number">{{ stats.under_review|default:"0" }}</span>
+            <span class="pub-stats__label">قيد المراجعة</span>
+        </div>
+        <div class="pub-stats__item">
+            <span class="pub-stats__number">{{ stats.reviewers|default:"0" }}</span>
+            <span class="pub-stats__label">أعضاء هيئة التحكيم</span>
+        </div>
+    </div>
+</div>
+{% endblock %}

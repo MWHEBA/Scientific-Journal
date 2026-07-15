@@ -16,6 +16,8 @@ SECRET_KEY = env('SECRET_KEY', default="django-insecure-s)jv^rezs#!*0d427()-u7t$
 
 DEBUG = env.bool('DEBUG', default=True)
 
+SITE_LANGUAGE = env('SITE_LANGUAGE', default='ar')
+
 ALLOWED_HOSTS = env.list('ALLOWED_HOSTS', default=[])
 
 # Application definition
@@ -49,6 +51,7 @@ MIDDLEWARE = [
     "django.contrib.auth.middleware.AuthenticationMiddleware",
     "django.contrib.messages.middleware.MessageMiddleware",
     "django.middleware.clickjacking.XFrameOptionsMiddleware",
+    "Journal.middleware.LanguageMiddleware",
 ]
 
 ROOT_URLCONF = "Journal.urls"
@@ -56,9 +59,13 @@ ROOT_URLCONF = "Journal.urls"
 TEMPLATES = [
     {
         "BACKEND": "django.template.backends.django.DjangoTemplates",
-        "DIRS": [BASE_DIR / "templates"],
-        "APP_DIRS": True,
+        "DIRS": [],
+        "APP_DIRS": False,
         "OPTIONS": {
+            "loaders": [
+                "Journal.loaders.LanguageTemplateLoader",
+                "django.template.loaders.app_directories.Loader",
+            ],
             "context_processors": [
                 "django.template.context_processors.debug",
                 "django.template.context_processors.request",
@@ -85,7 +92,7 @@ AUTH_PASSWORD_VALIDATORS = [
     {"NAME": "django.contrib.auth.password_validation.NumericPasswordValidator"},
 ]
 
-LANGUAGE_CODE = "en-us"
+LANGUAGE_CODE = "ar" if SITE_LANGUAGE == "ar" else "en-us"
 TIME_ZONE = "Africa/Cairo"
 USE_I18N = True
 USE_TZ = True
@@ -107,8 +114,15 @@ AUTH_USER_MODEL = "accounts.User"
 CRISPY_ALLOWED_TEMPLATE_PACKS = "bootstrap5"
 CRISPY_TEMPLATE_PACK = "bootstrap5"
 
-# Email — console backend for development
-EMAIL_BACKEND = "django.core.mail.backends.console.EmailBackend"
+# Email Settings
+EMAIL_BACKEND = env('EMAIL_BACKEND', default="django.core.mail.backends.console.EmailBackend")
+if EMAIL_BACKEND == "django.core.mail.backends.smtp.EmailBackend":
+    EMAIL_HOST = env('EMAIL_HOST')
+    EMAIL_PORT = env.int('EMAIL_PORT', default=587)
+    EMAIL_USE_TLS = env.bool('EMAIL_USE_TLS', default=True)
+    EMAIL_HOST_USER = env('EMAIL_HOST_USER')
+    EMAIL_HOST_PASSWORD = env('EMAIL_HOST_PASSWORD')
+    DEFAULT_FROM_EMAIL = env('DEFAULT_FROM_EMAIL', default=EMAIL_HOST_USER)
 
 # Auth redirects
 LOGIN_URL = "/accounts/login/"

@@ -1,27 +1,27 @@
 {% load static %}
 <!DOCTYPE html>
-<html lang="ar" dir="rtl">
+<html lang="en" dir="ltr">
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>إنشاء حساب جديد — Marcil</title>
-    <link rel="stylesheet" href="{% static 'css/tokens.css' %}">
-    <link rel="stylesheet" href="{% static 'css/base.css' %}">
-    <link rel="stylesheet" href="{% static 'css/components.css' %}">
-    <link rel="stylesheet" href="{% static 'css/auth.css' %}">
+    <title>Create Account — Marcil</title>
+    <link rel="stylesheet" href="{% static 'css/en/tokens.css' %}">
+    <link rel="stylesheet" href="{% static 'css/en/base.css' %}">
+    <link rel="stylesheet" href="{% static 'css/en/components.css' %}">
+    <link rel="stylesheet" href="{% static 'css/en/auth.css' %}">
 </head>
 <body class="auth-body">
 {% include "icons.svg" %}
 
 <div class="auth-split">
 
-    <!-- ===== الفورم — يسار (أول في RTL = يمين الشاشة) ===== -->
+    <!-- ===== Form — Left ===== -->
     <div class="auth-form-side">
         <div class="auth-form-box">
 
             <div class="auth-form-box__header">
-                <h2 class="auth-form-box__title">إنشاء حساب جديد</h2>
-                <p class="auth-form-box__subtitle">أدخل بياناتك للانضمام إلى المجلة كمؤلف</p>
+                <h2 class="auth-form-box__title">Create Account</h2>
+                <p class="auth-form-box__subtitle">Enter your details to join the journal as an author</p>
             </div>
 
             {% if form.errors %}
@@ -30,7 +30,7 @@
                         <svg class="icon icon-md" style="color:var(--color-danger)"><use href="#icon-warning"/></svg>
                     </span>
                     <div class="inline-alert__content">
-                        <p class="inline-alert__message">يرجى تصحيح الأخطاء الموضحة أدناه.</p>
+                        <p class="inline-alert__message">Please correct the errors outlined below.</p>
                     </div>
                 </div>
             {% endif %}
@@ -41,10 +41,10 @@
                 <div class="auth-field">
                     <label class="auth-field__label" for="id_username">
                         <svg class="icon icon-xs"><use href="#icon-user"/></svg>
-                        اسم المستخدم
+                        Username
                     </label>
                     <input type="text" name="username" id="id_username"
-                           class="auth-field__input" placeholder="أدخل اسم المستخدم"
+                           class="auth-field__input" placeholder="Enter a username"
                            value="{{ form.username.value|default:'' }}" required autofocus>
                     {% if form.username.errors %}
                         <div class="field-error-message" style="color: var(--color-danger); font-size: var(--text-xs); margin-top: var(--space-1); display: flex; align-items: center; gap: var(--space-1);">
@@ -62,10 +62,10 @@
                 <div class="auth-field">
                     <label class="auth-field__label" for="id_first_name">
                         <svg class="icon icon-xs"><use href="#icon-user"/></svg>
-                        الاسم الأول
+                        First Name
                     </label>
                     <input type="text" name="first_name" id="id_first_name"
-                           class="auth-field__input" placeholder="أدخل الاسم الأول"
+                           class="auth-field__input" placeholder="Enter your first name"
                            value="{{ form.first_name.value|default:'' }}" required>
                     {% if form.first_name.errors %}
                         <div class="field-error-message" style="color: var(--color-danger); font-size: var(--text-xs); margin-top: var(--space-1); display: flex; align-items: center; gap: var(--space-1);">
@@ -78,10 +78,10 @@
                 <div class="auth-field">
                     <label class="auth-field__label" for="id_last_name">
                         <svg class="icon icon-xs"><use href="#icon-user"/></svg>
-                        اسم العائلة
+                        Last Name
                     </label>
                     <input type="text" name="last_name" id="id_last_name"
-                           class="auth-field__input" placeholder="أدخل اسم العائلة"
+                           class="auth-field__input" placeholder="Enter your last name"
                            value="{{ form.last_name.value|default:'' }}" required>
                     {% if form.last_name.errors %}
                         <div class="field-error-message" style="color: var(--color-danger); font-size: var(--text-xs); margin-top: var(--space-1); display: flex; align-items: center; gap: var(--space-1);">
@@ -94,10 +94,10 @@
                 <div class="auth-field">
                     <label class="auth-field__label" for="id_email">
                         <svg class="icon icon-xs"><use href="#icon-contact"/></svg>
-                        البريد الإلكتروني
+                        Email Address
                     </label>
                     <input type="email" name="email" id="id_email"
-                           class="auth-field__input" placeholder="أدخل البريد الإلكتروني"
+                           class="auth-field__input" placeholder="Enter your email address"
                            value="{{ form.email.value|default:'' }}" required>
                     {% if form.email.errors %}
                         <div class="field-error-message" style="color: var(--color-danger); font-size: var(--text-xs); margin-top: var(--space-1); display: flex; align-items: center; gap: var(--space-1);">
@@ -110,10 +110,10 @@
                 <div class="auth-field">
                     <label class="auth-field__label" for="id_institution">
                         <svg class="icon icon-xs"><use href="#icon-conferences"/></svg>
-                        المؤسسة الأكاديمية
+                        Academic Institution
                     </label>
                     <input type="text" name="institution" id="id_institution"
-                           class="auth-field__input" placeholder="أدخل المؤسسة الأكاديمية (اختياري)"
+                           class="auth-field__input" placeholder="Enter academic institution (optional)"
                            value="{{ form.institution.value|default:'' }}">
                     {% if form.institution.errors %}
                         <div class="field-error-message" style="color: var(--color-danger); font-size: var(--text-xs); margin-top: var(--space-1); display: flex; align-items: center; gap: var(--space-1);">
@@ -126,10 +126,10 @@
                 <div class="auth-field">
                     <label class="auth-field__label" for="id_password1">
                         <svg class="icon icon-xs"><use href="#icon-lock"/></svg>
-                        كلمة المرور
+                        Password
                     </label>
                     <input type="password" name="password1" id="id_password1"
-                           class="auth-field__input" placeholder="أدخل كلمة المرور" required>
+                           class="auth-field__input" placeholder="Enter password" required>
                     {% if form.password1.errors %}
                         <div class="field-error-message" style="color: var(--color-danger); font-size: var(--text-xs); margin-top: var(--space-1); display: flex; align-items: center; gap: var(--space-1);">
                             <svg class="icon icon-xs" style="color:var(--color-danger)"><use href="#icon-warning"/></svg>
@@ -141,10 +141,10 @@
                 <div class="auth-field">
                     <label class="auth-field__label" for="id_password2">
                         <svg class="icon icon-xs"><use href="#icon-lock"/></svg>
-                        تأكيد كلمة المرور
+                        Confirm Password
                     </label>
                     <input type="password" name="password2" id="id_password2"
-                           class="auth-field__input" placeholder="تأكيد كلمة المرور" required>
+                           class="auth-field__input" placeholder="Confirm your password" required>
                     {% if form.password2.errors %}
                         <div class="field-error-message" style="color: var(--color-danger); font-size: var(--text-xs); margin-top: var(--space-1); display: flex; align-items: center; gap: var(--space-1);">
                             <svg class="icon icon-xs" style="color:var(--color-danger)"><use href="#icon-warning"/></svg>
@@ -155,39 +155,39 @@
 
                 <button type="submit" class="auth-submit">
                     <svg class="icon icon-sm"><use href="#icon-submit"/></svg>
-                    إنشاء الحساب
+                    Create Account
                 </button>
             </form>
 
             <p class="auth-form-box__footer">
-                لديك حساب بالفعل؟
-                <a href="{% url 'accounts:login' %}">تسجيل الدخول</a>
+                Already have an account?
+                <a href="{% url 'accounts:login' %}">Sign In</a>
             </p>
 
         </div>
     </div>
 
-    <!-- ===== الهوية — يمين ===== -->
-    <div class="auth-brand">
+    <!-- ===== Brand — Right ===== -->
+    <div class="auth-brand" style="background-color: var(--color-neutral-dark);">
         <div class="auth-brand__pattern"></div>
-        <div class="auth-brand__stripe"></div>
+        <div class="auth-brand__stripe" style="right: auto; left: 0;"></div>
         <div class="auth-brand__content">
             <a href="/" class="auth-brand__logo">
-                <img src="{% static 'img/Logo.png' %}" alt="Marcil">
+                <img src="{% static 'img/Logo_en.png' %}" alt="Marcil">
             </a>
             <p class="auth-brand__desc">
-                مجلة دولية محكّمة تصدر عن دار النشر<br>
-                Sciences Gates SDN BHD — ماليزيا
+                An international peer-reviewed journal published by<br>
+                Sciences Gates SDN BHD — Malaysia
             </p>
             <div class="auth-brand__stats">
                 <div class="auth-brand__stat">
                     <span class="auth-brand__stat-num">6</span>
-                    <span class="auth-brand__stat-label">أعداد سنوياً</span>
+                    <span class="auth-brand__stat-label">Issues / Year</span>
                 </div>
                 <div class="auth-brand__stat-divider"></div>
                 <div class="auth-brand__stat">
                     <span class="auth-brand__stat-num">OA</span>
-                    <span class="auth-brand__stat-label">وصول مفتوح</span>
+                    <span class="auth-brand__stat-label">Open Access</span>
                 </div>
                 <div class="auth-brand__stat-divider"></div>
                 <div class="auth-brand__stat">
@@ -197,7 +197,7 @@
             </div>
             <a href="/" class="auth-brand__back">
                 <svg class="icon icon-xs"><use href="#icon-home"/></svg>
-                العودة للموقع
+                Back to website
             </a>
         </div>
     </div>

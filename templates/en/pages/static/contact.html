@@ -1,0 +1,177 @@
+{% extends 'base_public.html' %}
+{% load static %}
+
+{% block title %}Contact Us{% endblock %}
+
+{% block layout_class %}pub-layout--single-sidebar{% endblock %}
+
+{# Hide left sidebar #}
+{% block sidebar_left %}{% endblock %}
+
+{% block content %}
+<div class="page-header">
+    <h1 class="page-header__title">Contact Us</h1>
+    <p class="page-header__subtitle">We are here to answer your questions and assist you</p>
+</div>
+
+<div class="contact-container">
+    <!-- Contact Info -->
+    <div class="contact-info-block">
+
+        <div class="contact-info-row">
+            <div class="contact-info-row__icon">
+                <svg class="icon icon-md"><use href="#icon-contact"/></svg>
+            </div>
+            <div class="contact-info-row__body">
+                <span class="contact-info-row__label">Email</span>
+                {% if settings.contact_email %}
+                <a href="mailto:{{ settings.contact_email }}" class="contact-info-row__value">{{ settings.contact_email }}</a>
+                {% else %}
+                <span class="contact-info-row__value">info@marciljournal.com</span>
+                {% endif %}
+            </div>
+        </div>
+
+        <div class="contact-info-row">
+            <div class="contact-info-row__icon">
+                <svg class="icon icon-md"><use href="#icon-phone"/></svg>
+            </div>
+            <div class="contact-info-row__body">
+                <span class="contact-info-row__label">Phone & WhatsApp</span>
+                <a href="tel:+601128195437" class="contact-info-row__value" dir="ltr">+601128195437</a>
+            </div>
+        </div>
+
+        <div class="contact-info-row">
+            <div class="contact-info-row__icon">
+                <svg class="icon icon-md"><use href="#icon-location"/></svg>
+            </div>
+            <div class="contact-info-row__body">
+                <span class="contact-info-row__label">Address</span>
+                {% if settings.contact_address %}
+                <span class="contact-info-row__value">{{ settings.contact_address }}</span>
+                {% else %}
+                <span class="contact-info-row__value">Office 408, Block B, Kajang Utama, Kajang, Selangor, Malaysia</span>
+                {% endif %}
+            </div>
+        </div>
+
+        <div class="contact-info-row">
+            <div class="contact-info-row__icon">
+                <svg class="icon icon-md"><use href="#icon-about"/></svg>
+            </div>
+            <div class="contact-info-row__body">
+                <span class="contact-info-row__label">Follow Us</span>
+                <div class="contact-social-links">
+                    <a href="#" class="pub-footer__social-link" title="Instagram">ig</a>
+                    <a href="#" class="pub-footer__social-link" title="LinkedIn">in</a>
+                    <a href="#" class="pub-footer__social-link" title="Twitter">𝕏</a>
+                    <a href="#" class="pub-footer__social-link" title="Facebook">f</a>
+                </div>
+            </div>
+        </div>
+
+    </div>
+
+    <!-- Contact Form -->
+    <div class="contact-form-section">
+        <div class="contact-form-header">
+            <h2 class="contact-form-header__title">Send Us a Message</h2>
+            <p class="contact-form-header__subtitle">Fill out the form below and we will get back to you as soon as possible</p>
+        </div>
+
+        <form id="contactForm" class="contact-form" method="post">
+            {% csrf_token %}
+            
+            <div class="contact-form__row">
+                <div class="contact-form__group">
+                    <label for="name" class="contact-form__label">Full Name <span class="required">*</span></label>
+                    <input type="text" id="name" name="name" class="contact-form__input" required>
+                </div>
+
+                <div class="contact-form__group">
+                    <label for="email" class="contact-form__label">Email Address <span class="required">*</span></label>
+                    <input type="email" id="email" name="email" class="contact-form__input" required>
+                </div>
+            </div>
+
+            <div class="contact-form__group">
+                <label for="subject" class="contact-form__label">Subject <span class="required">*</span></label>
+                <input type="text" id="subject" name="subject" class="contact-form__input" required>
+            </div>
+
+            <div class="contact-form__group">
+                <label for="message" class="contact-form__label">Message <span class="required">*</span></label>
+                <textarea id="message" name="message" class="contact-form__textarea" rows="6" required></textarea>
+            </div>
+
+            <button type="submit" class="btn btn--primary btn--lg">
+                <i class="fas fa-paper-plane"></i>
+                Send Message
+            </button>
+        </form>
+    </div>
+
+</div>
+
+<script>
+document.getElementById('contactForm').addEventListener('submit', function(e) {
+    e.preventDefault();
+    
+    const formData = new FormData(this);
+    const submitBtn = this.querySelector('button[type="submit"]');
+    const originalBtnText = submitBtn.innerHTML;
+    
+    submitBtn.disabled = true;
+    submitBtn.innerHTML = '<i class="fas fa-spinner fa-spin"></i> Sending...';
+    
+    fetch('{% url "pages:contact" %}', {
+        method: 'POST',
+        body: formData,
+        headers: {
+            'X-Requested-With': 'XMLHttpRequest'
+        }
+    })
+    .then(response => response.json())
+    .then(data => {
+        if (data.success) {
+            Swal.fire({
+                title: 'Thank you for contacting us!',
+                text: data.message || 'Your message has been sent successfully. We will respond to you shortly.',
+                icon: 'success',
+                confirmButtonText: 'OK'
+            }).then(() => {
+                this.reset();
+            });
+        } else {
+            let errorMsg = 'An error occurred while sending the message. Please try again.';
+            if (data.errors) {
+                errorMsg = Object.values(data.errors).flat().join('\n');
+            } else if (data.message) {
+                errorMsg = data.message;
+            }
+            
+            Swal.fire({
+                title: 'Error!',
+                text: errorMsg,
+                icon: 'error',
+                confirmButtonText: 'OK'
+            });
+        }
+    })
+    .catch(error => {
+        console.error('Error:', error);
+        Swal.fire({
+            title: 'Error!',
+            text: 'Connection error. Please try again later.',
+            icon: 'error',
+            confirmButtonText: 'OK'
+        });
+    })
+    .finally(() => {
+        submitBtn.disabled = false;
+        submitBtn.innerHTML = originalBtnText;
+    });
+});
+</script>
+{% endblock %}

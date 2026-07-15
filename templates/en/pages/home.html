@@ -1,0 +1,354 @@
+{% extends 'base_public.html' %}
+{% load static %}
+
+{% block title %}Home{% endblock %}
+{% block nav_home %}active{% endblock %}
+
+{% block extra_css %}
+<link rel="stylesheet" href="{% static 'css/en/pages.css' %}">
+{% endblock %}
+
+{# ===== HERO + FEATURES + TICKER ===== #}
+{% block above_layout %}
+
+<!-- HERO -->
+<div class="pub-hero">
+    <div class="pub-hero__background">
+        <div class="pub-hero__pattern"></div>
+    </div>
+    <div class="pub-hero__inner">
+        <!-- Left Column: Main Content -->
+        <div class="pub-hero__content">
+            <div class="pub-hero__header-row">
+                <div class="pub-hero__eyebrow-badge">
+                    <svg class="hero-icon" viewBox="0 0 24 24" fill="currentColor" style="width:16px;height:16px;"><path d="M12 2C6.5 2 2 6.5 2 12s4.5 10 10 10 10-4.5 10-10S17.5 2 12 2zm-2 15l-5-5 1.41-1.41L10 14.17l7.59-7.59L19 8l-9 9z"/></svg>
+                    <span class="pub-hero__badge-text">Global Peer-Reviewed</span>
+                </div>
+                <div class="pub-hero__issn-badge">
+                    E-ISSN: <span class="pub-hero__issn-val">2785-8294</span>
+                </div>
+            </div>
+            
+            <h1 class="pub-hero__title">
+                Shaping the <span class="text-primary-accent italic">Future</span> of <br>
+                <span class="text-primary-accent">Management</span> & <span class="text-primary-accent">IT</span>
+            </h1>
+            <p class="pub-hero__desc">{{ settings.journal_desc|default:"A leading international open-access journal bridging theoretical insights with technological advancements. High-impact research from Malaysia to the global community." }}</p>
+            
+            <!-- Value Badges -->
+            <div class="pub-hero__values">
+                <div class="pub-hero__value-item">
+                    <svg class="hero-icon text-accent" viewBox="0 0 24 24"><polygon points="13 2 3 14 12 14 11 22 21 10 12 10 13 2"/></svg>
+                    <span class="pub-hero__value-text">24h Initial Response</span>
+                </div>
+                <div class="pub-hero__value-item">
+                    <svg class="hero-icon text-accent" viewBox="0 0 24 24"><rect x="3" y="4" width="18" height="18" rx="2" ry="2"/><line x1="16" y1="2" x2="16" y2="6"/><line x1="8" y1="2" x2="8" y2="6"/><line x1="3" y1="10" x2="21" y2="10"/></svg>
+                    <span class="pub-hero__value-text">3 Days to Decision</span>
+                </div>
+                <div class="pub-hero__value-item">
+                    <svg class="hero-icon text-accent" viewBox="0 0 24 24"><circle cx="12" cy="12" r="10"/><line x1="2" y1="12" x2="22" y2="12"/><path d="M12 2a15.3 15.3 0 0 1 4 10 15.3 15.3 0 0 1-4 10 15.3 15.3 0 0 1-4-10 15.3 15.3 0 0 1 4-10z"/></svg>
+                    <span class="pub-hero__value-text">Full Open Access</span>
+                </div>
+            </div>
+
+            <div class="pub-hero__actions">
+                <a href="{% url 'submissions:create' %}" class="pub-hero__btn pub-hero__btn--primary">
+                    Submit Manuscript
+                    <svg class="hero-icon" viewBox="0 0 24 24" style="margin-left:8px;width:16px;height:16px;"><line x1="22" y1="2" x2="11" y2="13"/><polygon points="22 2 15 22 11 13 2 9 22 2"/></svg>
+                </a>
+                <a href="{% url 'pages:article_list' %}" class="pub-hero__btn pub-hero__btn--secondary">
+                    Browse Articles
+                    <svg class="hero-icon" viewBox="0 0 24 24" style="margin-left:8px;width:16px;height:16px;"><path d="M2 3h6a4 4 0 0 1 4 4v14a3 3 0 0 0-3-3H2z"/><path d="M22 3h-6a4 4 0 0 0-4 4v14a3 3 0 0 1 3-3h7z"/></svg>
+                </a>
+            </div>
+        </div>
+
+        <!-- Right Column: Spotlight Card -->
+        <div class="pub-hero__spotlight">
+            <div class="spotlight-card">
+                <div class="spotlight-card__decor"></div>
+                <div class="spotlight-card__header">
+                    <span class="spotlight-card__indicator animate-pulse"></span>
+                    <span class="spotlight-card__label">Latest Published Article</span>
+                </div>
+                {% if latest_articles %}
+                    {% with article=latest_articles.0 %}
+                        <span class="spotlight-card__section">{{ article.section.name }}</span>
+                        <h3 class="spotlight-card__title">{{ article.title|truncatechars:90 }}</h3>
+                        <div class="spotlight-card__meta">
+                            <div class="spotlight-card__meta-item">
+                                <svg class="hero-icon text-muted" viewBox="0 0 24 24"><path d="M20 21v-2a4 4 0 0 0-4-4H8a4 4 0 0 0-4 4v2"/><circle cx="12" cy="7" r="4"/></svg>
+                                <span class="spotlight-card__meta-text">{{ article.submission.author.get_full_name|default:article.submission.author.username }}</span>
+                            </div>
+                            <div class="spotlight-card__meta-item">
+                                <svg class="hero-icon text-muted" viewBox="0 0 24 24"><rect x="3" y="4" width="18" height="18" rx="2" ry="2"/><line x1="16" y1="2" x2="16" y2="6"/><line x1="8" y1="2" x2="8" y2="6"/><line x1="3" y1="10" x2="21" y2="10"/></svg>
+                                <span class="spotlight-card__meta-text">{{ article.published_at|date:"F d, Y" }}</span>
+                            </div>
+                        </div>
+                        <a href="{% url 'pages:article_detail' article.slug %}" class="spotlight-card__link">
+                            Read Full Article
+                            <svg class="hero-icon" viewBox="0 0 24 24" style="width:16px;height:16px;"><line x1="5" y1="12" x2="19" y2="12"/><polyline points="12 5 19 12 12 19"/></svg>
+                        </a>
+                    {% endwith %}
+                {% else %}
+                    <span class="spotlight-card__section">{% if current_issue %}{{ current_issue }}{% else %}Coming Soon{% endif %}</span>
+                    <h3 class="spotlight-card__title">{{ settings.journal_name|default:"IJCMIT Journal" }}</h3>
+                    <div class="spotlight-card__meta">
+                        <div class="spotlight-card__meta-item">
+                            <svg class="hero-icon text-muted" viewBox="0 0 24 24"><circle cx="12" cy="12" r="10"/><line x1="2" y1="12" x2="22" y2="12"/><path d="M12 2a15.3 15.3 0 0 1 4 10 15.3 15.3 0 0 1-4 10 15.3 15.3 0 0 1-4-10 15.3 15.3 0 0 1 4-10z"/></svg>
+                            <span class="spotlight-card__meta-text">Open Access</span>
+                        </div>
+                    </div>
+                    <a href="{% url 'pages:archive' %}" class="spotlight-card__link">
+                        Browse Archive
+                        <svg class="hero-icon" viewBox="0 0 24 24" style="width:16px;height:16px;"><line x1="5" y1="12" x2="19" y2="12"/><polyline points="12 5 19 12 12 19"/></svg>
+                    </a>
+                {% endif %}
+            </div>
+        </div>
+    </div>
+</div>
+
+<!-- STATS ROW -->
+<div class="pub-stats-grid">
+    <div class="pub-stats-card">
+        <span class="pub-stats-card__num">{{ stats.published|default:"0" }}</span>
+        <span class="pub-stats-card__label">Published Articles</span>
+    </div>
+    <div class="pub-stats-card">
+        <span class="pub-stats-card__num">{{ stats.reviewers|default:"0" }}</span>
+        <span class="pub-stats-card__label">Specialist Reviewers</span>
+    </div>
+    <div class="pub-stats-card">
+        <span class="pub-stats-card__num">3 Days</span>
+        <span class="pub-stats-card__label">To Decision</span>
+    </div>
+    <div class="pub-stats-card">
+        <span class="pub-stats-card__num font-issn">2785-8294</span>
+        <span class="pub-stats-card__label">E-ISSN</span>
+    </div>
+</div>
+
+<!-- FEATURES STRIP -->
+<div class="features-strip">
+    <div class="features-strip__item">
+        <div class="features-strip__icon">
+            <svg viewBox="0 0 24 24"><circle cx="12" cy="12" r="9"/><polyline points="12 6 12 12 16 14"/></svg>
+        </div>
+        <div>
+            <div class="features-strip__title">Fast Review & Publication</div>
+            <div class="features-strip__desc">
+                Initial response in <span class="features-strip__accent">24 hours</span>
+                and acceptance decision within <span class="features-strip__accent">3 working days</span>
+            </div>
+        </div>
+    </div>
+    <div class="features-strip__item">
+        <div class="features-strip__icon">
+            <svg viewBox="0 0 24 24"><path d="M12 2L2 7l10 5 10-5-10-5z"/><path d="M2 17l10 5 10-5"/><path d="M2 12l10 5 10-5"/></svg>
+        </div>
+        <div>
+            <div class="features-strip__title">Full Open Access</div>
+            <div class="features-strip__desc">All articles are available immediately upon acceptance to the widest audience of readers.</div>
+        </div>
+    </div>
+    <div class="features-strip__item">
+        <div class="features-strip__icon">
+            <svg viewBox="0 0 24 24"><path d="M14 2H6a2 2 0 0 0-2 2v16a2 2 0 0 0 2 2h12a2 2 0 0 0 2-2V8z"/><polyline points="14 2 14 8 20 8"/><line x1="16" y1="13" x2="8" y2="13"/><line x1="16" y1="17" x2="8" y2="17"/></svg>
+        </div>
+        <div>
+            <div class="features-strip__title">Easy & Direct Submission</div>
+            <div class="features-strip__desc">Track your manuscript status in real-time from your personal dashboard.</div>
+        </div>
+    </div>
+</div>
+
+<!-- TICKER -->
+{% if latest_articles %}
+<div class="ticker">
+    <span class="ticker__label">Latest Articles</span>
+    <div class="ticker__wrap">
+        <div class="ticker__track" id="ticker-track">
+            {% for article in latest_articles %}<span>{{ article.title|truncatechars:80 }}</span>{% endfor %}
+            {% for article in latest_articles %}<span>{{ article.title|truncatechars:80 }}</span>{% endfor %}
+            {% for article in latest_articles %}<span>{{ article.title|truncatechars:80 }}</span>{% endfor %}
+            {% for article in latest_articles %}<span>{{ article.title|truncatechars:80 }}</span>{% endfor %}
+        </div>
+    </div>
+</div>
+{% endif %}
+
+{% endblock %}
+
+{# ===== RIGHT SIDEBAR — MAIN ===== #}
+{% block sidebar_right %}
+
+<!-- Search -->
+<div class="pub-widget">
+    <div class="pub-widget__header"><svg class="icon icon-sm icon-inverse"><use href="#icon-search"/></svg> Search Articles</div>
+    <div class="pub-widget__body">
+        <form method="get" action="{% url 'pages:search' %}">
+            <div style="display:flex;flex-direction:column;gap:var(--space-2);">
+                <input type="text" name="q" placeholder="Search by title or keywords..." class="form-input form-input--sm">
+                <button type="submit" class="btn btn-primary btn-sm">Search</button>
+            </div>
+        </form>
+    </div>
+</div>
+
+<!-- Browse by Section -->
+{% if sections %}
+<div class="pub-widget">
+    <div class="pub-widget__header"><svg class="icon icon-sm icon-inverse"><use href="#icon-folder"/></svg> Browse by Section</div>
+    <div class="pub-widget__body pub-widget__body--flush">
+        <ul class="pub-widget__list">
+            {% for section in sections %}
+            <li class="pub-widget__list-item">
+                <a href="{% url 'pages:section_articles' section.slug %}">
+                    <span class="pub-widget__section-dot" style="background-color:var(--color-primary);"></span>
+                    {{ section.name }}
+                </a>
+            </li>
+            {% endfor %}
+        </ul>
+    </div>
+</div>
+{% endif %}
+
+<!-- CTA for New Visitors -->
+{% if not user.is_authenticated %}
+<div class="pub-widget" style="overflow:hidden;">
+    <div class="sidebar-cta">
+        <p class="sidebar-cta__text">Researcher? Publish your article in our peer-reviewed journal</p>
+        <a href="{% url 'accounts:register' %}" class="sidebar-cta__btn">Create Free Account →</a>
+        <a href="{% url 'pages:apc' %}" style="display:block;text-align:center;font-size:var(--text-xs);color:rgba(255,255,255,0.45);margin-top:var(--space-2);text-decoration:none;">Learn about Publishing Fees</a>
+    </div>
+</div>
+{% else %}
+<div class="pub-widget" style="overflow:hidden;">
+    <div class="sidebar-cta">
+        <p class="sidebar-cta__text">Welcome, {{ user.get_full_name|default:user.username }}</p>
+        <a href="{% url 'dashboard:home' %}" class="sidebar-cta__btn">Go to Dashboard →</a>
+    </div>
+</div>
+{% endif %}
+
+{% endblock %}
+
+{# ===== LEFT SIDEBAR — MAIN ===== #}
+{% block sidebar_left %}
+
+<!-- Latest Issues -->
+<div class="pub-widget">
+    <div class="pub-widget__header"><svg class="icon icon-sm icon-inverse"><use href="#icon-issues"/></svg> Latest Issues</div>
+    <div class="pub-widget__body pub-widget__body--flush">
+        <ul class="pub-widget__list">
+            {% for issue in latest_issues %}
+            <li class="pub-widget__list-item pub-widget__list-item--link">
+                <a href="{% url 'pages:article_list' %}?issue={{ issue.pk }}" class="pub-widget__issue-link">
+                    <span class="pub-widget__issue-name">
+                        <span style="flex:1;">{{ issue }}</span>
+                        {% if issue.is_current %}
+                            <span class="badge badge-published" style="font-size:9px;">Current</span>
+                        {% endif %}
+                    </span>
+                    <span class="text-muted text-xs">{{ issue.articles.count }} articles</span>
+                </a>
+            </li>
+            {% empty %}
+            <li class="pub-widget__list-item">
+                <span class="text-muted text-sm">No issues found</span>
+            </li>
+            {% endfor %}
+        </ul>
+        <div style="padding:var(--space-3) var(--space-5);border-top:1px solid var(--color-border-light);">
+            <a href="{% url 'pages:archive' %}" style="font-size:var(--text-sm);color:var(--color-primary-light);font-weight:600;text-decoration:none;">Full Archive →</a>
+        </div>
+    </div>
+</div>
+
+<!-- Indexed In -->
+<div class="pub-widget">
+    <div class="pub-widget__header"><svg class="icon icon-sm icon-inverse"><use href="#icon-partners"/></svg> Indexed In</div>
+    <div class="pub-widget__body" style="padding:var(--space-3);">
+        <a href="https://www.crossref.org" target="_blank" rel="noopener" class="partner-item">
+            <div class="partner-logo"><img src="{% static 'img/Crossref.png' %}" alt="Crossref"></div>
+        </a>
+        <a href="https://scholar.google.com" target="_blank" rel="noopener" class="partner-item">
+            <div class="partner-logo"><img src="{% static 'img/Google.png' %}" alt="Google Scholar"></div>
+        </a>
+        <a href="https://issuu.com" target="_blank" rel="noopener" class="partner-item">
+            <div class="partner-logo"><img src="{% static 'img/issuu.png' %}" alt="Issuu"></div>
+        </a>
+        <a href="https://www.scribd.com" target="_blank" rel="noopener" class="partner-item">
+            <div class="partner-logo"><img src="{% static 'img/Scribd.png' %}" alt="Scribd"></div>
+        </a>
+        <a href="https://www.academia.edu" target="_blank" rel="noopener" class="partner-item">
+            <div class="partner-logo"><img src="{% static 'img/academia.png' %}" alt="Academia.edu"></div>
+        </a>
+    </div>
+</div>
+
+{% endblock %}
+
+{# ===== MAIN CONTENT ===== #}
+{% block content %}
+
+<!-- Latest Articles -->
+<div class="section-header">
+    <span class="section-header__label">Latest Published Articles</span>
+    <a href="{% url 'pages:article_list' %}" class="section-header__link">View All →</a>
+</div>
+
+{% if latest_articles %}
+    {% for article in latest_articles %}
+    <div class="card card-article {% if forloop.first %}card-article--featured{% endif %} mb-4" style="position:relative;">
+        <a href="{% url 'pages:article_detail' article.slug %}" class="card-article__overlay-link" aria-label="{{ article.title }}"></a>
+        <div class="article-meta-row">
+            <span class="article-badge-type">{{ article.section.name }}</span>
+            <span class="article-badge-oa">Open Access</span>
+        </div>
+        <h2 class="card-article__title">{{ article.title|truncatechars:100 }}</h2>
+        <p class="text-secondary text-sm mb-2">
+            {{ article.submission.author.get_full_name|default:article.submission.author.username }}
+        </p>
+        <p class="text-secondary text-sm mb-3">{{ article.abstract|truncatechars:120 }}</p>
+        <div class="card-article__meta">
+            <span>{{ article.published_at|date:"Y/m/d" }}</span>
+            {% if article.issue %}<span>{{ article.issue }}</span>{% endif %}
+            {% if article.manuscript_file %}
+            <a href="{{ article.manuscript_file.file.url }}"
+               class="btn btn-ghost btn-sm article-card-pdf-btn" target="_blank"
+               style="position:relative;z-index:2;">
+                <svg class="icon icon-sm" style="margin-right:var(--space-1)"><use href="#icon-pdf"/></svg>
+                Download PDF
+            </a>
+            {% endif %}
+        </div>
+    </div>
+    {% endfor %}
+{% else %}
+    <div class="card">
+        <div class="empty-state">
+            <div class="empty-state__icon"><svg class="icon icon-xl icon-muted"><use href="#icon-articles"/></svg></div>
+            <h3 class="empty-state__title">No published articles yet</h3>
+        </div>
+    </div>
+{% endif %}
+
+<!-- Browse by Section -->
+{% if sections %}
+<div class="section-header mt-8">
+    <span class="section-header__label">Browse by Section</span>
+</div>
+<div style="display:flex;flex-wrap:wrap;gap:var(--space-2);">
+    {% for section in sections %}
+        <a href="{% url 'pages:section_articles' section.slug %}" class="topic-tag">{{ section.name }}</a>
+    {% endfor %}
+</div>
+{% endif %}
+
+{% endblock %}
+
+{% block stats_bar %}
+{% endblock %}

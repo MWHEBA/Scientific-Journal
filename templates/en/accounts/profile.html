@@ -1,0 +1,221 @@
+{% extends 'base_dashboard.html' %}
+
+{% block title %}My Profile{% endblock %}
+{% block nav_author_profile %}active{% endblock %}
+
+{% block breadcrumb %}
+    <span class="dash-breadcrumb__sep">/</span>
+    <span class="dash-breadcrumb__current">My Profile</span>
+{% endblock %}
+
+{% block content %}
+<div class="page-header">
+    <h1 class="page-header__title">My Profile</h1>
+    <p class="page-header__subtitle">Manage your personal account details and settings</p>
+</div>
+
+<!-- Basic Account Info -->
+<div class="card mb-6">
+    <div style="display: flex; align-items: center; gap: var(--space-4); padding-bottom: var(--space-4); border-bottom: 1px solid var(--color-border);">
+        <div style="width: 80px; height: 80px; border-radius: 50%; background: var(--color-accent); display: flex; align-items: center; justify-content: center; color: white; font-size: 32px; font-weight: 600;">
+            {{ user.get_full_name|default:user.username|first|upper }}
+        </div>
+        <div>
+            <h2 style="font-size: var(--text-lg); font-weight: 600; margin: 0;">{{ user.get_full_name|default:user.username }}</h2>
+            <p class="text-muted mb-2">@{{ user.username }}</p>
+            <span class="badge {% if user.role == 'author' %}badge-secondary{% elif user.role == 'reviewer' %}badge-accent{% else %}badge-primary{% endif %}">
+                {% if user.role == 'author' %}Author
+                {% elif user.role == 'reviewer' %}Reviewer
+                {% elif user.role == 'admin' %}Admin
+                {% endif %}
+            </span>
+        </div>
+    </div>
+</div>
+
+<div style="display: grid; grid-template-columns: 2fr 1fr; gap: var(--space-6); max-width: 1200px;">
+    <!-- Edit Form -->
+    <div>
+        <div class="card">
+            <h2 class="mb-6" style="font-size: var(--text-lg); font-weight: 600; display: flex; align-items: center; gap: var(--space-2);">
+                <svg class="icon icon-md"><use href="#icon-user"/></svg>
+                Personal Details
+            </h2>
+            
+            <form method="post" class="form">
+                {% csrf_token %}
+                
+                <div style="display: grid; grid-template-columns: 1fr 1fr; gap: var(--space-4); margin-bottom: var(--space-4);">
+                    <div>
+                        <label class="submit-field__label" for="id_first_name">First Name</label>
+                        <input type="text" name="first_name" id="id_first_name" class="submit-field__input" 
+                               value="{{ form.first_name.value|default:'' }}" required>
+                        {% if form.first_name.errors %}
+                            <span class="submit-field__error">{{ form.first_name.errors.0 }}</span>
+                        {% endif %}
+                    </div>
+
+                    <div>
+                        <label class="submit-field__label" for="id_last_name">Last Name</label>
+                        <input type="text" name="last_name" id="id_last_name" class="submit-field__input" 
+                               value="{{ form.last_name.value|default:'' }}" required>
+                        {% if form.last_name.errors %}
+                            <span class="submit-field__error">{{ form.last_name.errors.0 }}</span>
+                        {% endif %}
+                    </div>
+                </div>
+
+                <div class="mb-6">
+                    <label class="submit-field__label" for="id_email">Email Address</label>
+                    <input type="email" name="email" id="id_email" class="submit-field__input" 
+                           value="{{ form.email.value|default:'' }}" required>
+                    {% if form.email.errors %}
+                        <span class="submit-field__error">{{ form.email.errors.0 }}</span>
+                    {% endif %}
+                </div>
+
+                <button type="submit" class="btn btn-primary btn-full">
+                    <svg class="icon icon-sm"><use href="#icon-save"/></svg>
+                    Save Changes
+                </button>
+            </form>
+        </div>
+
+        <!-- Role-Specific Profiles -->
+        {% if user.role == 'author' and author_profile_form %}
+        <div class="card mt-6">
+            <h2 class="mb-6" style="font-size: var(--text-lg); font-weight: 600; display: flex; align-items: center; gap: var(--space-2);">
+                <svg class="icon icon-md"><use href="#icon-articles"/></svg>
+                Author Profile
+            </h2>
+            
+            <form method="post" class="form">
+                {% csrf_token %}
+                
+                <div style="display: grid; grid-template-columns: 1fr 1fr; gap: var(--space-4); margin-bottom: var(--space-4);">
+                    <div>
+                        <label class="submit-field__label" for="id_institution">Institution</label>
+                        {{ author_profile_form.institution }}
+                        {% if author_profile_form.institution.errors %}
+                            <span class="submit-field__error">{{ author_profile_form.institution.errors.0 }}</span>
+                        {% endif %}
+                    </div>
+                    
+                    <div>
+                        <label class="submit-field__label" for="id_orcid">ORCID</label>
+                        {{ author_profile_form.orcid }}
+                        {% if author_profile_form.orcid.errors %}
+                            <span class="submit-field__error">{{ author_profile_form.orcid.errors.0 }}</span>
+                        {% endif %}
+                    </div>
+                </div>
+
+                <div class="mb-6">
+                    <label class="submit-field__label" for="id_bio">Biography</label>
+                    {{ author_profile_form.bio }}
+                    {% if author_profile_form.bio.errors %}
+                        <span class="submit-field__error">{{ author_profile_form.bio.errors.0 }}</span>
+                    {% endif %}
+                </div>
+
+                <button type="submit" class="btn btn-primary btn-full">
+                    <svg class="icon icon-sm"><use href="#icon-save"/></svg>
+                    Save Changes
+                </button>
+            </form>
+        </div>
+        {% endif %}
+
+        {% if user.role == 'reviewer' and reviewer_profile_form %}
+        <div class="card mt-6">
+            <h2 class="mb-6" style="font-size: var(--text-lg); font-weight: 600; display: flex; align-items: center; gap: var(--space-2);">
+                <svg class="icon icon-md"><use href="#icon-review"/></svg>
+                Reviewer Profile
+            </h2>
+            
+            <form method="post" class="form">
+                {% csrf_token %}
+                
+                <div class="mb-4">
+                    <label class="submit-field__label" for="id_institution">Institution</label>
+                    {{ reviewer_profile_form.institution }}
+                    {% if reviewer_profile_form.institution.errors %}
+                        <span class="submit-field__error">{{ reviewer_profile_form.institution.errors.0 }}</span>
+                    {% endif %}
+                </div>
+
+                <div class="mb-6">
+                    <label style="display: flex; align-items: center; gap: var(--space-2); cursor: pointer;">
+                        {{ reviewer_profile_form.is_available }}
+                        <span class="submit-field__label" style="margin: 0;">Available for review</span>
+                    </label>
+                    {% if reviewer_profile_form.is_available.errors %}
+                        <span class="submit-field__error">{{ reviewer_profile_form.is_available.errors.0 }}</span>
+                    {% endif %}
+                </div>
+
+                <button type="submit" class="btn btn-primary btn-full">
+                    <svg class="icon icon-sm"><use href="#icon-save"/></svg>
+                    Save Changes
+                </button>
+            </form>
+        </div>
+        {% endif %}
+    </div>
+
+    <!-- Sidebar -->
+    <div>
+        <!-- Account Information -->
+        <div class="card mb-6">
+            <h3 class="mb-4" style="font-size: var(--text-base); font-weight: 600; display: flex; align-items: center; gap: var(--space-2);">
+                <svg class="icon icon-sm"><use href="#icon-about"/></svg>
+                Account Information
+            </h3>
+            
+            <div class="mb-4">
+                <p class="text-muted text-xs mb-1">Username</p>
+                <p class="text-sm font-weight-500">{{ user.username }}</p>
+            </div>
+
+            <div class="mb-4">
+                <p class="text-muted text-xs mb-1">Joined Date</p>
+                <p class="text-sm font-weight-500">{{ user.date_joined|date:"Y/m/d" }}</p>
+            </div>
+
+            <div class="mb-4">
+                <p class="text-muted text-xs mb-1">Last Update</p>
+                <p class="text-sm font-weight-500">{{ user.last_login|date:"Y/m/d H:i"|default:"Never logged in" }}</p>
+            </div>
+
+            <div style="padding-top: var(--space-4); border-top: 1px solid var(--color-border);">
+                <p class="text-muted text-xs mb-3">Status</p>
+                <div style="display: flex; gap: var(--space-2);">
+                    {% if user.is_active %}
+                        <span class="badge badge-success">Active</span>
+                    {% else %}
+                        <span class="badge badge-danger">Disabled</span>
+                    {% endif %}
+                </div>
+            </div>
+        </div>
+
+        <!-- Actions -->
+        <div class="card">
+            <h3 class="mb-4" style="font-size: var(--text-base); font-weight: 600; display: flex; align-items: center; gap: var(--space-2);">
+                <svg class="icon icon-sm"><use href="#icon-settings"/></svg>
+                Actions
+            </h3>
+            
+            <a href="{% url 'accounts:logout' %}" class="btn btn-ghost btn-full mb-3">
+                <svg class="icon icon-sm"><use href="#icon-logout"/></svg>
+                Logout
+            </a>
+
+            <a href="{% url 'dashboard:home' %}" class="btn btn-secondary btn-full">
+                <svg class="icon icon-sm"><use href="#icon-home"/></svg>
+                Back to Dashboard
+            </a>
+        </div>
+    </div>
+</div>
+{% endblock %}

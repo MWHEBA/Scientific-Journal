@@ -1,0 +1,31 @@
+{% extends 'base_public.html' %}
+
+{% block title %}Publishing Ethics{% endblock %}
+
+{% block content %}
+<div class="page-header">
+    <h1 class="page-header__title">Publishing Ethics</h1>
+</div>
+
+<div class="card mb-4">
+    <h3 class="mb-3" style="font-size: var(--text-md); color: var(--color-primary);">Authors' Responsibilities</h3>
+    <ul style="line-height: var(--leading-loose); padding-left: var(--space-6); margin-bottom: var(--space-6);">
+        <li>Submit original work that has not been published previously.</li>
+        <li>Disclose all co-authors who contributed to the work.</li>
+        <li>Declare all funding sources and potential conflicts of interest.</li>
+        <li>Obtain necessary ethical approvals for research data and images.</li>
+    </ul>
+
+    <h3 class="mb-3" style="font-size: var(--text-md); color: var(--color-primary);">Reviewers' Responsibilities</h3>
+    <ul style="line-height: var(--leading-loose); padding-left: var(--space-6); margin-bottom: var(--space-6);">
+        <li>Maintain absolute confidentiality regarding all reviewed manuscript materials.</li>
+        <li>Declare any potential conflict of interest prior to initiating review.</li>
+        <li>Provide objective, constructive, and timely peer-review feedback.</li>
+    </ul>
+
+    <h3 class="mb-3" style="font-size: var(--text-md); color: var(--color-primary);">Plagiarism Policy</h3>
+    <p class="mb-0">
+        The journal strictly employs software tools to detect plagiarism. Any submitted manuscript found containing plagiarized content will be immediately rejected.
+    </p>
+</div>
+{% endblock %}

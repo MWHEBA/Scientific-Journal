@@ -1,0 +1,180 @@
+{% extends 'base_dashboard.html' %}
+
+{% block title %}Submissions{% endblock %}
+{% block nav_author_articles %}active{% endblock %}
+
+{% block content %}
+<div class="page-header">
+    <h1 class="page-header__title">Submissions</h1>
+    <div class="page-header__actions">
+        <a href="{% url 'dashboard:author_archive' %}" class="btn btn-ghost">Archive{% if archived %} ({{ archived }}){% endif %}</a>
+        <a href="{% url 'submissions:create' %}" class="btn btn-accent">+ Submit New Article</a>
+    </div>
+</div>
+
+<!-- Submissions List -->
+{% if submissions %}
+    {% for sub in submissions %}
+    {% if sub.status != 'draft' %}
+    <div class="card mb-4">
+        <div style="display: flex; justify-content: space-between; align-items: flex-start; flex-wrap: wrap; gap: var(--space-3);">
+            <div style="flex: 1; min-width: 250px;">
+                <h3 class="mb-2" style="font-size: var(--text-md);">
+                    <a href="{% url 'dashboard:author_submission_detail' sub.pk %}" class="sub-title-link">{{ sub.title|truncatechars:80 }}</a>
+                </h3>
+                <p class="text-muted text-sm mb-0">
+                    {{ sub.section.name }} &nbsp;·&nbsp; {{ sub.created_at|date:"Y/m/d" }}
+                </p>
+            </div>
+            <span class="badge
+                {% if sub.status == 'draft' %}badge-draft
+                {% elif sub.status == 'under_initial_check' %}badge-initial-check
+                {% elif sub.status == 'under_review' %}badge-under-review
+                {% elif sub.status == 'revision_required' %}badge-revision
+                {% elif sub.status == 'accepted_awaiting_payment' %}badge-accepted
+                {% elif sub.status == 'payment_processing' %}badge-payment-processing
+                {% elif sub.status == 'paid' %}badge-paid
+                {% elif sub.status == 'published' %}badge-published
+                {% elif sub.status == 'rejected' %}badge-rejected
+                {% elif sub.status == 'expired' %}badge-expired
+                {% elif sub.status == 'withdrawn' %}badge-withdrawn
+                {% endif %}">
+                {% if sub.status == 'draft' %}Draft
+                {% elif sub.status == 'under_initial_check' %}Initial Checking
+                {% elif sub.status == 'under_review' %}Under Review
+                {% elif sub.status == 'revision_required' %}Revision Required
+                {% elif sub.status == 'accepted_awaiting_payment' %}Accepted (Awaiting Payment)
+                {% elif sub.status == 'payment_processing' %}Payment Processing
+                {% elif sub.status == 'paid' %}Paid
+                {% elif sub.status == 'published' %}Published
+                {% elif sub.status == 'rejected' %}Rejected
+                {% elif sub.status == 'expired' %}Expired
+                {% elif sub.status == 'withdrawn' %}Withdrawn
+                {% else %}{{ sub.get_status_display }}{% endif %}
+            </span>
+        </div>
+
+        <!-- Rejection Reason -->
+        {% if sub.status == 'rejected' and sub.admin_notes %}
+        <div class="inline-alert inline-alert--danger mt-4">
+            <span class="inline-alert__icon"><svg class="icon icon-md"><use href="#icon-reject"/></svg></span>
+            <div class="inline-alert__content">
+                <p class="inline-alert__title">Rejection Reason</p>
+                <p class="inline-alert__message">{{ sub.admin_notes|truncatechars:300 }}</p>
+            </div>
+        </div>
+        {% endif %}
+
+        <!-- Reviewer Comments -->
+        {% if sub.status == 'revision_required' or sub.status == 'rejected' %}
+            {% with latest_review=sub.reviews.last %}
+                {% if latest_review and latest_review.comments %}
+                <div class="inline-alert inline-alert--warning mt-4">
+                    <span class="inline-alert__icon"><svg class="icon icon-md"><use href="#icon-review"/></svg></span>
+                    <div class="inline-alert__content">
+                        <p class="inline-alert__title">Reviewer Comments</p>
+                        <p class="inline-alert__message">{{ latest_review.comments|truncatechars:300 }}</p>
+                    </div>
+                </div>
+                {% endif %}
+            {% endwith %}
+        {% endif %}
+
+        <!-- Payment Notice -->
+        {% if sub.status == 'accepted_awaiting_payment' or sub.status == 'payment_processing' %}
+        <div class="inline-alert inline-alert--success mt-4">
+            <span class="inline-alert__icon"><svg class="icon icon-md"><use href="#icon-publish"/></svg></span>
+            <div class="inline-alert__content">
+                <p class="inline-alert__title">Your article has been accepted!</p>
+                {% if sub.payment_deadline %}
+                <p class="inline-alert__message">
+                    Payment deadline: <strong>{{ sub.payment_deadline|date:"Y/m/d" }}</strong>
+                </p>
+                {% endif %}
+            </div>
+        </div>
+        {% endif %}
+
+        <!-- Actions -->
+        <div style="margin-top: var(--space-4); display: flex; gap: var(--space-2); flex-wrap: wrap;">
+            <a href="{% url 'dashboard:author_submission_detail' sub.pk %}" class="btn btn-sm btn-ghost">View</a>
+            {% if sub.status == 'draft' %}
+                <a href="{% url 'submissions:edit' sub.pk %}" class="btn btn-sm btn-primary">Edit</a>
+            {% elif sub.status == 'under_initial_check' %}
+                <button type="button" class="btn btn-sm btn-danger" onclick="withdrawSubmission('{{ sub.pk }}')">Withdraw Article</button>
+            {% elif sub.status == 'revision_required' %}
+                <a href="{% url 'submissions:revise' sub.pk %}" class="btn btn-sm btn-accent">Upload Revision</a>
+            {% elif sub.status == 'accepted_awaiting_payment' %}
+                <a href="{% url 'payments:initiate' sub.pk %}" class="btn btn-sm btn-success">Complete Payment</a>
+            {% elif sub.status == 'published' %}
+                {% with article=sub.published %}
+                    {% if article %}
+                        <a href="{{ article.pdf_file.url }}" target="_blank" class="btn btn-sm btn-primary">Download PDF</a>
+                        <a href="{% url 'pages:article_detail' article.slug %}" class="btn btn-sm btn-ghost">View Article</a>
+                    {% endif %}
+                {% endwith %}
+            {% elif sub.status == 'rejected' or sub.status == 'withdrawn' %}
+                <form method="post" action="{% url 'submissions:archive' sub.pk %}" style="display:inline;">
+                    {% csrf_token %}
+                    <button type="submit" class="btn btn-sm btn-ghost">Send to Archive</button>
+                </form>
+            {% endif %}
+        </div>
+    </div>
+    {% endif %}
+    {% endfor %}
+{% else %}
+    <div class="card">
+        <div class="empty-state">
+            <div class="empty-state__icon"><svg class="icon icon-xl icon-muted"><use href="#icon-articles"/></svg></div>
+            <h3 class="empty-state__title">
+                {% if current_filter %}
+                    No submissions in this status
+                {% else %}
+                    No submissions yet
+                {% endif %}
+            </h3>
+            <p class="empty-state__message">
+                {% if current_filter %}
+                    <a href="{% url 'dashboard:author' %}" style="color: var(--color-accent);">View all submissions</a>
+                {% else %}
+                    Start by submitting your first article and follow the review and publishing process.
+                {% endif %}
+            </p>
+            <div class="empty-state__action">
+                <a href="{% url 'submissions:create' %}" class="btn btn-accent">Start by submitting your first article</a>
+            </div>
+        </div>
+    </div>
+{% endif %}
+{% endblock %}
+
+{% block extra_js %}
+<script>
+function withdrawSubmission(submissionId) {
+    Swal.fire({
+        title: 'Are you sure you want to withdraw the article?',
+        text: 'The article will be returned to draft status and you can edit it later',
+        icon: 'warning',
+        showCancelButton: true,
+        confirmButtonText: 'Yes, withdraw article',
+        cancelButtonText: 'Cancel',
+        confirmButtonColor: '#b01116'
+    }).then((result) => {
+        if (result.isConfirmed) {
+            const form = document.createElement('form');
+            form.method = 'POST';
+            form.action = `/submissions/${submissionId}/withdraw/`;
+            
+            const csrfToken = document.querySelector('[name=csrfmiddlewaretoken]');
+            if (csrfToken) {
+                form.appendChild(csrfToken.cloneNode(true));
+            }
+            
+            document.body.appendChild(form);
+            form.submit();
+        }
+    });
+}
+</script>
+{% endblock %}

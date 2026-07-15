@@ -1,0 +1,42 @@
+{% extends 'base_public.html' %}
+
+{% block title %}Article Processing Charges (APC){% endblock %}
+
+{% block content %}
+<div class="page-header">
+    <h1 class="page-header__title">Article Processing Charges (APC)</h1>
+</div>
+
+<div class="card mb-4">
+    <div style="text-align:center;padding:var(--space-6) 0;border-bottom:1px solid var(--color-border);margin-bottom:var(--space-6);">
+        <span style="font-size:var(--text-4xl);font-weight:700;color:var(--color-primary);">{{ settings.apc_amount }} USD</span>
+        <p class="text-muted text-sm" style="margin-top:var(--space-2);">Article Processing Charge (APC)</p>
+    </div>
+
+    <h3 class="mb-3" style="font-size:var(--text-md);color:var(--color-primary);">Important Notes</h3>
+    <ul style="line-height:var(--leading-loose);padding-left:var(--space-6);margin-bottom:var(--space-4);">
+        <li>Fees are only paid upon <strong>acceptance of the article</strong> — there are no submission fees.</li>
+        <li>Payment window: <strong>{{ settings.payment_deadline_days }} days</strong> from the date of acceptance.</li>
+        <li>The article is automatically published online once payment is confirmed.</li>
+        <li>Fees are non-refundable after publication.</li>
+    </ul>
+</div>
+
+<div class="card mb-4">
+    <h3 class="mb-3" style="font-size:var(--text-md);color:var(--color-primary);">Open Access</h3>
+    <p class="mb-0">
+        All accepted articles are published online immediately, providing wide visibility to a larger academic community in a short time. Articles published in the Journal of Marcil receive a high number of citations due to full and free open access.
+    </p>
+</div>
+
+<div class="card">
+    <p class="text-muted text-sm mb-0">
+        For inquiries regarding fee waivers or discounts, please contact us at: 
+        {% if settings.contact_email %}
+            <a href="mailto:{{ settings.contact_email }}">{{ settings.contact_email }}</a>.
+        {% else %}
+            the journal's official email address.
+        {% endif %}
+    </p>
+</div>
+{% endblock %}

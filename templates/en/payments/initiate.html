@@ -1,0 +1,94 @@
+{% extends 'base_dashboard.html' %}
+{% load dashboard_extras %}
+
+{% block title %}Complete Payment — {{ submission.title }}{% endblock %}
+{% block nav_author_home %}active{% endblock %}
+{% block breadcrumb %}
+    <span class="dash-breadcrumb__sep">/</span>
+    <a href="{% url 'dashboard:author' %}">Dashboard</a>
+    <span class="dash-breadcrumb__sep">/</span>
+    <span class="dash-breadcrumb__current">Complete Payment</span>
+{% endblock %}
+
+{% block content %}
+<div class="page-header">
+    <h1 class="page-header__title">Pay Publication Fees</h1>
+</div>
+
+<div style="max-width: 600px;">
+
+    <!-- Article Info -->
+    <div class="card mb-4">
+        <p class="text-muted text-sm mb-2">Article</p>
+        <p class="mb-1" style="font-weight: 600; font-size: var(--text-lg);">{{ submission.title }}</p>
+        <p class="text-muted text-sm mb-0">{{ submission.section.name }}</p>
+    </div>
+
+    <!-- Payment Details -->
+    <div class="card mb-4">
+        <h3 class="mb-4" style="font-size: var(--text-xl); color: var(--color-primary);">Payment Details</h3>
+
+        <div style="display: flex; justify-content: space-between; align-items: center;
+                    padding: var(--space-4) 0; border-bottom: 1px solid var(--color-border);">
+            <span>Article Processing Charges (APC)</span>
+            <strong style="color: var(--color-primary); font-size: var(--text-2xl);">
+                {{ apc_amount }} USD
+            </strong>
+        </div>
+
+        {% if submission.payment_deadline %}
+        <div style="padding: var(--space-3) 0; font-size: var(--text-sm);">
+            <span class="text-muted">Payment Deadline:</span>
+            <strong style="color: var(--color-warning);"> {{ submission.payment_deadline|date:"Y/m/d" }}</strong>
+        </div>
+        {% endif %}
+
+        {% if payment and payment.status == 'completed' %}
+            <div class="inline-alert inline-alert--success mt-4">
+                <span class="inline-alert__icon"><svg class="icon icon-md"><use href="#icon-publish"/></svg></span>
+                <div class="inline-alert__content">
+                    <p class="inline-alert__title">Payment Completed</p>
+                    <p class="inline-alert__message">On: {{ payment.paid_at|date:"Y-m-d H:i" }}</p>
+                </div>
+            </div>
+        {% elif payment and payment.status == 'processing' %}
+            <div class="inline-alert inline-alert--info mt-4">
+                <span class="inline-alert__icon"><svg class="icon icon-md" style="color:var(--color-info)"><use href="#icon-clock"/></svg></span>
+                <div class="inline-alert__content">
+                    <p class="inline-alert__title">Payment Processing</p>
+                    <p class="inline-alert__message">The payment will be confirmed in a few minutes.</p>
+                </div>
+            </div>
+        {% else %}
+            <form method="post" style="margin-top: var(--space-6);" id="payment-form">
+                {% csrf_token %}
+                <button type="button" class="btn btn-success btn-full" id="btn-pay">
+                    Proceed to Payment — {{ apc_amount }} USD
+                </button>
+            </form>
+        {% endif %}
+    </div>
+
+    <a href="{% url 'dashboard:author' %}" class="btn btn-ghost">Back to Dashboard</a>
+</div>
+{% endblock %}
+
+{% block extra_js %}
+<script>
+document.getElementById('btn-pay')?.addEventListener('click', function() {
+    Swal.fire({
+        title: 'Confirm Payment',
+        text: 'You will be redirected to the payment gateway to complete the transaction.',
+        icon: 'info',
+        showCancelButton: true,
+        confirmButtonText: 'Proceed to Payment',
+        cancelButtonText: 'Cancel',
+        confirmButtonColor: '#2d9e6b'
+    }).then((result) => {
+        if (result.isConfirmed) {
+            document.getElementById('payment-form').submit();
+        }
+    });
+});
+</script>
+{% endblock %}

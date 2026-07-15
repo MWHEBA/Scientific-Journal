@@ -1,0 +1,63 @@
+{% extends 'base_dashboard.html' %}
+
+{% block title %}Upload Revised Version{% endblock %}
+{% block nav_author_home %}active{% endblock %}
+{% block breadcrumb %}
+    <span class="dash-breadcrumb__sep">/</span>
+    <a href="{% url 'dashboard:author' %}">My Submissions</a>
+    <span class="dash-breadcrumb__sep">/</span>
+    <span class="dash-breadcrumb__current">Upload Revision</span>
+{% endblock %}
+
+{% block content %}
+<div class="page-header">
+    <div>
+        <h1 class="page-header__title">Upload Revised Version</h1>
+        <p class="text-secondary text-sm mb-0">Revision Round: {{ submission.revision_count }} / 2</p>
+    </div>
+    <span class="badge badge-revision">Revision Required</span>
+</div>
+
+<div style="max-width: 720px;">
+
+    <!-- Article Info -->
+    <div class="card mb-6">
+        <p class="text-muted text-sm mb-2">Article</p>
+        <p class="mb-0" style="font-weight: 600; font-size: var(--text-lg);">{{ submission.title }}</p>
+    </div>
+
+    <!-- Reviewer Comments -->
+    {% with latest_review=submission.reviews.last %}
+        {% if latest_review and latest_review.comments %}
+            <div class="inline-alert inline-alert--warning mb-6">
+                <span class="inline-alert__icon"><svg class="icon icon-md"><use href="#icon-review"/></svg></span>
+                <div class="inline-alert__content">
+                    <p class="inline-alert__title">Reviewer Comments</p>
+                    <p class="inline-alert__message">{{ latest_review.comments }}</p>
+                </div>
+            </div>
+        {% endif %}
+    {% endwith %}
+
+    <!-- Upload Form -->
+    <div class="card">
+        <h3 class="mb-6" style="font-size: var(--text-xl); color: var(--color-primary);">Upload Revised File</h3>
+        <form method="post" enctype="multipart/form-data" novalidate>
+            {% csrf_token %}
+            
+            <div class="form-group mb-4">
+                <label class="form-label" for="id_manuscript">Manuscript File (PDF) *</label>
+                <input type="file" name="manuscript" id="id_manuscript" class="form-control" accept=".pdf" required>
+                {% if form.manuscript.errors %}
+                    <p class="text-sm mt-1" style="color: var(--color-danger);">{{ form.manuscript.errors.0 }}</p>
+                {% endif %}
+            </div>
+
+            <div style="display: flex; gap: var(--space-3); margin-top: var(--space-6);">
+                <button type="submit" class="btn btn-accent">Upload Revised Version</button>
+                <a href="{% url 'dashboard:author' %}" class="btn btn-ghost">Cancel</a>
+            </div>
+        </form>
+    </div>
+</div>
+{% endblock %}

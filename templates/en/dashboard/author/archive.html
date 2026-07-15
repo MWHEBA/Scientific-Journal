@@ -1,0 +1,87 @@
+{% extends 'base_dashboard.html' %}
+
+{% block title %}Archive{% endblock %}
+{% block nav_author_articles %}active{% endblock %}
+
+{% block content %}
+<div class="page-header">
+    <h1 class="page-header__title">Archive</h1>
+    <div class="page-header__actions">
+        <a href="{% url 'dashboard:author' %}" class="btn btn-ghost">Back to Submissions</a>
+        <a href="{% url 'submissions:create' %}" class="btn btn-accent">+ Submit New Article</a>
+    </div>
+</div>
+
+{% if submissions %}
+    {% for sub in submissions %}
+    <div class="card mb-4">
+        <div style="display: flex; justify-content: space-between; align-items: flex-start; flex-wrap: wrap; gap: var(--space-3);">
+            <div style="flex: 1; min-width: 250px;">
+                <h3 class="mb-2" style="font-size: var(--text-md);">{{ sub.title|truncatechars:80 }}</h3>
+                <p class="text-muted text-sm mb-0">
+                    {% if sub.section %}{{ sub.section.name }} &nbsp;·&nbsp; {% endif %}{{ sub.created_at|date:"Y/m/d" }}
+                </p>
+            </div>
+            <span class="badge
+                {% if sub.status == 'rejected' %}badge-rejected
+                {% elif sub.status == 'withdrawn' %}badge-withdrawn
+                {% else %}badge-secondary
+                {% endif %}">
+                {% if sub.status == 'draft' %}Draft
+                {% elif sub.status == 'under_initial_check' %}Initial Checking
+                {% elif sub.status == 'under_review' %}Under Review
+                {% elif sub.status == 'revision_required' %}Revision Required
+                {% elif sub.status == 'accepted_awaiting_payment' %}Accepted (Awaiting Payment)
+                {% elif sub.status == 'payment_processing' %}Payment Processing
+                {% elif sub.status == 'paid' %}Paid
+                {% elif sub.status == 'published' %}Published
+                {% elif sub.status == 'rejected' %}Rejected
+                {% elif sub.status == 'expired' %}Expired
+                {% elif sub.status == 'withdrawn' %}Withdrawn
+                {% else %}{{ sub.get_status_display }}{% endif %}
+            </span>
+        </div>
+
+        {% if sub.status == 'rejected' and sub.admin_notes %}
+        <div class="inline-alert inline-alert--danger mt-4">
+            <span class="inline-alert__icon"><svg class="icon icon-md"><use href="#icon-reject"/></svg></span>
+            <div class="inline-alert__content">
+                <p class="inline-alert__title">Rejection Reason</p>
+                <p class="inline-alert__message">{{ sub.admin_notes|truncatechars:300 }}</p>
+            </div>
+        </div>
+        {% endif %}
+
+        {% with latest_review=sub.reviews.last %}
+            {% if latest_review and latest_review.comments %}
+            <div class="inline-alert inline-alert--warning mt-4">
+                <span class="inline-alert__icon"><svg class="icon icon-md"><use href="#icon-review"/></svg></span>
+                <div class="inline-alert__content">
+                    <p class="inline-alert__title">Reviewer Comments</p>
+                    <p class="inline-alert__message">{{ latest_review.comments|truncatechars:300 }}</p>
+                </div>
+            </div>
+            {% endif %}
+        {% endwith %}
+
+        <div style="margin-top: var(--space-4); display: flex; gap: var(--space-2); flex-wrap: wrap;">
+            <form method="post" action="{% url 'submissions:unarchive' sub.pk %}" style="display:inline;">
+                {% csrf_token %}
+                <button type="submit" class="btn btn-sm btn-ghost">Restore from Archive</button>
+            </form>
+        </div>
+    </div>
+    {% endfor %}
+{% else %}
+    <div class="card">
+        <div class="empty-state">
+            <div class="empty-state__icon"><svg class="icon icon-xl icon-muted"><use href="#icon-save"/></svg></div>
+            <h3 class="empty-state__title">Archive is empty</h3>
+            <p class="empty-state__message">Rejected or withdrawn submissions you send to the archive will appear here.</p>
+            <div class="empty-state__action">
+                <a href="{% url 'dashboard:author' %}" class="btn btn-accent">Back to Submissions</a>
+            </div>
+        </div>
+    </div>
+{% endif %}
+{% endblock %}

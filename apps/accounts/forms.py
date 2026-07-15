@@ -1,13 +1,14 @@
 from django import forms
 from django.contrib.auth.forms import UserCreationForm
+from django.utils.translation import gettext_lazy as _
 from apps.accounts.models import User, AuthorProfile, ReviewerProfile
 
 
 class RegisterForm(UserCreationForm):
-    first_name = forms.CharField(max_length=150, required=True, label='الاسم الأول')
-    last_name  = forms.CharField(max_length=150, required=True, label='اسم العائلة')
-    email      = forms.EmailField(required=True, label='البريد الإلكتروني')
-    institution = forms.CharField(max_length=255, required=False, label='المؤسسة الأكاديمية')
+    first_name = forms.CharField(max_length=150, required=True, label=_('First Name'))
+    last_name  = forms.CharField(max_length=150, required=True, label=_('Last Name'))
+    email      = forms.EmailField(required=True, label=_('Email'))
+    institution = forms.CharField(max_length=255, required=False, label=_('Academic Institution'))
 
     class Meta:
         model  = User
@@ -17,7 +18,7 @@ class RegisterForm(UserCreationForm):
     def clean_email(self):
         email = self.cleaned_data.get('email')
         if User.objects.filter(email=email).exists():
-            raise forms.ValidationError('هذا البريد الإلكتروني مستخدم مسبقاً.')
+            raise forms.ValidationError(_('This email address is already registered.'))
         return email
 
     def save(self, commit=True):

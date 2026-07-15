@@ -1,0 +1,111 @@
+{% extends 'base_dashboard.html' %}
+{% load dashboard_extras %}
+
+{% block title %}Manage Published Articles{% endblock %}
+{% block nav_admin_articles %}active{% endblock %}
+{% block breadcrumb %}
+  <span class="dash-breadcrumb__sep">/</span>
+  <span class="dash-breadcrumb__current">Published Articles</span>
+{% endblock %}
+
+{% block content %}
+<div class="page-header">
+  <h1 class="page-header__title">Published Articles</h1>
+</div>
+
+<div class="card mb-6">
+  <form method="get" class="filter-bar" style="--filter-cols:minmax(240px,1.6fr) minmax(180px,1fr) minmax(220px,1fr) auto;">
+    <div class="form-group mb-0">
+      <label class="form-label">Search</label>
+      <input type="text" name="q" class="form-input" value="{{ current_filters.q }}" placeholder="Title / Author">
+    </div>
+    <div class="form-group mb-0">
+      <label class="form-label">Section</label>
+      <select name="section" class="form-select">
+        <option value="">All Sections</option>
+        {% for sec in sections %}
+          <option value="{{ sec.pk }}" {% if current_filters.section == sec.pk|stringformat:"s" %}selected{% endif %}>{{ sec.name }}</option>
+        {% endfor %}
+      </select>
+    </div>
+    <div class="form-group mb-0">
+      <label class="form-label">Issue</label>
+      <select name="issue" class="form-select">
+        <option value="">All Issues</option>
+        {% for issue_item in issues %}
+          <option value="{{ issue_item.pk }}" {% if current_filters.issue == issue_item.pk|stringformat:"s" %}selected{% endif %}>
+            {{ issue_item }}
+          </option>
+        {% endfor %}
+      </select>
+    </div>
+    <div class="form-group mb-0 filter-bar__actions-wrap">
+      <label class="form-label">Actions</label>
+      <div class="filter-bar__actions">
+        <button type="submit" class="btn btn-primary">Apply</button>
+        <a href="{% url 'dashboard:admin_articles' %}" class="btn btn-ghost">Clear</a>
+      </div>
+    </div>
+  </form>
+</div>
+
+<div class="card" style="padding:0;overflow:hidden;">
+  <table class="data-table">
+    <thead>
+      <tr>
+        <th>#</th>
+        <th>Title</th>
+        <th>Author</th>
+        <th>Section</th>
+        <th>Issue</th>
+        <th>Published Date</th>
+      </tr>
+    </thead>
+    <tbody>
+      {% for article in articles %}
+      <tr style="cursor: pointer;" onclick="window.location='{% url 'dashboard:submission_detail' article.submission.pk %}'" onmouseover="this.style.backgroundColor='var(--color-surface-alt)'" onmouseout="this.style.backgroundColor='transparent'">
+        <td class="text-muted text-sm">{{ article.pk }}</td>
+        <td style="font-weight:600;">{{ article.title|truncatechars:70 }}</td>
+        <td class="text-sm">{{ article.submission.author.get_full_name|default:article.submission.author.username }}</td>
+        <td class="text-sm">
+          <a href="{% url 'dashboard:admin_articles' %}?section={{ article.section.pk }}" onclick="event.stopPropagation();" style="color: var(--color-primary); text-decoration: none; font-weight: 500;" onmouseover="this.style.textDecoration='underline'" onmouseout="this.style.textDecoration='none'">
+            {{ article.section.name }}
+          </a>
+        </td>
+        <td class="text-sm">
+          {% if article.issue %}
+            <a href="{% url 'dashboard:admin_articles' %}?issue={{ article.issue.pk }}" onclick="event.stopPropagation();" style="color: var(--color-primary); text-decoration: none; font-weight: 500;" onmouseover="this.style.textDecoration='underline'" onmouseout="this.style.textDecoration='none'">
+              {{ article.issue }}
+            </a>
+          {% else %}
+            <span class="text-muted">Not Assigned</span>
+          {% endif %}
+        </td>
+        <td class="text-sm text-muted">{{ article.published_at|date:"Y/m/d" }}</td>
+      </tr>
+      {% empty %}
+      <tr>
+        <td colspan="6" style="padding:var(--space-8);">
+          <div class="empty-state" style="padding:var(--space-4);">
+            <h3 class="empty-state__title">No published articles found</h3>
+            <p class="empty-state__message mb-0">No results matching the current filters.</p>
+          </div>
+        </td>
+      </tr>
+      {% endfor %}
+    </tbody>
+  </table>
+</div>
+
+{% if is_paginated %}
+<div class="pagination" style="margin-top:var(--space-6);">
+  {% if page_obj.has_previous %}
+    <a href="?page={{ page_obj.previous_page_number }}{% if page_query %}&{{ page_query }}{% endif %}" class="btn btn-sm btn-ghost">Previous</a>
+  {% endif %}
+  <span class="pagination__info">{{ page_obj.number }} / {{ paginator.num_pages }}</span>
+  {% if page_obj.has_next %}
+    <a href="?page={{ page_obj.next_page_number }}{% if page_query %}&{{ page_query }}{% endif %}" class="btn btn-sm btn-ghost">Next</a>
+  {% endif %}
+</div>
+{% endif %}
+{% endblock %}

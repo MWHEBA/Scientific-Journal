@@ -1,0 +1,264 @@
+{% extends 'base_dashboard.html' %}
+
+{% block title %}Manage Volumes{% endblock %}
+{% block nav_admin_issues %}active{% endblock %}
+
+{% block breadcrumb %}
+<span class="dash-breadcrumb__sep">/</span>
+<a href="{% url 'dashboard:issues' %}">Issues</a>
+<span class="dash-breadcrumb__sep">/</span>
+<span class="dash-breadcrumb__current">Volumes</span>
+{% endblock %}
+
+{% block extra_css %}
+<style>
+  .vol-grid {
+    display: grid;
+    gap: var(--space-6);
+    grid-template-columns: 1fr;
+    align-items: start;
+  }
+  .vol-kpis {
+    display: grid;
+    gap: var(--space-4);
+    grid-template-columns: repeat(3, minmax(0, 1fr));
+    margin-bottom: var(--space-6);
+  }
+  .vol-kpi {
+    border: 1px solid var(--color-border);
+    background: var(--color-surface);
+    padding: var(--space-4);
+  }
+  .vol-kpi__label { font-size: var(--text-xs); color: var(--color-text-muted); margin-bottom: var(--space-2); }
+  .vol-kpi__value { font-size: var(--text-2xl); font-weight: 700; color: var(--color-primary); line-height: 1.2; }
+  .vol-form-row { --filter-cols: 1fr 1fr auto; }
+  .vol-note { font-size: var(--text-xs); color: var(--color-text-muted); margin-top: var(--space-3); }
+  .vol-table-wrap {
+    overflow: hidden;
+    border: 1px solid var(--color-border);
+    background: var(--color-surface);
+  }
+  .vol-table-wrap .data-table { box-shadow: none; border: 0; }
+  .vol-table-meta {
+    display: flex;
+    justify-content: space-between;
+    align-items: center;
+    padding: var(--space-4) var(--space-5);
+    border-bottom: 1px solid var(--color-border);
+    background: var(--color-surface-alt);
+  }
+  .vol-table-title { font-weight: 700; font-size: var(--text-sm); margin: 0; }
+  .vol-table-caption { color: var(--color-text-muted); font-size: var(--text-xs); margin: 0; }
+  .modal-backdrop {
+    position: fixed; inset: 0; background: var(--color-backdrop); z-index: 200;
+    display: none; align-items: center; justify-content: center; padding: var(--space-4);
+  }
+  .modal-backdrop.show { display: flex; }
+  .modal-card {
+    width: min(680px, 96vw);
+    background: var(--color-surface);
+    border: 1px solid var(--color-border);
+    box-shadow: var(--shadow-md);
+  }
+  .modal-head {
+    display:flex; justify-content:space-between; align-items:center;
+    padding: var(--space-4) var(--space-5); border-bottom:1px solid var(--color-border);
+  }
+  .modal-title { margin:0; font-size:var(--text-lg); font-weight:700; color:var(--color-primary); }
+  .modal-close { border:0; background:none; font-size:20px; cursor:pointer; color:var(--color-text-muted); }
+  .modal-body { padding: var(--space-5); }
+  .vol-edit-grid {
+    display:grid; gap:var(--space-3); grid-template-columns: 1fr 1fr auto; align-items:end;
+  }
+  @media (max-width: 1024px) {
+    .vol-grid { grid-template-columns: 1fr; }
+  }
+  @media (max-width: 768px) {
+    .vol-kpis { grid-template-columns: 1fr; }
+    .vol-edit-grid { grid-template-columns: 1fr; }
+  }
+</style>
+{% endblock %}
+
+{% block content %}
+<div class="page-header">
+  <h1 class="page-header__title">Manage Volumes</h1>
+  <div class="page-header__actions">
+    <button type="button" class="btn btn-primary btn-sm" id="btn-open-create-volume">Add New Volume</button>
+    <a href="{% url 'dashboard:issues' %}" class="btn btn-ghost btn-sm">Back to Issues</a>
+  </div>
+</div>
+
+<section class="vol-kpis" aria-label="Volumes Statistics">
+  <article class="vol-kpi">
+    <p class="vol-kpi__label">Total Volumes</p>
+    <p class="vol-kpi__value">{{ stats.total_volumes }}</p>
+  </article>
+  <article class="vol-kpi">
+    <p class="vol-kpi__label">Total Issues</p>
+    <p class="vol-kpi__value">{{ stats.total_issues }}</p>
+  </article>
+  <article class="vol-kpi">
+    <p class="vol-kpi__label">Latest Volume</p>
+    <p class="vol-kpi__value">{% if stats.latest_volume %}{{ stats.latest_volume.number }}{% else %}—{% endif %}</p>
+  </article>
+</section>
+
+<!-- ===== Modal Add Volume ===== -->
+<div id="volume-create-modal" class="modal-backdrop" aria-hidden="true">
+  <div class="modal-card" role="dialog" aria-modal="true" aria-labelledby="volume-create-modal-title">
+    <div class="modal-head">
+      <h3 id="volume-create-modal-title" class="modal-title">Add New Volume</h3>
+      <button type="button" class="modal-close js-close-create-volume-modal" aria-label="Close">×</button>
+    </div>
+    <div class="modal-body">
+      <form method="post" action="{% url 'dashboard:volumes' %}" novalidate>
+        {% csrf_token %}
+        <div style="display:grid; grid-template-columns: 1fr 1fr; gap:var(--space-4);">
+          <div class="form-group mb-0">
+            <label class="form-label" for="id_number">Volume Number</label>
+            <input id="id_number" type="number" name="number" class="form-input" min="1" value="{{ defaults.number }}" required>
+          </div>
+          <div class="form-group mb-0">
+            <label class="form-label" for="id_year">Year</label>
+            <input id="id_year" type="number" name="year" class="form-input" min="1900" max="2100" value="{{ defaults.year }}" required>
+          </div>
+        </div>
+        <p class="vol-note mb-4">Volume numbers are automatically prevented from duplicating.</p>
+        <div style="display:flex; gap:var(--space-3); justify-content:flex-end; border-top:1px solid var(--color-border-light); padding-top:var(--space-4); margin-top:var(--space-6);">
+          <button type="button" class="btn btn-ghost js-close-create-volume-modal">Cancel</button>
+          <button type="submit" class="btn btn-primary">Create Volume</button>
+        </div>
+      </form>
+    </div>
+  </div>
+</div>
+
+<section class="vol-grid">
+  <article class="vol-table-wrap">
+    <header class="vol-table-meta">
+      <div>
+        <p class="vol-table-title">Volumes List</p>
+        <p class="vol-table-caption">Sorted descending by volume number</p>
+      </div>
+    </header>
+
+    <table class="data-table">
+      <thead>
+        <tr>
+          <th style="width:110px;">Number</th>
+          <th style="width:120px;">Year</th>
+          <th style="width:120px;">Issues</th>
+          <th>Created Date</th>
+          <th style="width:240px;">Action</th>
+        </tr>
+      </thead>
+      <tbody>
+        {% for vol in volumes %}
+        <tr>
+          <td><strong>Vol. {{ vol.number }}</strong></td>
+          <td>{{ vol.year }}</td>
+          <td>{% if vol.issue_count %}<span class="badge badge-under-review">{{ vol.issue_count }}</span>{% else %}<span class="badge badge-draft">0</span>{% endif %}</td>
+          <td class="text-muted text-sm">{{ vol.created_at|date:"Y/m/d" }}</td>
+          <td>
+            <button type="button"
+                    class="btn btn-ghost btn-sm js-open-volume-modal"
+                    data-action="{% url 'dashboard:volume_update' vol.pk %}"
+                    data-number="{{ vol.number }}"
+                    data-year="{{ vol.year }}">
+              Edit this Volume
+            </button>
+          </td>
+        </tr>
+        {% empty %}
+        <tr>
+          <td colspan="5">
+            <div class="empty-state" style="padding:var(--space-8);">
+              <h3 class="empty-state__title">No volumes found yet</h3>
+              <p class="empty-state__message mb-0">Add your first volume to start organizing issues.</p>
+            </div>
+          </td>
+        </tr>
+        {% endfor %}
+      </tbody>
+    </table>
+  </article>
+</section>
+
+<!-- ===== Modal Edit Volume ===== -->
+<div id="volume-edit-modal" class="modal-backdrop" aria-hidden="true">
+  <div class="modal-card" role="dialog" aria-modal="true" aria-labelledby="volume-modal-title">
+    <div class="modal-head">
+      <h3 id="volume-modal-title" class="modal-title">Edit Volume</h3>
+      <button type="button" class="modal-close js-close-volume-modal" aria-label="Close">×</button>
+    </div>
+    <div class="modal-body">
+      <form id="volume-edit-form" method="post" class="vol-edit-grid" novalidate>
+        {% csrf_token %}
+        <div class="form-group mb-0">
+          <label class="form-label">Volume Number</label>
+          <input id="volume_modal_number" type="number" name="number" class="form-input" min="1" required>
+        </div>
+        <div class="form-group mb-0">
+          <label class="form-label">Year</label>
+          <input id="volume_modal_year" type="number" name="year" class="form-input" min="1900" max="2100" required>
+        </div>
+        <button type="submit" class="btn btn-primary">Save Changes</button>
+      </form>
+    </div>
+  </div>
+</div>
+{% endblock %}
+
+{% block extra_js %}
+<script>
+(() => {
+  // Edit modal logic
+  const editModal = document.getElementById('volume-edit-modal');
+  const editForm = document.getElementById('volume-edit-form');
+  if (editModal && editForm) {
+    const openBtns = document.querySelectorAll('.js-open-volume-modal');
+    const closeBtns = document.querySelectorAll('.js-close-volume-modal');
+    const number = document.getElementById('volume_modal_number');
+    const year = document.getElementById('volume_modal_year');
+
+    const open = (btn) => {
+      editForm.action = btn.dataset.action;
+      number.value = btn.dataset.number;
+      year.value = btn.dataset.year;
+      editModal.classList.add('show');
+      editModal.setAttribute('aria-hidden', 'false');
+    };
+    const close = () => {
+      editModal.classList.remove('show');
+      editModal.setAttribute('aria-hidden', 'true');
+    };
+
+    openBtns.forEach((btn) => btn.addEventListener('click', () => open(btn)));
+    closeBtns.forEach((btn) => btn.addEventListener('click', close));
+    editModal.addEventListener('click', (e) => { if (e.target === editModal) close(); });
+    document.addEventListener('keydown', (e) => { if (e.key === 'Escape' && editModal.classList.contains('show')) close(); });
+  }
+
+  // Create modal logic
+  const createModal = document.getElementById('volume-create-modal');
+  const btnOpenCreate = document.getElementById('btn-open-create-volume');
+  const closeCreateBtns = document.querySelectorAll('.js-close-create-volume-modal');
+  if (createModal) {
+    const openCreate = () => {
+      createModal.classList.add('show');
+      createModal.setAttribute('aria-hidden', 'false');
+    };
+    const closeCreate = () => {
+      createModal.classList.remove('show');
+      createModal.setAttribute('aria-hidden', 'true');
+    };
+
+    if (btnOpenCreate) btnOpenCreate.addEventListener('click', openCreate);
+    closeCreateBtns.forEach((btn) => btn.addEventListener('click', closeCreate));
+    createModal.addEventListener('click', (e) => { if (e.target === createModal) closeCreate(); });
+    document.addEventListener('keydown', (e) => { if (e.key === 'Escape' && createModal.classList.contains('show')) closeCreate(); });
+  }
+})();
+</script>
+{% endblock %}

@@ -1,0 +1,244 @@
+{% extends 'base_dashboard.html' %}
+
+{% block title %}Manage Issues{% endblock %}
+{% block nav_admin_issues %}active{% endblock %}
+
+{% block breadcrumb %}
+<span class="dash-breadcrumb__sep">/</span>
+<span class="dash-breadcrumb__current">Issues & Volumes</span>
+{% endblock %}
+
+{% block extra_css %}
+<style>
+  .issues-layout { display: grid; gap: var(--space-6); }
+  .issue-create-grid { --filter-cols: minmax(220px, 1.2fr) minmax(120px, .6fr) minmax(160px, .8fr) auto; }
+  .issue-card { border: 1px solid var(--color-border); background: var(--color-surface); padding: var(--space-5); }
+  .issue-head { display: flex; justify-content: space-between; align-items: center; gap: var(--space-4); }
+  .issue-title { font-size: var(--text-lg); font-weight: 700; margin: 0; color: var(--color-primary); }
+  .issue-meta { font-size: var(--text-sm); color: var(--color-text-muted); }
+  .issue-actions { display:flex; align-items:center; gap:var(--space-2); }
+  .modal-backdrop { position: fixed; inset: 0; background: var(--color-backdrop); z-index: 200; display: none; align-items: center; justify-content: center; padding: var(--space-4); }
+  .modal-backdrop.show { display: flex; }
+  .modal-card { width: min(680px, 96vw); background: var(--color-surface); border: 1px solid var(--color-border); box-shadow: var(--shadow-md); }
+  .modal-head { display:flex; justify-content:space-between; align-items:center; padding: var(--space-4) var(--space-5); border-bottom:1px solid var(--color-border); }
+  .modal-title { margin:0; font-size:var(--text-lg); font-weight:700; color:var(--color-primary); }
+  .modal-close { border:0; background:none; font-size:20px; cursor:pointer; color:var(--color-text-muted); }
+  .modal-body { padding: var(--space-5); }
+  .issue-edit-grid { display:grid; gap:var(--space-3); grid-template-columns: 1.2fr .6fr .8fr auto; align-items:end; }
+  .articles-list { margin-top: var(--space-3); border-top: 1px solid var(--color-border); padding-top: var(--space-3); }
+  .article-row { display: flex; justify-content: space-between; align-items: center; gap: var(--space-4); padding: var(--space-2) 0; border-bottom: 1px solid var(--color-border-light); }
+  .article-row:last-child { border-bottom: 0; }
+  @media (max-width: 1024px) { .issue-edit-grid { grid-template-columns: 1fr 1fr; } }
+  @media (max-width: 768px) { .issue-edit-grid { grid-template-columns: 1fr; } }
+</style>
+{% endblock %}
+
+{% block content %}
+<div class="page-header">
+  <h1 class="page-header__title">Issues & Volumes</h1>
+  <div class="page-header__actions">
+    <button type="button" class="btn btn-primary btn-sm" id="btn-open-create-issue">Create New Issue</button>
+    <a href="{% url 'dashboard:volumes' %}" class="btn btn-ghost btn-sm">Manage Volumes</a>
+  </div>
+</div>
+
+<!-- ===== Modal Create Issue ===== -->
+<div id="issue-create-modal" class="modal-backdrop" aria-hidden="true">
+  <div class="modal-card" role="dialog" aria-modal="true" aria-labelledby="issue-create-modal-title">
+    <div class="modal-head">
+      <h3 id="issue-create-modal-title" class="modal-title">Create New Issue</h3>
+      <button type="button" class="modal-close js-close-create-issue-modal" aria-label="Close">×</button>
+    </div>
+    <div class="modal-body">
+      <form method="post" action="{% url 'dashboard:issue_create' %}" novalidate>
+        {% csrf_token %}
+        <div style="display:grid; grid-template-columns: 1.2fr 0.8fr 1fr; gap:var(--space-4);">
+          <div class="form-group mb-0">
+            <label class="form-label" for="create_volume">Volume</label>
+            <select id="create_volume" name="volume_id" class="form-select" required>
+              <option value="">Select a volume</option>
+              {% for vol in volumes %}
+                <option value="{{ vol.pk }}">Volume {{ vol.number }} ({{ vol.year }})</option>
+              {% endfor %}
+            </select>
+          </div>
+          <div class="form-group mb-0">
+            <label class="form-label" for="create_number">Issue Number</label>
+            <input id="create_number" type="number" name="number" class="form-input" min="1" required>
+          </div>
+          <div class="form-group mb-0">
+            <label class="form-label" for="create_quarter">Publication Month</label>
+            <select id="create_quarter" name="quarter" class="form-select" required>
+              <option value="1">January</option>
+              <option value="2">March</option>
+              <option value="3">May</option>
+              <option value="4">July</option>
+              <option value="5">September</option>
+              <option value="6">November</option>
+            </select>
+          </div>
+        </div>
+        
+        <div style="display:flex; gap:var(--space-3); justify-content:flex-end; border-top:1px solid var(--color-border-light); padding-top:var(--space-4); margin-top:var(--space-6);">
+          <button type="button" class="btn btn-ghost js-close-create-issue-modal">Cancel</button>
+          <button type="submit" class="btn btn-primary">Create Issue</button>
+        </div>
+      </form>
+    </div>
+  </div>
+</div>
+
+<section class="issues-layout">
+  {% for volume in volumes %}
+    <article class="card">
+      <h2 class="mb-4" style="font-size:var(--text-lg);color:var(--color-primary);">Volume {{ volume.number }} — {{ volume.year }}</h2>
+      {% if volume.issues.all %}
+        {% for issue in volume.issues.all %}
+          <div class="issue-card mb-4">
+            <div class="issue-head">
+              <div>
+                <p class="issue-title">Issue {{ issue.number }}{% if issue.is_current %} <span class="badge badge-published">Current</span>{% endif %}</p>
+                <p class="issue-meta">
+                  {% if issue.quarter == 1 %}January
+                  {% elif issue.quarter == 2 %}March
+                  {% elif issue.quarter == 3 %}May
+                  {% elif issue.quarter == 4 %}July
+                  {% elif issue.quarter == 5 %}September
+                  {% elif issue.quarter == 6 %}November
+                  {% else %}{{ issue.get_quarter_display }}{% endif %} • {{ issue.articles.count }} article(s)
+                </p>
+              </div>
+              <div class="issue-actions">
+                <button type="button" class="btn btn-ghost btn-sm js-open-issue-modal"
+                        data-action="{% url 'dashboard:issue_update' issue.pk %}"
+                        data-volume="{{ issue.volume_id }}"
+                        data-number="{{ issue.number }}"
+                        data-quarter="{{ issue.quarter }}">
+                  Edit this Issue
+                </button>
+              </div>
+            </div>
+            {% if issue.articles.all %}
+              <div class="articles-list">
+                {% for article in issue.articles.all %}
+                  <div class="article-row">
+                    <span class="text-sm">{{ article.title|truncatechars:70 }}</span>
+                    <form method="post" action="{% url 'dashboard:assign_article' article.pk %}">
+                      {% csrf_token %}
+                      <input type="hidden" name="issue_id" value="">
+                      <button type="submit" class="btn btn-ghost btn-sm">Unassign</button>
+                    </form>
+                  </div>
+                {% endfor %}
+              </div>
+            {% endif %}
+          </div>
+        {% endfor %}
+      {% else %}
+        <p class="text-muted text-sm mb-0">No issues in this volume yet.</p>
+      {% endif %}
+    </article>
+  {% empty %}
+    <div class="card">
+      <div class="empty-state">
+        <h3 class="empty-state__title">No volumes found</h3>
+        <p class="empty-state__message mb-0">Create a volume first from the Volumes management page.</p>
+      </div>
+    </div>
+  {% endfor %}
+</section>
+
+<!-- ===== Modal Edit Issue ===== -->
+<div id="issue-edit-modal" class="modal-backdrop" aria-hidden="true">
+  <div class="modal-card" role="dialog" aria-modal="true" aria-labelledby="issue-modal-title">
+    <div class="modal-head">
+      <h3 id="issue-modal-title" class="modal-title">Edit Issue</h3>
+      <button type="button" class="modal-close js-close-issue-modal" aria-label="Close">×</button>
+    </div>
+    <div class="modal-body">
+      <form id="issue-edit-form" method="post" class="issue-edit-grid" novalidate>
+        {% csrf_token %}
+        <div class="form-group mb-0">
+          <label class="form-label">Volume</label>
+          <select id="issue_modal_volume" name="volume_id" class="form-select" required>
+            {% for vol in volumes %}
+              <option value="{{ vol.pk }}">Volume {{ vol.number }} ({{ vol.year }})</option>
+            {% endfor %}
+          </select>
+        </div>
+        <div class="form-group mb-0">
+          <label class="form-label">Issue Number</label>
+          <input id="issue_modal_number" type="number" name="number" class="form-input" min="1" required>
+        </div>
+        <div class="form-group mb-0">
+          <label class="form-label">Publication Month</label>
+          <select id="issue_modal_quarter" name="quarter" class="form-select" required>
+            <option value="1">January</option>
+            <option value="2">March</option>
+            <option value="3">May</option>
+            <option value="4">July</option>
+            <option value="5">September</option>
+            <option value="6">November</option>
+          </select>
+        </div>
+        <button type="submit" class="btn btn-primary">Save Changes</button>
+      </form>
+    </div>
+  </div>
+</div>
+{% endblock %}
+
+{% block extra_js %}
+<script>
+(() => {
+  // Edit modal logic
+  const editModal = document.getElementById('issue-edit-modal');
+  const editForm = document.getElementById('issue-edit-form');
+  if (editModal && editForm) {
+    const openBtns = document.querySelectorAll('.js-open-issue-modal');
+    const closeBtns = document.querySelectorAll('.js-close-issue-modal');
+    const volume = document.getElementById('issue_modal_volume');
+    const number = document.getElementById('issue_modal_number');
+    const quarter = document.getElementById('issue_modal_quarter');
+
+    const open = (btn) => {
+      editForm.action = btn.dataset.action;
+      volume.value = btn.dataset.volume;
+      number.value = btn.dataset.number;
+      quarter.value = btn.dataset.quarter;
+      editModal.classList.add('show');
+      editModal.setAttribute('aria-hidden', 'false');
+    };
+    const close = () => {
+      editModal.classList.remove('show');
+      editModal.setAttribute('aria-hidden', 'true');
+    };
+
+    openBtns.forEach((btn) => btn.addEventListener('click', () => open(btn)));
+    closeBtns.forEach((btn) => btn.addEventListener('click', close));
+    editModal.addEventListener('click', (e) => { if (e.target === editModal) close(); });
+    document.addEventListener('keydown', (e) => { if (e.key === 'Escape' && editModal.classList.contains('show')) close(); });
+  }
+
+  // Create modal logic
+  const createModal = document.getElementById('issue-create-modal');
+  const btnOpenCreate = document.getElementById('btn-open-create-issue');
+  const closeCreateBtns = document.querySelectorAll('.js-close-create-issue-modal');
+  if (createModal) {
+    const openCreate = () => {
+      createModal.classList.add('show');
+      createModal.setAttribute('aria-hidden', 'false');
+    };
+    const closeCreate = () => {
+      createModal.classList.remove('show');
+      createModal.setAttribute('aria-hidden', 'true');
+    };
+
+    if (btnOpenCreate) btnOpenCreate.addEventListener('click', openCreate);
+    closeCreateBtns.forEach((btn) => btn.addEventListener('click', closeCreate));
+    createModal.addEventListener('click', (e) => { if (e.target === createModal) closeCreate(); });
+    document.addEventListener('keydown', (e) => { if (e.key === 'Escape' && createModal.classList.contains('show')) closeCreate(); });
+  }
+})();
+</script>
+{% endblock %}

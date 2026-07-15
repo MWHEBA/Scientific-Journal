@@ -1,0 +1,145 @@
+{% extends 'base_dashboard.html' %}
+
+{% block title %}Member Management{% endblock %}
+{% block nav_admin_users %}active{% endblock %}
+{% block breadcrumb %}
+    <span class="dash-breadcrumb__sep">/</span>
+    <span class="dash-breadcrumb__current">Member Management</span>
+{% endblock %}
+{% block content %}
+<div class="page-header">
+    <h1 class="page-header__title">Member Management</h1>
+    <div class="page-header__actions">
+        <button class="btn btn-primary btn-sm btn-open-create">+ Add Member</button>
+    </div>
+</div>
+
+<!-- Tabs -->
+<div style="display: flex; gap: var(--space-1); border-bottom: 2px solid var(--color-border); margin-bottom: var(--space-6);">
+    <a href="{% url 'dashboard:admin_authors' %}" 
+       style="padding: var(--space-3) var(--space-6); text-decoration: none; font-weight: 600; color: var(--color-primary); border-bottom: 2px solid var(--color-primary); margin-bottom: -2px; font-size: var(--text-base); transition: all var(--transition);">
+        Authors
+    </a>
+    <a href="{% url 'dashboard:reviewers' %}" 
+       style="padding: var(--space-3) var(--space-6); text-decoration: none; font-weight: 600; color: var(--color-text-secondary); border-bottom: 2px solid transparent; margin-bottom: -2px; font-size: var(--text-base); transition: all var(--transition);">
+        Reviewers
+    </a>
+    <a href="{% url 'dashboard:users' %}" 
+       style="padding: var(--space-3) var(--space-6); text-decoration: none; font-weight: 600; color: var(--color-text-secondary); border-bottom: 2px solid transparent; margin-bottom: -2px; font-size: var(--text-base); transition: all var(--transition);">
+        Staff/Admin
+    </a>
+</div>
+
+<!-- Filter and Search -->
+<div class="card mb-6">
+    <form method="get" class="filter-bar" style="--filter-cols:minmax(240px,1.6fr) auto;">
+        <div class="form-group mb-0">
+            <label class="form-label">Search</label>
+            <input type="text" name="q" class="form-input" placeholder="Author name or email..."
+                   value="{{ current_search }}">
+        </div>
+        <div class="form-group mb-0 filter-bar__actions-wrap">
+            <label class="form-label">Actions</label>
+            <div class="filter-bar__actions">
+                <button type="submit" class="btn btn-primary">Search</button>
+                <a href="{% url 'dashboard:admin_authors' %}" class="btn btn-ghost">Reset</a>
+            </div>
+        </div>
+    </form>
+</div>
+
+<!-- Authors Table -->
+<div class="card" style="padding:0;overflow:hidden;">
+    <table class="data-table">
+        <thead>
+            <tr>
+                <th style="width: 80px; text-align: center;">#</th>
+                <th>Author Name</th>
+                <th>Email Address</th>
+                <th style="text-align: center;">Published Articles</th>
+                <th style="text-align: center;">Total Submissions</th>
+                <th>Joined Date</th>
+                <th style="text-align: center;">Status</th>
+                <th style="text-align: center; width: 240px;">Administrative Actions</th>
+            </tr>
+        </thead>
+        <tbody>
+            {% for author in authors %}
+            <tr>
+                <td style="text-align: center; color: var(--color-text-muted); font-size: var(--text-sm);">{{ forloop.counter|add:page_obj.start_index|add:-1 }}</td>
+                <td style="font-weight: 600;">
+                    {{ author.get_full_name|default:author.username }}
+                    {% if author.get_full_name %}
+                        <br><span class="text-xs text-muted" dir="ltr" style="font-weight: normal;">{{ author.username }}</span>
+                    {% endif %}
+                </td>
+                <td class="text-sm">{{ author.email|default:"—" }}</td>
+                <td style="text-align: center;">
+                    <span class="badge badge-published">{{ author.published_articles_count }} article(s)</span>
+                </td>
+                <td style="text-align: center; font-weight: bold; color: var(--color-primary);">
+                    {{ author.total_submissions_count }}
+                </td>
+                <td class="text-sm text-muted">{{ author.date_joined|date:"Y/m/d" }}</td>
+                <td style="text-align: center;">
+                    {% if author.is_active %}
+                        <span class="badge badge-published" style="font-size: 11px;">Active</span>
+                    {% else %}
+                        <span class="badge badge-rejected" style="font-size: 11px;">Disabled</span>
+                    {% endif %}
+                </td>
+                <td>
+                    <div style="display: flex; gap: var(--space-2); justify-content: center;">
+                        <!-- Impersonation -->
+                        <a href="{% url 'dashboard:impersonate_start' author.pk %}" class="btn btn-sm btn-ghost" style="color: var(--color-info);">
+                            Impersonate
+                        </a>
+
+                        <!-- Enable / Disable -->
+                        <form method="post" style="display: inline;">
+                            {% csrf_token %}
+                            <input type="hidden" name="user_id" value="{{ author.pk }}">
+                            {% if author.is_active %}
+                                <button type="submit" class="btn btn-sm btn-ghost" style="color: var(--color-danger);" onclick="return confirm('Are you sure you want to disable this account?');">
+                                    Disable
+                                </button>
+                            {% else %}
+                                <button type="submit" class="btn btn-sm btn-ghost" style="color: var(--color-success);">
+                                    Enable
+                                </button>
+                            {% endif %}
+                        </form>
+                    </div>
+                </td>
+            </tr>
+            {% empty %}
+            <tr>
+                <td colspan="8" style="text-align: center; padding: var(--space-8);">
+                    <div class="empty-state">
+                        <div class="empty-state__icon" style="font-size: 2rem;"><svg class="icon icon-xl icon-muted"><use href="#icon-user"/></svg></div>
+                        <p class="empty-state__message mb-0">No authors matching the search query.</p>
+                    </div>
+                </td>
+            </tr>
+            {% endfor %}
+        </tbody>
+    </table>
+</div>
+
+<!-- Pagination -->
+{% if is_paginated %}
+<div style="display:flex;gap:var(--space-2);justify-content:center;margin-top:var(--space-6);">
+    {% if page_obj.has_previous %}
+        <a href="?page={{ page_obj.previous_page_number }}{% if current_search %}&q={{ current_search }}{% endif %}"
+           class="btn btn-sm btn-ghost">Previous</a>
+    {% endif %}
+    <span style="padding:var(--space-2) var(--space-4);color:var(--color-text-muted);font-size:var(--text-sm);">
+        {{ page_obj.number }} / {{ paginator.num_pages }}
+    </span>
+    {% if page_obj.has_next %}
+        <a href="?page={{ page_obj.next_page_number }}{% if current_search %}&q={{ current_search }}{% endif %}"
+           class="btn btn-sm btn-ghost">Next</a>
+    {% endif %}
+</div>
+{% endif %}
+{% endblock %}

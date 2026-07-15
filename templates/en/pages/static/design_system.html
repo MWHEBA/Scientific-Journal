@@ -1,0 +1,486 @@
+{% extends 'base_public.html' %}
+{% load static %}
+
+{% block title %}Design System — Academic Precision{% endblock %}
+
+{% block extra_css %}
+<style>
+    /* Design System Styles */
+    .ds-container {
+        max-width: var(--container-max, 1200px);
+        margin: var(--space-12) auto;
+        padding: 0 var(--space-6);
+        font-family: 'Inter', sans-serif;
+    }
+
+    .ds-header {
+        border-bottom: 1px solid var(--color-border);
+        padding-bottom: var(--space-6);
+        margin-bottom: var(--space-10);
+    }
+
+    .ds-title {
+        font-size: var(--text-4xl);
+        font-weight: 700;
+        color: var(--color-primary);
+        margin-bottom: var(--space-2);
+        letter-spacing: -0.02em;
+    }
+
+    .ds-subtitle {
+        font-size: var(--text-lg);
+        color: var(--color-text-secondary);
+        max-width: 800px;
+    }
+
+    .ds-section {
+        margin-bottom: var(--space-12);
+        padding-bottom: var(--space-8);
+        border-bottom: 1px solid var(--color-border-light);
+    }
+
+    .ds-section-title {
+        font-size: var(--text-2xl);
+        font-weight: 600;
+        color: var(--color-text);
+        margin-bottom: var(--space-6);
+        display: flex;
+        align-items: center;
+        gap: var(--space-2);
+    }
+
+    .ds-section-title::after {
+        content: '';
+        flex-grow: 1;
+        height: 1px;
+        background-color: var(--color-border-light);
+        margin-left: var(--space-4);
+    }
+
+    /* Color Swatches */
+    .ds-colors-grid {
+        display: grid;
+        grid-template-columns: repeat(auto-fill, minmax(220px, 1fr));
+        gap: var(--space-4);
+    }
+
+    .ds-color-card {
+        background: var(--color-surface);
+        border: 1px solid var(--color-border);
+        border-radius: var(--radius-lg);
+        overflow: hidden;
+        transition: transform 0.2s ease;
+    }
+
+    .ds-color-card:hover {
+        transform: translateY(-2px);
+    }
+
+    .ds-color-preview {
+        height: 120px;
+        width: 100%;
+    }
+
+    .ds-color-info {
+        padding: var(--space-4);
+    }
+
+    .ds-color-name {
+        font-weight: 600;
+        font-size: var(--text-base);
+        color: var(--color-text);
+        margin-bottom: var(--space-1);
+    }
+
+    .ds-color-value {
+        font-family: 'JetBrains Mono', monospace;
+        font-size: var(--text-sm);
+        color: var(--color-text-secondary);
+    }
+
+    /* Typography Table */
+    .ds-typo-table {
+        width: 100%;
+        border-collapse: collapse;
+    }
+
+    .ds-typo-table th,
+    .ds-typo-table td {
+        padding: var(--space-4);
+        text-align: left;
+        border-bottom: 1px solid var(--color-border-light);
+    }
+
+    .ds-typo-table th {
+        font-family: 'JetBrains Mono', monospace;
+        font-size: var(--text-sm);
+        color: var(--color-text-secondary);
+        font-weight: 500;
+        background: var(--color-bg);
+    }
+
+    /* Component Showcases */
+    .ds-showcase-box {
+        background: var(--color-bg);
+        border: 1px solid var(--color-border);
+        border-radius: var(--radius-lg);
+        padding: var(--space-8);
+        margin-bottom: var(--space-6);
+        display: flex;
+        flex-direction: column;
+        gap: var(--space-6);
+    }
+
+    .ds-showcase-label {
+        font-family: 'JetBrains Mono', monospace;
+        font-size: var(--text-xs);
+        color: var(--color-text-muted);
+        text-transform: uppercase;
+        margin-bottom: var(--space-2);
+        display: block;
+    }
+
+    .ds-btn-group {
+        display: flex;
+        flex-wrap: wrap;
+        gap: var(--space-4);
+        align-items: center;
+    }
+
+    /* Standardized Buttons from Design System */
+    .ds-btn {
+        display: inline-flex;
+        align-items: center;
+        justify-content: center;
+        padding: var(--space-3) var(--space-6);
+        font-size: var(--text-sm);
+        font-weight: 500;
+        border-radius: var(--radius-sm);
+        transition: all 0.2s ease;
+        cursor: pointer;
+        font-family: 'Inter', sans-serif;
+    }
+
+    .ds-btn-primary {
+        background-color: var(--color-primary);
+        color: var(--color-text-inverse);
+        border: none;
+    }
+
+    .ds-btn-primary:hover {
+        background-color: var(--color-primary-dark);
+    }
+
+    .ds-btn-secondary {
+        background-color: transparent;
+        color: var(--color-neutral);
+        border: 1px solid var(--color-neutral);
+    }
+
+    .ds-btn-secondary:hover {
+        background-color: var(--color-border-light);
+        color: var(--color-primary);
+    }
+
+    .ds-btn-tertiary {
+        background-color: transparent;
+        color: var(--color-primary);
+        border: none;
+        padding: var(--space-2) 0;
+    }
+
+    .ds-btn-tertiary:hover {
+        color: var(--color-primary-dark);
+        text-decoration: underline;
+    }
+
+    /* Standardized Input from Design System */
+    .ds-input-group {
+        max-width: 360px;
+    }
+
+    .ds-input-label {
+        display: block;
+        font-family: 'JetBrains Mono', monospace;
+        font-size: var(--text-sm);
+        color: var(--color-text);
+        margin-bottom: var(--space-2);
+        font-weight: 500;
+    }
+
+    .ds-input {
+        width: 100%;
+        padding: var(--space-3) var(--space-4);
+        font-size: var(--text-sm);
+        font-family: 'Inter', sans-serif;
+        background: var(--color-surface);
+        border: 1px solid #cbd5e1;
+        border-radius: var(--radius-sm);
+        color: var(--color-text);
+        transition: all 0.2s ease;
+    }
+
+    .ds-input:focus {
+        border-color: var(--color-primary);
+        outline: none;
+        box-shadow: 0 0 0 2px rgba(204, 0, 0, 0.1);
+    }
+
+    /* Standardized Article Card from Design System */
+    .ds-card {
+        background: var(--color-surface);
+        border: 1px solid var(--color-border);
+        border-radius: var(--radius-lg);
+        padding: var(--space-6);
+        max-width: 480px;
+        transition: all 0.2s ease;
+    }
+
+    .ds-card:hover {
+        border-color: var(--color-neutral);
+    }
+
+    .ds-card-caption {
+        font-family: 'Inter', sans-serif;
+        font-size: var(--text-xs);
+        font-weight: 500;
+        color: var(--color-primary);
+        text-transform: uppercase;
+        margin-bottom: var(--space-2);
+        display: block;
+    }
+
+    .ds-card-title {
+        font-size: var(--text-xl);
+        font-weight: 600;
+        color: var(--color-text);
+        margin-bottom: var(--space-3);
+        line-height: var(--leading-tight);
+    }
+
+    .ds-card-desc {
+        font-size: var(--text-sm);
+        color: var(--color-text-secondary);
+        margin-bottom: var(--space-4);
+    }
+
+    /* Standardized Data Table from Design System */
+    .ds-table {
+        width: 100%;
+        border-collapse: collapse;
+        background: var(--color-surface);
+    }
+
+    .ds-table th {
+        background-color: var(--color-border-light);
+        font-weight: 600;
+        font-size: var(--text-sm);
+        color: var(--color-text);
+        padding: var(--space-4);
+        text-align: left;
+        border-bottom: 2px solid var(--color-border);
+    }
+
+    .ds-table td {
+        padding: var(--space-4);
+        font-size: var(--text-sm);
+        color: var(--color-text-secondary);
+        border-bottom: 1px solid var(--color-border-light);
+    }
+</style>
+{% endblock %}
+
+{% block above_layout %}
+<div class="ds-container">
+    <!-- Header -->
+    <div class="ds-header">
+        <h1 class="ds-title">Academic Precision Design System</h1>
+        <p class="ds-subtitle">
+            The formal visual system for the IJCMIT Scientific Journal Platform. Engineered for international scientific publication, balancing authority with absolute legibility and modern technical aesthetics.
+        </p>
+    </div>
+
+    <!-- Colors Section -->
+    <div class="ds-section">
+        <h2 class="ds-section-title">Color Palette</h2>
+        <p class="mb-6 text-secondary">Rooted in deep academic red accented with crisp structural grays and neutral reading surfaces.</p>
+        <div class="ds-colors-grid">
+            <!-- Primary Color -->
+            <div class="ds-color-card">
+                <div class="ds-color-preview" style="background-color: var(--color-primary);"></div>
+                <div class="ds-color-info">
+                    <div class="ds-color-name">Primary Deep Red</div>
+                    <div class="ds-color-value">#CC0000</div>
+                </div>
+            </div>
+            <!-- Primary Dark -->
+            <div class="ds-color-card">
+                <div class="ds-color-preview" style="background-color: var(--color-primary-dark);"></div>
+                <div class="ds-color-info">
+                    <div class="ds-color-name">Primary Dark</div>
+                    <div class="ds-color-value">#9E0000</div>
+                </div>
+            </div>
+            <!-- Secondary Gray -->
+            <div class="ds-color-card">
+                <div class="ds-color-preview" style="background-color: var(--color-neutral);"></div>
+                <div class="ds-color-info">
+                    <div class="ds-color-name">Metallic Gray</div>
+                    <div class="ds-color-value">#505F76</div>
+                </div>
+            </div>
+            <!-- Background -->
+            <div class="ds-color-card">
+                <div class="ds-color-preview" style="background-color: var(--color-bg);"></div>
+                <div class="ds-color-info">
+                    <div class="ds-color-name">Off-White Base</div>
+                    <div class="ds-color-value">#F7F9FB</div>
+                </div>
+            </div>
+            <!-- Outline -->
+            <div class="ds-color-card">
+                <div class="ds-color-preview" style="background-color: var(--color-text-muted);"></div>
+                <div class="ds-color-info">
+                    <div class="ds-color-name">Outline Border</div>
+                    <div class="ds-color-value">#926E69</div>
+                </div>
+            </div>
+        </div>
+    </div>
+
+    <!-- Typography Section -->
+    <div class="ds-section">
+        <h2 class="ds-section-title">Typography Hierarchy</h2>
+        <p class="mb-6 text-secondary">Utilizing <strong>Inter</strong> for reading layouts and headlines, and <strong>JetBrains Mono</strong> for data elements, ISSN, and technical meta-labels.</p>
+        
+        <table class="ds-typo-table">
+            <thead>
+                <tr>
+                    <th style="width: 25%">Token</th>
+                    <th style="width: 25%">Specs</th>
+                    <th>Sample Rendering</th>
+                </tr>
+            </thead>
+            <tbody>
+                <tr>
+                    <td><strong>Display Large</strong></td>
+                    <td>Inter, 48px, Bold, -0.02em</td>
+                    <td><span style="font-family: 'Inter', sans-serif; font-size: 48px; font-weight: 700; letter-spacing: -0.02em; color: var(--color-text);">Global Science</span></td>
+                </tr>
+                <tr>
+                    <td><strong>Headline Large</strong></td>
+                    <td>Inter, 32px, Semibold, -0.01em</td>
+                    <td><span style="font-family: 'Inter', sans-serif; font-size: 32px; font-weight: 600; letter-spacing: -0.01em; color: var(--color-text);">Research Impact</span></td>
+                </tr>
+                <tr>
+                    <td><strong>Headline Medium</strong></td>
+                    <td>Inter, 24px, Semibold</td>
+                    <td><span style="font-family: 'Inter', sans-serif; font-size: 24px; font-weight: 600; color: var(--color-text);">Volume 12, Issue 3</span></td>
+                </tr>
+                <tr>
+                    <td><strong>Body Large</strong></td>
+                    <td>Inter, 18px, Regular</td>
+                    <td><span style="font-family: 'Inter', sans-serif; font-size: 18px; font-weight: 400; color: var(--color-text);">Academic literature on software engineering, management, and technology.</span></td>
+                </tr>
+                <tr>
+                    <td><strong>Body Medium</strong></td>
+                    <td>Inter, 16px, Regular</td>
+                    <td><span style="font-family: 'Inter', sans-serif; font-size: 16px; font-weight: 400; color: var(--color-text-secondary);">This peer-reviewed journal serves researchers worldwide.</span></td>
+                </tr>
+                <tr>
+                    <td><strong>Label Medium</strong></td>
+                    <td>JetBrains Mono, 14px, Medium</td>
+                    <td><span style="font-family: 'JetBrains Mono', monospace; font-size: 14px; font-weight: 500; letter-spacing: 0.02em; color: var(--color-text);">E-ISSN: 2785-8294</span></td>
+                </tr>
+                <tr>
+                    <td><strong>Caption</strong></td>
+                    <td>Inter, 12px, Medium</td>
+                    <td><span style="font-family: 'Inter', sans-serif; font-size: 12px; font-weight: 500; color: var(--color-primary);">PEER-REVIEWED</span></td>
+                </tr>
+            </tbody>
+        </table>
+    </div>
+
+    <!-- Components Showcase -->
+    <div class="ds-section">
+        <h2 class="ds-section-title">UI Components</h2>
+        <p class="mb-6 text-secondary">Foundational reusable components styled to reflect the clean, minimal, flat academic design guidelines.</p>
+
+        <!-- Buttons Showcase -->
+        <div>
+            <span class="ds-showcase-box-title ds-showcase-label">Button Tokens</span>
+            <div class="ds-showcase-box">
+                <div class="ds-btn-group">
+                    <button class="ds-btn ds-btn-primary">Submit Manuscript</button>
+                    <button class="ds-btn ds-btn-secondary">Browse Articles</button>
+                    <button class="ds-btn ds-btn-tertiary">Read Full PDF →</button>
+                </div>
+            </div>
+        </div>
+
+        <!-- Input Showcase -->
+        <div class="mt-8">
+            <span class="ds-showcase-box-title ds-showcase-label">Form Inputs</span>
+            <div class="ds-showcase-box">
+                <div class="ds-input-group">
+                    <label class="ds-input-label" for="sample-search">Search Manuscripts</label>
+                    <input class="ds-input" type="text" id="sample-search" placeholder="Enter keywords, author or DOI...">
+                </div>
+            </div>
+        </div>
+
+        <!-- Card Showcase -->
+        <div class="mt-8">
+            <span class="ds-showcase-box-title ds-showcase-label">Article Grid Card</span>
+            <div class="ds-showcase-box">
+                <article class="ds-card">
+                    <span class="ds-card-caption">Volume 15, Issue 2 • Information Technology</span>
+                    <h3 class="ds-card-title">The Role of Deep Learning Systems in Medical Imaging Diagnostics</h3>
+                    <p class="ds-card-desc">This study explores the computational efficiency and accuracy rates of convolutional neural networks in classifying MRI scans within clinical environments.</p>
+                    <div style="display: flex; justify-content: space-between; align-items: center;">
+                        <span style="font-size: var(--text-xs); color: var(--color-text-secondary); font-style: italic;">Dr. Sarah Henderson, et al.</span>
+                        <a href="#" class="ds-btn ds-btn-tertiary">Download PDF</a>
+                    </div>
+                </article>
+            </div>
+        </div>
+
+        <!-- Table Showcase -->
+        <div class="mt-8">
+            <span class="ds-showcase-box-title ds-showcase-label">Data Tables</span>
+            <div class="ds-showcase-box">
+                <table class="ds-table">
+                    <thead>
+                        <tr>
+                            <th>Volume</th>
+                            <th>Release Date</th>
+                            <th>Articles Count</th>
+                            <th>Status</th>
+                        </tr>
+                    </thead>
+                    <tbody>
+                        <tr>
+                            <td>Vol. 12 No. 3 (2026)</td>
+                            <td>June 15, 2026</td>
+                            <td>18 Articles</td>
+                            <td><span style="color: var(--color-success); font-weight: 500;">Published</span></td>
+                        </tr>
+                        <tr>
+                            <td>Vol. 12 No. 2 (2026)</td>
+                            <td>April 10, 2026</td>
+                            <td>15 Articles</td>
+                            <td><span style="color: var(--color-success); font-weight: 500;">Published</span></td>
+                        </tr>
+                        <tr>
+                            <td>Vol. 12 No. 1 (2026)</td>
+                            <td>February 05, 2026</td>
+                            <td>12 Articles</td>
+                            <td><span style="color: var(--color-success); font-weight: 500;">Published</span></td>
+                        </tr>
+                    </tbody>
+                </table>
+            </div>
+        </div>
+    </div>
+</div>
+{% endblock %}

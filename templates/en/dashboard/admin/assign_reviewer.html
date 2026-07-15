@@ -1,0 +1,150 @@
+{% extends 'base_dashboard.html' %}
+
+{% block title %}Assign Reviewer — {{ submission.title }}{% endblock %}
+{% block nav_admin_submissions %}active{% endblock %}
+{% block breadcrumb %}
+    <span class="dash-breadcrumb__sep">/</span>
+    <a href="{% url 'dashboard:admin_submissions' %}">Submissions</a>
+    <span class="dash-breadcrumb__sep">/</span>
+    <span class="dash-breadcrumb__current">Assign Reviewer</span>
+{% endblock %}
+
+{% block content %}
+<div class="page-header">
+    <div>
+        <h1 class="page-header__title">Assign Reviewer</h1>
+        <p class="text-secondary text-sm mb-0">{{ submission.title|truncatechars:70 }}</p>
+    </div>
+</div>
+
+<!-- Submission Info -->
+<div class="card mb-6">
+    <div style="display: grid; grid-template-columns: 1fr 1fr; gap: var(--space-4); font-size: var(--text-sm);">
+        <div><span class="text-muted">Section:</span> <strong>{{ submission.section.name }}</strong></div>
+        <div>
+            <span class="text-muted">Author:</span>
+            <strong>{{ submission.author.get_full_name|default:submission.author.username }}</strong>
+        </div>
+        <div>
+            <span class="text-muted">Status:</span>
+            <span class="badge badge-under-review" style="margin-left: var(--space-2);">
+                {% if submission.status == 'draft' %}Draft
+                {% elif submission.status == 'under_initial_check' %}Initial Checking
+                {% elif submission.status == 'under_review' %}Under Review
+                {% elif submission.status == 'revision_required' %}Revision Required
+                {% elif submission.status == 'accepted_awaiting_payment' %}Accepted (Awaiting Payment)
+                {% elif submission.status == 'payment_processing' %}Payment Processing
+                {% elif submission.status == 'paid' %}Paid
+                {% elif submission.status == 'published' %}Published
+                {% elif submission.status == 'rejected' %}Rejected
+                {% elif submission.status == 'expired' %}Expired
+                {% elif submission.status == 'withdrawn' %}Withdrawn
+                {% else %}{{ submission.get_status_display }}{% endif %}
+            </span>
+        </div>
+        {% if submission.assigned_reviewer %}
+        <div>
+            <span class="text-muted">Current Reviewer:</span>
+            <strong>{{ submission.assigned_reviewer.get_full_name|default:submission.assigned_reviewer.username }}</strong>
+        </div>
+        {% endif %}
+    </div>
+</div>
+
+<!-- Reviewers List -->
+<form method="post" id="assign-form">
+    {% csrf_token %}
+    <div class="card mb-6" style="padding: 0; overflow: hidden;">
+        <table class="data-table">
+            <thead>
+                <tr>
+                    <th style="width: 40px;"></th>
+                    <th>Reviewer</th>
+                    <th>Specialties</th>
+                    <th>Active Reviews</th>
+                    <th>Status</th>
+                </tr>
+            </thead>
+            <tbody>
+                {% for item in reviewer_data %}
+                <tr style="cursor: pointer;" onclick="document.getElementById('rev-{{ item.user.pk }}').click()">
+                    <td>
+                        <input type="radio" name="reviewer_id"
+                                id="rev-{{ item.user.pk }}"
+                                value="{{ item.user.pk }}"
+                                {% if submission.assigned_reviewer.pk == item.user.pk %}checked{% endif %}>
+                    </td>
+                    <td>
+                        <strong class="text-sm">{{ item.user.get_full_name|default:item.user.username }}</strong>
+                        <div class="text-muted" style="font-size: var(--text-xs);">{{ item.user.email }}</div>
+                    </td>
+                    <td>
+                        {% for spec in item.specialties %}
+                            <span class="badge badge-under-review" style="margin-left: 2px; margin-bottom: 2px; font-size: 10px;">
+                                {{ spec.name }}
+                            </span>
+                        {% empty %}
+                            <span class="text-muted text-sm">—</span>
+                        {% endfor %}
+                    </td>
+                    <td style="text-align: center;">
+                        {% if item.active_count >= 3 %}
+                            <span style="font-weight: 700; color: var(--color-danger);">{{ item.active_count }}</span>
+                        {% elif item.active_count >= 2 %}
+                            <span style="font-weight: 700; color: var(--color-warning);">{{ item.active_count }}</span>
+                        {% else %}
+                            <span style="font-weight: 700; color: var(--color-success);">{{ item.active_count }}</span>
+                        {% endif %}
+                    </td>
+                    <td>
+                        {% if item.user.reviewer_profile.is_available %}
+                            <span class="badge badge-published" style="font-size: 10px;">Available</span>
+                        {% else %}
+                            <span class="badge badge-rejected" style="font-size: 10px;">Unavailable</span>
+                        {% endif %}
+                    </td>
+                </tr>
+                {% empty %}
+                <tr>
+                    <td colspan="5" style="padding: var(--space-8);">
+                        <div class="empty-state" style="padding: var(--space-4);">
+                            <p class="empty-state__message mb-0">No registered reviewers found in the system.</p>
+                        </div>
+                    </td>
+                </tr>
+                {% endfor %}
+            </tbody>
+        </table>
+    </div>
+
+    <div style="display: flex; gap: var(--space-3);">
+        <button type="button" class="btn btn-primary" id="btn-assign">Assign Selected Reviewer</button>
+        <a href="{% url 'dashboard:admin_submissions' %}" class="btn btn-ghost">Cancel</a>
+    </div>
+</form>
+{% endblock %}
+
+{% block extra_js %}
+<script>
+document.getElementById('btn-assign').addEventListener('click', function() {
+    const selected = document.querySelector('input[name="reviewer_id"]:checked');
+    if (!selected) {
+        Swal.fire('Warning', 'Please select a reviewer first.', 'warning');
+        return;
+    }
+    Swal.fire({
+        title: 'Confirm Assignment',
+        text: 'Do you want to assign this reviewer to the article?',
+        icon: 'question',
+        showCancelButton: true,
+        confirmButtonText: 'Yes, Assign',
+        cancelButtonText: 'Cancel',
+        confirmButtonColor: '#1e2d4a'
+    }).then((result) => {
+        if (result.isConfirmed) {
+            document.getElementById('assign-form').submit();
+        }
+    });
+});
+</script>
+{% endblock %}

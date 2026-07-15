@@ -1,0 +1,119 @@
+{% extends 'base_dashboard.html' %}
+
+{% block title %}Reviewer Dashboard{% endblock %}
+{% block nav_reviewer_home %}active{% endblock %}
+
+{% block content %}
+<div class="page-header">
+    <h1 class="page-header__title">Dashboard</h1>
+    <p class="text-secondary text-sm mb-0">
+        Welcome, {{ request.user.get_full_name|default:request.user.username }}
+    </p>
+</div>
+
+<!-- Stats -->
+<div style="display: grid; grid-template-columns: repeat(auto-fit, minmax(160px, 1fr)); gap: var(--space-4); margin-bottom: var(--space-8);">
+    <div class="card card-stat">
+        <span class="card-stat__number">{{ total }}</span>
+        <span class="card-stat__label">Total Reviews</span>
+    </div>
+    <div class="card card-stat">
+        <span class="card-stat__number" style="color: var(--color-warning);">{{ pending_count }}</span>
+        <span class="card-stat__label">In Progress</span>
+    </div>
+    <div class="card card-stat">
+        <span class="card-stat__number" style="color: var(--color-success);">{{ completed_count }}</span>
+        <span class="card-stat__label">Completed</span>
+    </div>
+</div>
+
+<!-- All Completed Message -->
+{% if pending_count == 0 and completed_count > 0 %}
+    <div class="inline-alert inline-alert--success mb-6">
+        <span class="inline-alert__icon"><svg class="icon icon-md"><use href="#icon-publish"/></svg></span>
+        <div class="inline-alert__content">
+            <p class="inline-alert__title">Well done!</p>
+            <p class="inline-alert__message">You have completed all your assigned reviews. Thank you for your contribution.</p>
+        </div>
+    </div>
+{% endif %}
+
+<!-- Assigned Reviews -->
+{% if in_progress_reviews %}
+    <h2 class="mb-4" style="font-size: var(--text-xl); color: var(--color-primary);">Assigned Reviews</h2>
+    {% for review in in_progress_reviews %}
+    <div class="card mb-4">
+        <div style="display: flex; justify-content: space-between; align-items: flex-start; flex-wrap: wrap; gap: var(--space-3);">
+            <div style="flex: 1;">
+                <h3 class="mb-2" style="font-size: var(--text-md);">
+                    {{ review.submission.title|truncatechars:70 }}
+                </h3>
+                <p class="text-muted text-sm mb-2">
+                    {{ review.submission.section.name }}
+                    &nbsp;·&nbsp; Revision Round: {{ review.revision_round }}
+                    &nbsp;·&nbsp; Assigned Date: {{ review.created_at|date:"Y/m/d" }}
+                </p>
+                <p class="text-sm mb-0" style="color: var(--color-warning);">
+                    <svg class="icon icon-md" style="color:var(--color-warning)"><use href="#icon-bell"/></svg> Expected due: 5–10 days from assignment date
+                </p>
+            </div>
+            <span class="badge badge-under-review">In Progress</span>
+        </div>
+        <div style="margin-top: var(--space-4); display: flex; gap: var(--space-2);">
+            <a href="{% url 'reviews:detail' review.pk %}" class="btn btn-sm btn-primary">Start Review</a>
+            {% for mf in review.submission.manuscript_files.all %}
+                {% if mf.is_current %}
+                    <a href="{{ mf.file.url }}" target="_blank" class="btn btn-sm btn-ghost">Download Manuscript</a>
+                {% endif %}
+            {% endfor %}
+        </div>
+    </div>
+    {% endfor %}
+{% endif %}
+
+<!-- Completed Reviews -->
+{% if completed_reviews %}
+    <h2 class="mb-4 mt-8" style="font-size: var(--text-xl); color: var(--color-text-secondary);">Completed Reviews</h2>
+    <div class="card" style="padding: 0; overflow: hidden;">
+        <table class="data-table">
+            <thead>
+                <tr>
+                    <th>Article Title</th>
+                    <th>Decision</th>
+                    <th>Submission Date</th>
+                    <th>View</th>
+                </tr>
+            </thead>
+            <tbody>
+                {% for review in completed_reviews %}
+                <tr>
+                    <td>{{ review.submission.title|truncatechars:55 }}</td>
+                    <td>
+                        <span class="badge
+                            {% if review.decision == 'accept' %}badge-review-accept
+                            {% elif review.decision == 'reject' %}badge-review-reject
+                            {% else %}badge-review-revision{% endif %}">
+                            {{ review.get_decision_display }}
+                        </span>
+                    </td>
+                    <td class="text-muted text-sm">{{ review.submitted_at|date:"Y/m/d" }}</td>
+                    <td>
+                        <a href="{% url 'reviews:detail' review.pk %}" class="btn btn-sm btn-ghost">View</a>
+                    </td>
+                </tr>
+                {% endfor %}
+            </tbody>
+        </table>
+    </div>
+{% endif %}
+
+{% if not reviews %}
+    <div class="card">
+        <div class="empty-state">
+            <div class="empty-state__icon"><svg class="icon icon-xl icon-muted"><use href="#icon-review"/></svg></div>
+            <h3 class="empty-state__title">No reviews assigned to you at the moment</h3>
+            <p class="empty-state__message">Manuscripts assigned to you for review will appear here.</p>
+        </div>
+    </div>
+{% endif %}
+{% endblock %}

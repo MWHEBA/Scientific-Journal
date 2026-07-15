@@ -1,0 +1,176 @@
+{% extends 'base_public.html' %}
+{% load static %}
+
+{% block title %}About Us - IJCMIT{% endblock %}
+{% block nav_about %}active{% endblock %}
+
+{% block layout_class %}pub-layout--single-sidebar{% endblock %}
+
+{# Hide left sidebar #}
+{% block sidebar_left %}{% endblock %}
+
+{% block content %}
+<div class="page-header">
+    <h1 class="page-header__title">About Us</h1>
+</div>
+
+<!-- Main Definition -->
+<div class="card mb-4">
+    <p class="mb-4">
+        <strong>International Journal of Contemporary Management and Information Technology (IJCMIT)</strong>
+        <span dir="ltr" style="font-size:var(--text-sm);color:var(--color-text-muted);"> (e-ISSN: 2773-5036)</span>
+        is an open access peer reviewed International Journal published six issues per year (January, March, May, July, September, and November) by
+        <strong>Sciences Gates SDN BHD, Malaysia</strong>.
+    </p>
+    <p class="mb-4">
+        The journal aims to publish high quality articles dedicated to management and information technology in the field of management information system (MIS) and management information technology (MIT). Its scope encompasses the applications of management, HRM, Marketing, Finance, IT adoption, MIS, MIT, and others.
+    </p>
+    <p class="mb-0">
+        IJCMIT allows submission at any time of the year without time restrictions.
+    </p>
+</div>
+
+<!-- Editors -->
+<div class="card mb-4">
+    <h3 class="mb-4" style="color:var(--color-primary);">Editors</h3>
+    <div style="display:grid;grid-template-columns:repeat(auto-fill,minmax(280px,1fr));gap:var(--space-3);">
+        <div style="display:flex;align-items:center;gap:var(--space-4);padding:var(--space-4);background:var(--color-surface-alt);border-left:4px solid var(--color-primary);">
+            <div>
+                <p style="font-weight:700;font-size:var(--text-base);margin-bottom:2px;">Dr. Saad Alaaraj</p>
+                <p class="text-muted text-sm mb-0">Editor in Chief (IJCMIT)</p>
+            </div>
+        </div>
+        <div style="display:flex;align-items:center;gap:var(--space-4);padding:var(--space-4);background:var(--color-surface-alt);border-left:4px solid var(--color-primary-light);">
+            <div>
+                <p style="font-weight:700;font-size:var(--text-base);margin-bottom:2px;">Dr. Mohammad Kayali</p>
+                <p class="text-muted text-sm mb-0">Co-Editor in Chief (IJCMIT)</p>
+            </div>
+        </div>
+    </div>
+</div>
+
+<!-- Advisory Board -->
+<div class="card mb-4">
+    <h3 class="mb-4" style="color:var(--color-primary);">Advisory Board</h3>
+    <div style="display:grid;grid-template-columns:repeat(auto-fill,minmax(280px,1fr));gap:var(--space-3);">
+        <div style="padding:var(--space-3) var(--space-4);border:1px solid var(--color-border);background:var(--color-bg);">
+            <p style="font-weight:600;font-size:var(--text-sm);margin-bottom:2px;">Assoc. Prof. Dr. Nurhizam Safie</p>
+            <p class="text-muted text-xs mb-0">Cloud based Technology, Universiti Kebangsaan Malaysia (UKM), Malaysia</p>
+        </div>
+        <div style="padding:var(--space-3) var(--space-4);border:1px solid var(--color-border);background:var(--color-bg);">
+            <p style="font-weight:600;font-size:var(--text-sm);margin-bottom:2px;">Assoc. Prof. Dr. Soong Der Chen</p>
+            <p class="text-muted text-xs mb-0">Information Technology, Universiti Tenaga Nasional (UNITEN), Malaysia</p>
+        </div>
+        <div style="padding:var(--space-3) var(--space-4);border:1px solid var(--color-border);background:var(--color-bg);">
+            <p style="font-weight:600;font-size:var(--text-sm);margin-bottom:2px;">Dr. Bilal Eneizan</p>
+            <p class="text-muted text-xs mb-0">Marketing, Jadara University, Jordan</p>
+        </div>
+        <div style="padding:var(--space-3) var(--space-4);border:1px solid var(--color-border);background:var(--color-bg);">
+            <p style="font-weight:600;font-size:var(--text-sm);margin-bottom:2px;">Dr. Murad Ali Ahmad Al-Zaqeba</p>
+            <p class="text-muted text-xs mb-0">Accounting and Taxation, Scholar Center, Jordan</p>
+        </div>
+        <div style="padding:var(--space-3) var(--space-4);border:1px solid var(--color-border);background:var(--color-bg);">
+            <p style="font-weight:600;font-size:var(--text-sm);margin-bottom:2px;">Dr. Odai Enaizan</p>
+            <p class="text-muted text-xs mb-0">E-business, Jadara University, Jordan</p>
+        </div>
+        <div style="padding:var(--space-3) var(--space-4);border:1px solid var(--color-border);background:var(--color-bg);">
+            <p style="font-weight:600;font-size:var(--text-sm);margin-bottom:2px;">Dr. Mohyaadean Atiya Salem Mousa</p>
+            <p class="text-muted text-xs mb-0">Information Technology, Bani Walid University, Libya</p>
+        </div>
+        <div style="padding:var(--space-3) var(--space-4);border:1px solid var(--color-border);background:var(--color-bg);">
+            <p style="font-weight:600;font-size:var(--text-sm);margin-bottom:2px;">Dr. Salem Asseed Alatresh Aboabdulla</p>
+            <p class="text-muted text-xs mb-0">Information technology, Bani Walid University, Libya</p>
+        </div>
+        <div style="padding:var(--space-3) var(--space-4);border:1px solid var(--color-border);background:var(--color-bg);">
+            <p style="font-weight:600;font-size:var(--text-sm);margin-bottom:2px;">Dr. Owais Al-Gharaibah</p>
+            <p class="text-muted text-xs mb-0">Marketing, Taibah University, Saudi Arabia</p>
+        </div>
+        <div style="padding:var(--space-3) var(--space-4);border:1px solid var(--color-border);background:var(--color-bg);">
+            <p style="font-weight:600;font-size:var(--text-sm);margin-bottom:2px;">Assistant Prof. Dr. Ahmad Marei</p>
+            <p class="text-muted text-xs mb-0">Accounting, Middle East University, Amman, Jordan</p>
+        </div>
+        <div style="padding:var(--space-3) var(--space-4);border:1px solid var(--color-border);background:var(--color-bg);">
+            <p style="font-weight:600;font-size:var(--text-sm);margin-bottom:2px;">Dr. Ishaq Ibrahim</p>
+            <p class="text-muted text-xs mb-0">Human Resource Management, USIM, Malaysia</p>
+        </div>
+        <div style="padding:var(--space-3) var(--space-4);border:1px solid var(--color-border);background:var(--color-bg);">
+            <p style="font-weight:600;font-size:var(--text-sm);margin-bottom:2px;">Assistant Prof. Dr. Mohammad Salem Oudat</p>
+            <p class="text-muted text-xs mb-0">Financial Management, Applied Science University, Bahrain</p>
+        </div>
+        <div style="padding:var(--space-3) var(--space-4);border:1px solid var(--color-border);background:var(--color-bg);">
+            <p style="font-weight:600;font-size:var(--text-sm);margin-bottom:2px;">Assistant Prof. Dr. Basel J A Ali</p>
+            <p class="text-muted text-xs mb-0">Financial Management, Applied Science University, Bahrain</p>
+        </div>
+        <div style="padding:var(--space-3) var(--space-4);border:1px solid var(--color-border);background:var(--color-bg);">
+            <p style="font-weight:600;font-size:var(--text-sm);margin-bottom:2px;">Dr. Monther Y. S. El daia</p>
+            <p class="text-muted text-xs mb-0">Accounting, Al Aqsa University, Palestine</p>
+        </div>
+    </div>
+</div>
+
+<!-- Join Us -->
+<div class="card mb-4" style="border-left: 4px solid var(--color-primary-light);">
+    <h3 class="mb-3" style="color:var(--color-primary); font-size: var(--text-md);">Join Us</h3>
+    <p class="mb-0">
+        Join Us as advisory board or a reviewer. Please submit your C.V. to editor in chief at email:
+        {% if settings.contact_email %}
+            <a href="mailto:{{ settings.contact_email }}">{{ settings.contact_email }}</a>
+        {% else %}
+            the journal's official email address.
+        {% endif %}
+    </p>
+</div>
+
+<!-- Online Submission -->
+<div class="card mb-4">
+    <h3 class="mb-3" style="color:var(--color-primary);">Online Submission</h3>
+    <p class="mb-3">To submit a manuscript, please follow these instructions:</p>
+    <ol style="line-height: var(--leading-loose); padding-left: var(--space-6);">
+        <li>Create a new account at <a href="{% url 'accounts:register' %}" target="_blank">Registration Page</a></li>
+        <li>Fill in the required information</li>
+        <li>Choose to submit a new paper</li>
+        <li>Upload the paper</li>
+        <li>Submit your paper</li>
+    </ol>
+</div>
+
+<!-- Author Guidelines -->
+<div class="card mb-4">
+    <h3 class="mb-3" style="color:var(--color-primary);">Author Guidelines</h3>
+    <ol style="line-height: var(--leading-loose); padding-left: var(--space-6);">
+        <li>Author(s) must prepare a full article in English and submit the article to IJCMIT.</li>
+        <li>Please prepare your article following the journal template.</li>
+        <li>Referencing style: the author must follow the Numbering referencing style (IEEE). Examples are provided in the template.</li>
+        <li>After accepting your manuscript, you must fill in the copyright form.</li>
+        <li>Processing fees should be paid after accepting the manuscript.</li>
+    </ol>
+</div>
+
+<!-- Publisher -->
+<div class="card mb-4">
+    <h3 class="mb-3" style="color:var(--color-primary);">Publisher</h3>
+    <p class="mb-2"><strong>Sciences Gates SDN BHD</strong> — Kuala Lumpur, Malaysia</p>
+    <p class="text-muted text-sm mb-4">
+        B, 408, Cemara Apartment, Kajang Utama, Kajang, Selangor, Malaysia
+    </p>
+    <div style="display:flex;align-items:center;gap:var(--space-3);">
+        <a href="http://creativecommons.org/licenses/by-nc/4.0/" rel="license" target="_blank">
+            <img src="https://i.creativecommons.org/l/by-nc/4.0/88x31.png" alt="Creative Commons Licence" style="border:0;display:block;">
+        </a>
+        <p class="text-muted text-xs mb-0">
+            Licensed under
+            <a href="http://creativecommons.org/licenses/by-nc/4.0/" target="_blank">Creative Commons Attribution-NonCommercial 4.0 International License</a>
+        </p>
+    </div>
+</div>
+
+{% if settings.contact_email %}
+<div class="card">
+    <p class="mb-0">
+        Contact: <a href="mailto:{{ settings.contact_email }}">{{ settings.contact_email }}</a>
+        &nbsp;·&nbsp; <a href="tel:+601128195437" dir="ltr">+601128195437</a>
+    </p>
+</div>
+{% endif %}
+
+{% endblock %}

@@ -54,5 +54,6 @@ urlpatterns = [
     path('topics/',             StaticPageView.as_view(), kwargs={'slug': 'topics'},            name='topics'),
     path('blog/',               StaticPageView.as_view(), kwargs={'slug': 'blog'},              name='blog'),
     path('conferences/',        StaticPageView.as_view(), kwargs={'slug': 'conferences'},       name='conferences'),
+    path('design-system/',      StaticPageView.as_view(), kwargs={'slug': 'design-system'},     name='design_system'),
     path('<str:slug>/',        ArticleDetailView.as_view(), name='article_detail'),
 ]
