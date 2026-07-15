@@ -16,6 +16,10 @@ from apps.submissions.exceptions import (
     InvalidManuscriptFileError,
 )
 
+def _t(ar_text, en_text):
+    from django.utils import translation
+    return en_text if translation.get_language() == 'en' else ar_text
+
 
 class SubmissionCreateView(AuthorRequiredMixin, CreateView):
     """إنشاء تقديم جديد — يُحفظ كمسودة."""
@@ -59,7 +63,7 @@ class SubmissionCreateView(AuthorRequiredMixin, CreateView):
         manuscript = self.request.FILES.get('manuscript')
         if manuscript:
             if not manuscript.name.lower().endswith('.pdf'):
-                messages.error(self.request, 'يجب أن يكون الملف بصيغة PDF.')
+                messages.error(self.request, _t('يجب أن يكون الملف بصيغة PDF.', 'The file must be in PDF format.'))
                 self.object.delete()
                 return self.form_invalid(form)
             ManuscriptFile.objects.create(
@@ -80,19 +84,19 @@ class SubmissionCreateView(AuthorRequiredMixin, CreateView):
             if ManuscriptFile.objects.filter(submission=self.object, is_current=True).exists():
                 try:
                     SubmissionService.submit(self.object, actor=self.request.user)
-                    messages.success(self.request, 'تم إرسال مقالتك بنجاح. سيتم مراجعته من قِبَل المشرف.')
+                    messages.success(self.request, _t('تم إرسال مقالتك بنجاح. سيتم مراجعته من قِبَل المشرف.', 'Your article has been submitted successfully. It will be reviewed by the admin.'))
                     return redirect(reverse('dashboard:author'))
                 except InvalidStateTransitionError as e:
-                    messages.error(self.request, f'خطأ: {e}')
+                    messages.error(self.request, _t(f'خطأ: {e}', f'Error: {e}'))
             else:
-                messages.error(self.request, 'يجب رفع ملف المخطوطة قبل الإرسال.')
+                messages.error(self.request, _t('يجب رفع ملف المخطوطة قبل الإرسال.', 'The manuscript file must be uploaded before submitting.'))
         else:
-            messages.success(self.request, 'تم حفظ التقديم كمسودة.')
+            messages.success(self.request, _t('تم حفظ التقديم كمسودة.', 'Submission saved as draft.'))
 
         return redirect(reverse('submissions:edit', kwargs={'pk': self.object.pk}))
 
     def form_invalid(self, form):
-        messages.error(self.request, 'يرجى تصحيح الأخطاء أدناه.')
+        messages.error(self.request, _t('يرجى تصحيح الأخطاء أدناه.', 'Please correct the errors below.'))
         return super().form_invalid(form)
 
 
@@ -107,7 +111,7 @@ class SubmissionUpdateView(AuthorRequiredMixin, UpdateView):
         if obj.author != self.request.user:
             raise PermissionDenied
         if obj.status != ArticleSubmission.STATUS_DRAFT:
-            messages.error(self.request, 'لا يمكن تعديل تقديم بعد إرساله.')
+            messages.error(self.request, _t('لا يمكن تعديل تقديم بعد إرساله.', 'A submission cannot be edited after it has been submitted.'))
             raise PermissionDenied
         return obj
 
@@ -135,7 +139,7 @@ class SubmissionUpdateView(AuthorRequiredMixin, UpdateView):
         manuscript = self.request.FILES.get('manuscript')
         if manuscript:
             if not manuscript.name.lower().endswith('.pdf'):
-                messages.error(self.request, 'يجب أن يكون الملف بصيغة PDF.')
+                messages.error(self.request, _t('يجب أن يكون الملف بصيغة PDF.', 'The file must be in PDF format.'))
                 return self.form_invalid(form)
             # إلغاء النسخة الحالية وإنشاء نسخة جديدة
             ManuscriptFile.objects.filter(
@@ -160,15 +164,15 @@ class SubmissionUpdateView(AuthorRequiredMixin, UpdateView):
             if ManuscriptFile.objects.filter(submission=self.object, is_current=True).exists():
                 try:
                     SubmissionService.submit(self.object, actor=self.request.user)
-                    messages.success(self.request, 'تم إرسال مقالتك بنجاح. سيتم مراجعته من قِبَل المشرف.')
+                    messages.success(self.request, _t('تم إرسال مقالتك بنجاح. سيتم مراجعته من قِبَل المشرف.', 'Your article has been submitted successfully. It will be reviewed by the admin.'))
                     return redirect(reverse('dashboard:author'))
                 except InvalidStateTransitionError as e:
-                    messages.error(self.request, f'خطأ: {e}')
+                    messages.error(self.request, _t(f'خطأ: {e}', f'Error: {e}'))
             else:
-                messages.error(self.request, 'يجب رفع ملف المخطوطة قبل الإرسال.')
+                messages.error(self.request, _t('يجب رفع ملف المخطوطة قبل الإرسال.', 'The manuscript file must be uploaded before submitting.'))
                 return self.form_invalid(form)
         else:
-            messages.success(self.request, 'تم حفظ التعديلات.')
+            messages.success(self.request, _t('تم حفظ التعديلات.', 'Changes saved.'))
 
         return redirect(reverse('submissions:edit', kwargs={'pk': self.object.pk}))
 
@@ -183,14 +187,14 @@ class SubmissionSubmitView(AuthorRequiredMixin, View):
 
         # التحقق من وجود ملف مخطوطة
         if not submission.manuscript_files.filter(is_current=True).exists():
-            messages.error(request, 'يجب رفع ملف المخطوطة قبل الإرسال.')
+            messages.error(request, _t('يجب رفع ملف المخطوطة قبل الإرسال.', 'The manuscript file must be uploaded before submitting.'))
             return redirect(reverse('submissions:edit', kwargs={'pk': pk}))
 
         try:
             SubmissionService.submit(submission, actor=request.user)
-            messages.success(request, 'تم إرسال مقالتك بنجاح. سيتم مراجعته من قِبَل المشرف.')
+            messages.success(request, _t('تم إرسال مقالتك بنجاح. سيتم مراجعته من قِبَل المشرف.', 'Your article has been submitted successfully. It will be reviewed by the admin.'))
         except InvalidStateTransitionError as e:
-            messages.error(request, f'لا يمكن إرسال التقديم: {e}')
+            messages.error(request, _t(f'لا يمكن إرسال التقديم: {e}', f'Cannot submit: {e}'))
 
         return redirect(reverse('dashboard:author'))
 
@@ -228,13 +232,13 @@ class RevisionUploadView(AuthorRequiredMixin, View):
                 file=form.cleaned_data['manuscript'],
                 actor=request.user,
             )
-            messages.success(request, 'تم رفع النسخة المعدّلة بنجاح. سيتم إعادة المراجعة.')
+            messages.success(request, _t('تم رفع النسخة المعدّلة بنجاح. سيتم إعادة المراجعة.', 'Revised version uploaded successfully. It will be reviewed again.'))
         except InvalidStateTransitionError as e:
-            messages.error(request, f'خطأ: {e}')
+            messages.error(request, _t(f'خطأ: {e}', f'Error: {e}'))
         except RevisionLimitExceededError:
-            messages.error(request, 'تجاوزت الحد الأقصى لدورات التعديل (دورتان).')
+            messages.error(request, _t('تجاوزت الحد الأقصى لدورات التعديل (دورتان).', 'You have exceeded the maximum number of revision rounds (2 rounds).'))
         except InvalidManuscriptFileError:
-            messages.error(request, 'يجب أن يكون الملف بصيغة PDF.')
+            messages.error(request, _t('يجب أن يكون الملف بصيغة PDF.', 'The file must be in PDF format.'))
 
         return redirect(reverse('dashboard:author'))
 
@@ -249,9 +253,9 @@ class SubmissionWithdrawView(AuthorRequiredMixin, View):
 
         try:
             SubmissionService.withdraw(submission, actor=request.user)
-            messages.success(request, 'تم سحب مقالتك بنجاح.')
+            messages.success(request, _t('تم سحب مقالتك بنجاح.', 'Your article has been successfully withdrawn.'))
         except InvalidStateTransitionError as e:
-            messages.error(request, f'لا يمكن سحب التقديم: {e}')
+            messages.error(request, _t(f'لا يمكن سحب التقديم: {e}', f'Cannot withdraw submission: {e}'))
 
         return redirect(reverse('dashboard:author'))
 
@@ -270,12 +274,12 @@ class SubmissionArchiveView(AuthorRequiredMixin, View):
             raise PermissionDenied
 
         if submission.status not in self.allowed_statuses:
-            messages.error(request, 'يمكن أرشفة التقديمات المرفوضة أو المسحوبة فقط.')
+            messages.error(request, _t('يمكن أرشفة التقديمات المرفوضة أو المسحوبة فقط.', 'Only rejected or withdrawn submissions can be archived.'))
             return redirect(reverse('dashboard:author'))
 
         submission.is_archived = True
         submission.save(update_fields=['is_archived', 'updated_at'])
-        messages.success(request, 'تم إرسال التقديم إلى الأرشيف.')
+        messages.success(request, _t('تم إرسال التقديم إلى الأرشيف.', 'Submission has been archived.'))
         return redirect(reverse('dashboard:author'))
 
 
@@ -289,5 +293,5 @@ class SubmissionUnarchiveView(AuthorRequiredMixin, View):
 
         submission.is_archived = False
         submission.save(update_fields=['is_archived', 'updated_at'])
-        messages.success(request, 'تمت إزالة التقديم من الأرشيف.')
+        messages.success(request, _t('تمت إزالة التقديم من الأرشيف.', 'Submission has been unarchived.'))
         return redirect(reverse('dashboard:author_archive'))

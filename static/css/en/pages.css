@@ -38,6 +38,8 @@
   opacity: 0.25;
   background-image: radial-gradient(var(--color-neutral-dark) 1.5px, transparent 1.5px);
   background-size: 24px 24px;
+  -webkit-mask-image: linear-gradient(-45deg, black 0%, rgba(0,0,0,0.4) 45%, transparent 80%);
+  mask-image: linear-gradient(-45deg, black 0%, rgba(0,0,0,0.4) 45%, transparent 80%);
 }
 
 .pub-hero__inner {
@@ -202,6 +204,7 @@
 
 .pub-hero__btn--primary:hover {
   background-color: var(--color-primary-dark);
+  color: var(--color-text-inverse);
   box-shadow: 0 6px 20px rgba(4, 82, 128, 0.35);
 }
 
@@ -494,15 +497,18 @@
 
 .ticker__label {
   font-size: var(--text-sm);
-  color: rgba(255, 255, 255, 0.35);
+  color: var(--color-text-inverse);
   font-weight: 700;
   white-space: nowrap;
-  padding: 0 var(--space-4);
-  border-left: 1px solid rgba(255, 255, 255, 0.12);
+  padding: 0 var(--space-5);
+  background-color: rgba(0, 0, 0, 0.15);
+  border-right: 1px solid rgba(255, 255, 255, 0.12);
   flex-shrink: 0;
   align-self: stretch;
   display: flex;
   align-items: center;
+  text-transform: uppercase;
+  letter-spacing: 0.05em;
 }
 
 .ticker__wrap {
@@ -516,7 +522,7 @@
   white-space: nowrap;
   animation: ticker-scroll 40s linear infinite;
   font-size: var(--text-sm);
-  color: rgba(255, 255, 255, 0.65);
+  color: rgba(255, 255, 255, 0.85);
   padding-left: var(--space-4);
 }
 

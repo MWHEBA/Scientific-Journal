@@ -25,7 +25,11 @@
         <ul class="mb-0">
             {% for field in form %}
                 {% for error in field.errors %}
-                    <li>{{ field.label }}: {{ error }}</li>
+                    <li>
+                        {% if field.name == 'name' %}Name
+                        {% elif field.name == 'slug' %}Slug
+                        {% else %}{{ field.label }}{% endif %}: {{ error }}
+                    </li>
                 {% endfor %}
             {% endfor %}
             {% for error in form.non_field_errors %}
@@ -42,8 +46,7 @@
         
         <div class="form-group mb-4">
             <label class="form-label" for="{{ form.name.id_for_label }}">
-                {% if form.name.label == 'الاسم' or form.name.label == 'الاسم بالكامل' %}Name
-                {% else %}{{ form.name.label }}{% endif %}
+                Name
             </label>
             {{ form.name }}
             {% if form.name.help_text %}
@@ -53,8 +56,7 @@
 
         <div class="form-group mb-6">
             <label class="form-label" for="{{ form.slug.id_for_label }}">
-                {% if form.slug.label == 'الرابط البديل' or form.slug.label == 'الرابط اللطيف' %}Slug
-                {% else %}{{ form.slug.label }}{% endif %}
+                Slug
             </label>
             {{ form.slug }}
             {% if form.slug.help_text %}

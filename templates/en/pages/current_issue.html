@@ -1,0 +1,55 @@
+{% extends 'base_public.html' %}
+{% load dashboard_extras %}
+
+{% block title %}Current Issue{% endblock %}
+{% block nav_current %}active{% endblock %}
+
+{% block content %}
+<div class="page-header">
+    <h1 class="page-header__title">Current Issue</h1>
+</div>
+
+{% if current_issue %}
+    <div class="card mb-6">
+        <h2 class="mb-2" style="color: var(--color-primary);">{{ current_issue }}</h2>
+        <p class="text-muted text-sm mb-0">
+            Volume {{ current_issue.volume.number }} — {{ current_issue.volume.year }}
+            &nbsp;·&nbsp; {{ current_issue.articles.count }} article{{ current_issue.articles.count|pluralize }}
+        </p>
+    </div>
+
+    {% if current_issue.articles.all %}
+        {% for article in current_issue.articles.all %}
+        <div class="card mb-4">
+            <span class="badge badge-draft mb-3">{{ article.section.name|translate_section_name:article.section.slug }}</span>
+            <h3 class="mb-2" style="font-size: var(--text-lg);">
+                <a href="{% url 'pages:article_detail' article.slug %}" style="color: var(--color-text);">
+                    {{ article.title }}
+                </a>
+            </h3>
+            <p class="text-secondary text-sm mb-4">{{ article.abstract|truncatechars:180 }}</p>
+            <div style="display: flex; justify-content: space-between; align-items: center;">
+                <span class="text-muted text-sm">
+                    {{ article.submission.author.get_full_name|default:article.submission.author.username }}
+                </span>
+                <a href="{{ article.pdf_file.url }}" target="_blank" class="btn btn-sm btn-ghost">PDF</a>
+            </div>
+        </div>
+        {% endfor %}
+    {% else %}
+        <div class="card">
+            <div class="empty-state">
+                <div class="empty-state__icon"><svg class="icon icon-xl icon-muted"><use href="#icon-articles"/></svg></div>
+                <h3 class="empty-state__title">No articles in this issue yet</h3>
+            </div>
+        </div>
+    {% endif %}
+{% else %}
+    <div class="card">
+        <div class="empty-state">
+            <div class="empty-state__icon"><svg class="icon icon-xl icon-muted"><use href="#icon-issues"/></svg></div>
+            <h3 class="empty-state__title">No current issue designated yet</h3>
+        </div>
+    </div>
+{% endif %}
+{% endblock %}

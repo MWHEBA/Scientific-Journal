@@ -1,0 +1,68 @@
+{% extends 'base_public.html' %}
+{% load dashboard_extras %}
+
+{% block title %}Search{% if query %} — {{ query }}{% endif %}{% endblock %}
+{% block nav_search %}active{% endblock %}
+
+{% block content %}
+<div class="page-header">
+    <h1 class="page-header__title">Search Articles</h1>
+</div>
+
+<!-- Search Form -->
+<form method="get" class="mb-8">
+    <div style="display: flex; gap: var(--space-3);">
+        <input type="text" name="q" value="{{ query }}"
+               placeholder="Search title, abstract, keywords..."
+               class="form-input" style="flex: 1;">
+        <button type="submit" class="btn btn-primary">Search</button>
+    </div>
+</form>
+
+{% if query %}
+    <p class="text-secondary text-sm mb-6">
+        Search results for: <strong>"{{ query }}"</strong>
+        {% if articles %} — {{ paginator.count }} result{{ paginator.count|pluralize }}{% endif %}
+    </p>
+
+    {% if articles %}
+        {% for article in articles %}
+        <div class="card mb-4">
+            <span class="badge badge-draft mb-3">{{ article.section.name|translate_section_name:article.section.slug }}</span>
+            <h3 class="mb-2" style="font-size: var(--text-lg);">
+                <a href="{% url 'pages:article_detail' article.slug %}" style="color: var(--color-text);">
+                    {{ article.title }}
+                </a>
+            </h3>
+            <p class="text-secondary text-sm mb-3">{{ article.abstract|truncatechars:200 }}</p>
+            <div class="text-muted text-sm">
+                {{ article.submission.author.get_full_name|default:article.submission.author.username }}
+                &nbsp;·&nbsp; {{ article.published_at|date:"Y/m/d" }}
+            </div>
+        </div>
+        {% endfor %}
+
+        {% if is_paginated %}
+        <div style="display: flex; gap: var(--space-2); justify-content: center; margin-top: var(--space-6);">
+            {% if page_obj.has_previous %}
+                <a href="?q={{ query }}&page={{ page_obj.previous_page_number }}" class="btn btn-sm btn-ghost">Previous</a>
+            {% endif %}
+            <span style="padding: var(--space-2) var(--space-4); color: var(--color-text-muted); font-size: var(--text-sm);">
+                {{ page_obj.number }} / {{ paginator.num_pages }}
+            </span>
+            {% if page_obj.has_next %}
+                <a href="?q={{ query }}&page={{ page_obj.next_page_number }}" class="btn btn-sm btn-ghost">Next</a>
+            {% endif %}
+        </div>
+        {% endif %}
+    {% else %}
+        <div class="card">
+            <div class="empty-state">
+                <div class="empty-state__icon"><svg class="icon icon-xl icon-muted"><use href="#icon-search"/></svg></div>
+                <h3 class="empty-state__title">No results found</h3>
+                <p class="empty-state__message">No results found for "{{ query }}".</p>
+            </div>
+        </div>
+    {% endif %}
+{% endif %}
+{% endblock %}

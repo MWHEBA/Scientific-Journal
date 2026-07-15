@@ -23,6 +23,7 @@ ALL_STATUSES = [
     SubmissionStatus.PUBLISHED,
     SubmissionStatus.REJECTED,
     SubmissionStatus.EXPIRED,
+    SubmissionStatus.WITHDRAWN,
 ]
 
 ALLOWED = SubmissionStateMachine.ALLOWED_TRANSITIONS
@@ -43,6 +44,7 @@ ALLOWED = SubmissionStateMachine.ALLOWED_TRANSITIONS
     (SubmissionStatus.PAYMENT_PROCESSING, SubmissionStatus.PAID),
     (SubmissionStatus.PAYMENT_PROCESSING, SubmissionStatus.ACCEPTED),
     (SubmissionStatus.PAID,               SubmissionStatus.PUBLISHED),
+    (SubmissionStatus.PUBLISHED,          SubmissionStatus.PAID),
 ])
 @pytest.mark.django_db
 def test_allowed_transition_changes_status(make_submission, from_status, to_status):
@@ -96,7 +98,7 @@ def test_illegal_transition_raises_error(make_submission, from_status, to_status
 @pytest.mark.django_db
 def test_terminal_states_have_no_transitions(make_submission):
     """الحالات النهائية لا تقبل أي انتقال."""
-    for terminal in [SubmissionStatus.PUBLISHED, SubmissionStatus.REJECTED, SubmissionStatus.EXPIRED]:
+    for terminal in [SubmissionStatus.REJECTED, SubmissionStatus.EXPIRED, SubmissionStatus.WITHDRAWN]:
         sub = make_submission(status=terminal)
         for target in ALL_STATUSES:
             if target != terminal:

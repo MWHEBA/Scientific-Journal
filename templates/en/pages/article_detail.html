@@ -1,0 +1,247 @@
+{% extends 'base_public.html' %}
+{% load static dashboard_extras %}
+
+{% block title %}{{ object.title }}{% endblock %}
+{% block nav_articles %}active{% endblock %}
+
+{% block extra_css %}
+<link rel="stylesheet" href="{% static 'css/pages.css' %}">
+{% endblock %}
+
+{% block sidebar_right %}{% endblock %}
+{% block sidebar_left %}{% endblock %}
+{% block content %}{% endblock %}
+
+{% block above_layout %}
+<div class="article-page-wrap">
+
+    <!-- Breadcrumb -->
+    <nav class="dash-breadcrumb mb-6">
+        <a href="/">Home</a>
+        <span class="dash-breadcrumb__sep">/</span>
+        <a href="{% url 'pages:article_list' %}">Articles</a>
+        <span class="dash-breadcrumb__sep">/</span>
+        <a href="{% url 'pages:section_articles' object.section.slug %}">{{ object.section.name|translate_section_name:object.section.slug }}</a>
+        <span class="dash-breadcrumb__sep">/</span>
+        <span class="dash-breadcrumb__current">{{ object.title|truncatechars:50 }}</span>
+    </nav>
+
+    <div class="article-layout">
+
+        <!-- ===== MAIN CONTENT ===== -->
+        <div class="article-layout__main">
+
+            <!-- Section -->
+            <span class="article-header__section" style="color:var(--color-primary);">
+                <span class="article-header__section-dot" style="background:var(--color-primary);"></span>
+                {{ object.section.name|translate_section_name:object.section.slug }}
+            </span>
+
+            <!-- Title -->
+            <h1 class="article-detail__title">{{ object.title }}</h1>
+
+            <!-- Authors -->
+            <div class="article-detail__authors">
+                {% with main_author=object.submission.author.get_full_name|default:object.submission.author.username %}
+                    <span class="article-detail__author-main">{{ main_author }}</span>
+                    {% for co in co_authors %}
+                        {% if co.full_name and co.full_name != main_author %}
+                            <span class="article-detail__author-sep">·</span>
+                            <span class="article-detail__author-co">
+                                {{ co.full_name }}
+                                {% if co.institution %}
+                                    <em class="article-detail__author-inst">({{ co.institution }})</em>
+                                {% endif %}
+                            </span>
+                        {% endif %}
+                    {% endfor %}
+                {% endwith %}
+            </div>
+
+            <!-- Meta row -->
+            <div class="article-header__meta">
+            </div>
+
+            <div class="article-header__divider"></div>
+
+            <!-- Abstract -->
+            <div class="article-detail__abstract">
+                <h2 class="article-detail__section-title">Abstract</h2>
+                <p>{{ object.abstract }}</p>
+            </div>
+
+            <!-- Keywords -->
+            {% if object.keywords %}
+            <div class="article-detail__keywords">
+                <span class="article-detail__keywords-label">Keywords:</span>
+                {% for kw in object.keywords|keywords_to_list %}
+                    <span class="article-detail__kw-tag">{{ kw }}</span>
+                {% endfor %}
+            </div>
+            {% endif %}
+
+            <!-- Actions -->
+            <div class="article-detail__actions">
+                <button class="btn btn-ghost" id="btn-share">
+                    <svg class="icon icon-sm" style="margin-right:var(--space-2)"><use href="#icon-partners"/></svg>
+                    Share Article
+                </button>
+                <a href="{% url 'pages:article_list' %}" class="btn btn-ghost">Back to List</a>
+            </div>
+
+            <!-- Related Articles -->
+            {% if related_articles %}
+            <div class="article-related" style="margin-top:var(--space-12);">
+                <div class="section-header">
+                    <span class="section-header__label">Related Articles</span>
+                    <a href="{% url 'pages:section_articles' object.section.slug %}" class="section-header__link">View all articles in {{ object.section.name|translate_section_name:object.section.slug }} →</a>
+                </div>
+                {% for art in related_articles %}
+                <a href="{% url 'pages:article_detail' art.slug %}" class="article-related__card">
+                    <div class="article-related__body">
+                        <span class="article-related__section" style="color:var(--color-primary);">{{ art.section.name|translate_section_name:art.section.slug }}</span>
+                        <h4 class="article-related__title">{{ art.title|truncatechars:100 }}</h4>
+                        <span class="article-related__author">{{ art.submission.author.get_full_name|default:art.submission.author.username }}</span>
+                    </div>
+                    <svg class="icon icon-md article-related__arrow"><use href="#icon-submit"/></svg>
+                </a>
+                {% endfor %}
+            </div>
+            {% endif %}
+
+        </div>
+
+        <!-- ===== ARTICLE SIDEBAR ===== -->
+        <aside class="article-layout__sidebar">
+
+            <!-- Download PDF -->
+            <div class="pub-widget">
+                <div class="pub-widget__body" style="padding:var(--space-5);">
+                    <a href="{{ object.pdf_file.url }}" target="_blank" class="btn btn-accent btn-full" style="padding:var(--space-4);font-size:var(--text-base);">
+                        <svg class="icon icon-md icon-inverse" style="margin-right:var(--space-2)"><use href="#icon-pdf"/></svg>
+                        Download PDF
+                    </a>
+                    <p class="text-muted text-xs" style="margin-top:var(--space-2);text-align:center;">Open Access — Free for everyone</p>
+                </div>
+            </div>
+
+            <!-- Article Info -->
+            <div class="pub-widget">
+                <div class="pub-widget__header"><svg class="icon icon-sm"><use href="#icon-guidelines"/></svg> Article Info</div>
+                <div class="pub-widget__body pub-widget__body--flush">
+                    <ul class="article-info-list">
+                        <li class="article-info-list__item">
+                            <span class="article-info-list__label">Published Date</span>
+                            <span class="article-info-list__value">{{ object.published_at|date:"Y/m/d" }}</span>
+                        </li>
+                        {% if object.issue %}
+                        <li class="article-info-list__item">
+                            <span class="article-info-list__label">Issue</span>
+                            <a href="{% url 'pages:article_list' %}?issue={{ object.issue.pk }}" class="article-info-list__value article-info-list__link">{{ object.issue }}</a>
+                        </li>
+                        {% endif %}
+                        <li class="article-info-list__item">
+                            <span class="article-info-list__label">Section</span>
+                            <span class="article-info-list__value">{{ object.section.name|translate_section_name:object.section.slug }}</span>
+                        </li>
+                        <li class="article-info-list__item">
+                            <span class="article-info-list__label">Views</span>
+                            <span class="article-info-list__value article-views-count" id="views-count" data-url="{% url 'pages:article_views' object.slug %}">
+                                <span class="article-views-num">{{ object.views_count }}</span>
+                                <svg class="icon icon-xs icon-muted" style="margin-left:2px"><use href="#icon-review"/></svg>
+                            </span>
+                        </li>
+                        <li class="article-info-list__item">
+                            <span class="article-info-list__label">Access</span>
+                            <span class="article-info-list__value" style="color:var(--color-oa-text);font-weight:600;">Free Access</span>
+                        </li>
+                    </ul>
+                </div>
+            </div>
+
+            <!-- Authors -->
+            <div class="pub-widget">
+                <div class="pub-widget__header"><svg class="icon icon-sm"><use href="#icon-user"/></svg> Authors</div>
+                <div class="pub-widget__body">
+                    {% with main_author=object.submission.author.get_full_name|default:object.submission.author.username %}
+                        <p style="font-size:var(--text-xs);color:var(--color-text-secondary);margin-bottom:var(--space-1);">
+                            {{ main_author }}{% if object.submission.author.author_profile.institution %} — {{ object.submission.author.author_profile.institution }}{% endif %}
+                        </p>
+                        {% for co in co_authors %}
+                            {% if co.full_name and co.full_name != main_author %}
+                                <p style="font-size:var(--text-xs);color:var(--color-text-secondary);margin-bottom:var(--space-1);">
+                                    {{ co.full_name }}{% if co.institution %} — {{ co.institution }}{% endif %}
+                                </p>
+                            {% endif %}
+                        {% endfor %}
+                    {% endwith %}
+                </div>
+            </div>
+
+            {% if not user.is_authenticated %}
+            <div class="pub-widget" style="overflow:hidden;">
+                <div class="sidebar-cta">
+                    <p class="sidebar-cta__text">Have an article to publish?</p>
+                    <a href="{% url 'submissions:create' %}" class="sidebar-cta__btn">Submit Article →</a>
+                </div>
+            </div>
+            {% endif %}
+
+        </aside>
+
+    </div>
+</div>
+{% endblock %}
+
+{% block extra_js %}
+<script>
+// Share Article
+document.getElementById('btn-share')?.addEventListener('click', function() {
+    const url = window.location.href;
+    if (navigator.share) {
+        navigator.share({ title: document.title, url: url });
+    } else {
+        navigator.clipboard.writeText(url).then(() => {
+            toastr.success('Article link copied to clipboard');
+        });
+    }
+});
+
+// Views counter — animation + live count
+(function() {
+    const el = document.getElementById('views-count');
+    if (!el) return;
+
+    const numEl = el.querySelector('.article-views-num');
+    const url   = el.dataset.url;
+    const start = parseInt(numEl.textContent) || 0;
+
+    // animation from 0 to current count
+    function animateCount(from, to, duration) {
+        const startTime = performance.now();
+        function update(now) {
+            const elapsed = now - startTime;
+            const progress = Math.min(elapsed / duration, 1);
+            const eased = 1 - Math.pow(1 - progress, 3); // ease-out cubic
+            numEl.textContent = Math.round(from + (to - from) * eased);
+            if (progress < 1) requestAnimationFrame(update);
+        }
+        requestAnimationFrame(update);
+    }
+
+    animateCount(0, start, 1200);
+
+    // fetch real count after a delay
+    setTimeout(() => {
+        fetch(url)
+            .then(r => r.json())
+            .then(data => {
+                if (data.views !== start) {
+                    animateCount(start, data.views, 600);
+                }
+            })
+            .catch(() => {});
+    }, 1500);
+})();
+</script>
+{% endblock %}

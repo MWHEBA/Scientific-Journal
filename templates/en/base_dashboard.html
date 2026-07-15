@@ -4,7 +4,8 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>{% block title %}Dashboard{% endblock %} — Marcil</title>
+    <title>{% block title %}Dashboard{% endblock %} — IJCMIT</title>
+    <link rel="icon" type="image/png" href="{% static 'img/favicon_ijcmit.png' %}">
     <link rel="preconnect" href="https://fonts.googleapis.com">
     <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
     <link href="https://fonts.googleapis.com/css2?family=Outfit:wght@400;500;600;700&family=Inter:wght@400;500;600&display=swap" rel="stylesheet">
@@ -23,7 +24,7 @@
 
     <aside class="dash-sidebar" id="dash-sidebar">
         <a href="/" class="dash-sidebar__brand">
-            <img src="{% static 'img/Logo_en.png' %}" alt="Marcil"
+            <img src="{% static 'img/Logo_en.png' %}" alt="IJCMIT"
                  style="height:48px;width:auto;filter:brightness(0) invert(1);">
         </a>
 
@@ -186,7 +187,7 @@
                             {% for notif in latest_notifications %}
                                 <div class="dash-topbar__notif-item {% if not notif.is_read %}is-unread{% endif %}" data-dash-notif-item data-notif-id="{{ notif.pk }}" role="menuitem">
                                     <a href="{% if notif.target_url %}{{ notif.target_url }}{% else %}{% url 'notifications:list' %}{% endif %}" class="dash-topbar__notif-link">
-                                        <p class="dash-topbar__notif-title">{{ notif.title }}</p>
+                                        <p class="dash-topbar__notif-title">{{ notif.localized_title }}</p>
                                         <p class="dash-topbar__notif-time">{{ notif.created_at|date:"Y-m-d H:i" }}</p>
                                     </a>
                                     {% if not notif.is_read %}

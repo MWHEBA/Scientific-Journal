@@ -5,6 +5,7 @@
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
     <title>{% block title %}لوحة التحكم{% endblock %} — Marcil</title>
+    <link rel="icon" type="image/png" href="{% static 'img/favicon_marcil.png' %}">
     <link rel="preconnect" href="https://fonts.googleapis.com">
     <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
     <link href="https://fonts.googleapis.com/css2?family=Cairo:wght@400;500;600;700&display=swap" rel="stylesheet">
@@ -186,7 +187,7 @@
                             {% for notif in latest_notifications %}
                                 <div class="dash-topbar__notif-item {% if not notif.is_read %}is-unread{% endif %}" data-dash-notif-item data-notif-id="{{ notif.pk }}" role="menuitem">
                                     <a href="{% if notif.target_url %}{{ notif.target_url }}{% else %}{% url 'notifications:list' %}{% endif %}" class="dash-topbar__notif-link">
-                                        <p class="dash-topbar__notif-title">{{ notif.title }}</p>
+                                        <p class="dash-topbar__notif-title">{{ notif.localized_title }}</p>
                                         <p class="dash-topbar__notif-time">{{ notif.created_at|ar_datetime12 }}</p>
                                     </a>
                                     {% if not notif.is_read %}
@@ -337,9 +338,9 @@ document.addEventListener('DOMContentLoaded', function() {
         modal.addEventListener('click', (e) => {
             if (e.target === modal) modal.style.display = 'none';
         });
-        {% if show_modal %}
-        modal.style.display = 'flex';
-        {% endif %}
+        if ("{{ show_modal }}" === "True") {
+            modal.style.display = 'flex';
+        }
     }
 });
 </script>

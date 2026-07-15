@@ -406,6 +406,27 @@
     </div>
   </section>
   {% endif %}
+
+  {% if user.role == 'admin' %}
+  <section class="summary-card" style="border: 1px solid var(--color-danger); margin-top: var(--space-6);">
+    <h3 class="block-title" style="color: var(--color-danger);">Danger Zone</h3>
+    <p class="text-muted text-sm">The following actions are highly sensitive and affect the database records and uploaded files.</p>
+    <div style="display: flex; gap: var(--space-3); flex-wrap: wrap; margin-top: var(--space-4);">
+      {% if submission.status == 'published' %}
+      <form method="post" id="form-retract" style="display: inline;">
+        {% csrf_token %}
+        <input type="hidden" name="action" value="retract_article">
+        <button type="button" class="btn" style="background-color: var(--color-warning); color: var(--color-text-inverse);" id="btn-retract">Unpublish & Retract Article</button>
+      </form>
+      {% endif %}
+      <form method="post" id="form-delete-submission" style="display: inline;">
+        {% csrf_token %}
+        <input type="hidden" name="action" value="delete_submission_completely">
+        <button type="button" class="btn btn-danger" id="btn-delete-submission">Delete Submission Permanently</button>
+      </form>
+    </div>
+  </section>
+  {% endif %}
 </div>
 {% endblock %}
 
@@ -419,7 +440,7 @@ document.getElementById('btn-self-assign')?.addEventListener('click', () => {
     showCancelButton: true,
     confirmButtonText: 'Yes, Assign',
     cancelButtonText: 'Cancel',
-    confirmButtonColor: '#3b82f6'
+    confirmButtonColor: 'var(--color-primary)'
   }).then((result) => {
     if (result.isConfirmed) document.getElementById('form-self-assign').submit();
   });
@@ -432,7 +453,7 @@ document.getElementById('btn-pass')?.addEventListener('click', () => {
     showCancelButton: true,
     confirmButtonText: 'Yes, Accept',
     cancelButtonText: 'Cancel',
-    confirmButtonColor: '#2d9e6b'
+    confirmButtonColor: 'var(--color-success)'
   }).then((result) => {
     if (result.isConfirmed) document.getElementById('form-pass').submit();
   });
@@ -452,9 +473,37 @@ document.getElementById('btn-reject')?.addEventListener('click', () => {
     showCancelButton: true,
     confirmButtonText: 'Yes, Reject',
     cancelButtonText: 'Cancel',
-    confirmButtonColor: '#e63946'
+    confirmButtonColor: 'var(--color-danger)'
   }).then((result) => {
     if (result.isConfirmed) document.getElementById('form-reject').submit();
+  });
+});
+
+document.getElementById('btn-retract')?.addEventListener('click', () => {
+  Swal.fire({
+    title: 'Unpublish & Retract Article?',
+    text: 'This will remove the article from the public site and change its status back to "Paid" so you can edit or delete it later.',
+    icon: 'warning',
+    showCancelButton: true,
+    confirmButtonText: 'Yes, Unpublish',
+    cancelButtonText: 'Cancel',
+    confirmButtonColor: 'var(--color-warning)'
+  }).then((result) => {
+    if (result.isConfirmed) document.getElementById('form-retract').submit();
+  });
+});
+
+document.getElementById('btn-delete-submission')?.addEventListener('click', () => {
+  Swal.fire({
+    title: 'Delete Submission Permanently?',
+    text: 'Warning: This will permanently delete the submission, the published article, all uploaded files, and reviews. This action cannot be undone!',
+    icon: 'error',
+    showCancelButton: true,
+    confirmButtonText: 'Yes, Delete Permanently',
+    cancelButtonText: 'Cancel',
+    confirmButtonColor: 'var(--color-danger)'
+  }).then((result) => {
+    if (result.isConfirmed) document.getElementById('form-delete-submission').submit();
   });
 });
 </script>

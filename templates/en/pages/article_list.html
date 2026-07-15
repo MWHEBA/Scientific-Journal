@@ -1,0 +1,150 @@
+{% extends 'base_public.html' %}
+{% load static dashboard_extras %}
+
+{% block title %}{% if section %}{{ section.name|translate_section_name:section.slug }} — {% endif %}Published Articles{% endblock %}
+{% block nav_articles %}active{% endblock %}
+
+{% block extra_css %}
+<link rel="stylesheet" href="{% static 'css/pages.css' %}">
+{% endblock %}
+
+{# full-width outside the 3-column grid #}
+{% block sidebar_right %}{% endblock %}
+{% block sidebar_left %}{% endblock %}
+{% block content %}{% endblock %}
+
+{% block above_layout %}
+<div class="article-page-wrap">
+<div class="article-list-layout">
+
+    <!-- ===== ARTICLES MAIN ===== -->
+    <div class="article-list-layout__main">
+
+        <div class="page-header">
+            <h1 class="page-header__title">
+                {% if section %}{{ section.name|translate_section_name:section.slug }}{% else %}Published Articles{% endif %}
+            </h1>
+            <span class="text-muted text-sm">{{ paginator.count }} article{{ paginator.count|pluralize }}</span>
+        </div>
+
+        {% if articles %}
+            {% for article in articles %}
+            <div class="card card-article mb-4" style="position:relative;">
+                <a href="{% url 'pages:article_detail' article.slug %}" class="card-article__overlay-link" aria-label="{{ article.title }}"></a>
+                <div class="article-row">
+                    <div class="article-row__body">
+                        <div class="article-meta-row">
+                            <span class="article-badge-type">{{ article.section.name|translate_section_name:article.section.slug }}</span>
+                            <span class="article-badge-oa">Open Access</span>
+                        </div>
+                        <h3 class="card-article__title">{{ article.title }}</h3>
+                        <p class="text-secondary text-sm mb-3">{{ article.abstract|truncatechars:200 }}</p>
+                        <div class="card-article__meta">
+                            <span>{{ article.submission.author.get_full_name|default:article.submission.author.username }}</span>
+                            <span>{{ article.published_at|date:"Y/m/d" }}</span>
+                            {% if article.issue %}<span>{{ article.issue }}</span>{% endif %}
+                        </div>
+                    </div>
+                    <div class="article-row__action" style="position:relative;z-index:2;">
+                        <a href="{{ article.pdf_file.url }}" target="_blank"
+                           class="btn btn-ghost btn-sm article-card-pdf-btn">
+                            <svg class="icon icon-sm" style="margin-right:var(--space-1)"><use href="#icon-pdf"/></svg>
+                            PDF
+                        </a>
+                    </div>
+                </div>
+            </div>
+            {% endfor %}
+
+            {% if is_paginated %}
+            <div class="pagination">
+                {% if page_obj.has_previous %}
+                    <a href="?page={{ page_obj.previous_page_number }}" class="btn btn-sm btn-ghost">Previous</a>
+                {% endif %}
+                <span class="pagination__info">{{ page_obj.number }} / {{ paginator.num_pages }}</span>
+                {% if page_obj.has_next %}
+                    <a href="?page={{ page_obj.next_page_number }}" class="btn btn-sm btn-ghost">Next</a>
+                {% endif %}
+            </div>
+            {% endif %}
+
+        {% else %}
+            <div class="card">
+                <div class="empty-state">
+                    <div class="empty-state__icon"><svg class="icon icon-xl icon-muted"><use href="#icon-articles"/></svg></div>
+                    <h3 class="empty-state__title">No Articles Yet</h3>
+                    <p class="empty-state__message">No articles have been published in this section yet.</p>
+                </div>
+            </div>
+        {% endif %}
+
+    </div>
+
+    <!-- ===== FILTER SIDEBAR ===== -->
+    <aside class="article-list-layout__sidebar">
+
+        <div class="pub-widget">
+            <div class="pub-widget__header"><svg class="icon icon-sm"><use href="#icon-folder"/></svg> Sections</div>
+            <div class="pub-widget__body pub-widget__body--flush">
+                <ul class="pub-widget__list">
+                    <li class="pub-widget__list-item {% if not section %}pub-widget__list-item--active{% endif %}">
+                        <a href="{% url 'pages:article_list' %}">All Sections</a>
+                    </li>
+                    {% for sec in sections %}
+                    <li class="pub-widget__list-item {% if section.pk == sec.pk %}pub-widget__list-item--active{% endif %}">
+                        <a href="{% url 'pages:section_articles' sec.slug %}">
+                            <span class="pub-widget__section-dot" data-color="{{ sec.color }}"></span>
+                            {{ sec.name|translate_section_name:sec.slug }}
+                        </a>
+                    </li>
+                    {% endfor %}
+                </ul>
+            </div>
+        </div>
+
+        <div class="pub-widget">
+            <div class="pub-widget__header"><svg class="icon icon-sm"><use href="#icon-issues"/></svg> Issues</div>
+            <div class="pub-widget__body pub-widget__body--flush">
+                <ul class="pub-widget__list">
+                    {% for issue in latest_issues %}
+                    <li class="pub-widget__list-item">
+                        <a href="{% url 'pages:article_list' %}?issue={{ issue.pk }}">
+                            {{ issue }}
+                            {% if issue.is_current %}
+                                <span class="badge badge-published" style="font-size:9px;margin-left:var(--space-1);">Current</span>
+                            {% endif %}
+                        </a>
+                        <div class="text-muted text-xs">{{ issue.articles.count }} article{{ issue.articles.count|pluralize }}</div>
+                    </li>
+                    {% empty %}
+                    <li class="pub-widget__list-item">
+                        <span class="text-muted text-sm">No issues yet</span>
+                    </li>
+                    {% endfor %}
+                </ul>
+            </div>
+        </div>
+
+        <div class="pub-widget">
+            <div class="pub-widget__header"><svg class="icon icon-sm"><use href="#icon-search"/></svg> Search</div>
+            <div class="pub-widget__body">
+                <form method="get" action="{% url 'pages:search' %}">
+                    <div style="display:flex;flex-direction:column;gap:var(--space-2);">
+                        <input type="text" name="q" placeholder="Search..." class="form-input form-input--sm">
+                        <button type="submit" class="btn btn-primary btn-sm">Search</button>
+                    </div>
+                </form>
+            </div>
+        </div>
+
+    </aside>
+
+</div>
+</div>
+
+<script>
+document.querySelectorAll('.pub-widget__section-dot[data-color]').forEach(el => {
+    el.style.backgroundColor = el.dataset.color;
+});
+</script>
+{% endblock %}

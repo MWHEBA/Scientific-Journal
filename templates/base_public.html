@@ -5,6 +5,7 @@
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
     <title>{% block title %}المجلة العلمية{% endblock %} — Marcil</title>
+    <link rel="icon" type="image/png" href="{% static 'img/favicon_marcil.png' %}">
     <link rel="preconnect" href="https://fonts.googleapis.com">
     <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
     <link href="https://fonts.googleapis.com/css2?family=Cairo:wght@400;500;600;700&display=swap" rel="stylesheet">
@@ -80,7 +81,7 @@
                                                 {% elif notif.type == 'review_completed' %}<svg class="icon icon-sm"><use href="#icon-review"/></svg>
                                                 {% else %}<svg class="icon icon-sm"><use href="#icon-bell"/></svg>{% endif %}
                                             </span>
-                                            <p class="pub-navbar__notif-item-title">{{ notif.title }}</p>
+                                            <p class="pub-navbar__notif-item-title">{{ notif.localized_title }}</p>
                                         </div>
                                         <p class="pub-navbar__notif-item-time">{{ notif.created_at|ar_datetime12 }}</p>
                                     </a>

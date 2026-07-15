@@ -257,7 +257,7 @@
 .pub-navbar__link {
   display: block;
   padding: var(--space-3) var(--space-3);
-  font-size: var(--text-sm);
+  font-size: var(--text-base);
   font-weight: 700;
   color: var(--color-text-secondary);
   text-decoration: none;
@@ -901,14 +901,14 @@
    ======================================== */
 
 .sidebar-cta {
-  background-color: var(--color-primary);
+  background-color: var(--color-border);
   padding: var(--space-4);
   text-align: center;
 }
 
 .sidebar-cta__text {
   font-size: var(--text-sm);
-  color: rgba(255, 255, 255, 0.75);
+  color: var(--color-text);
   line-height: var(--leading-normal);
   margin-bottom: var(--space-3);
 }
@@ -931,7 +931,7 @@
 
 .sidebar-cta__phone {
   font-size: var(--text-xs);
-  color: rgba(255, 255, 255, 0.4);
+  color: var(--color-text-secondary);
   margin-top: var(--space-2);
   font-family: monospace;
   direction: ltr;

@@ -111,8 +111,7 @@
 
             <div class="form-group mb-4">
                 <label class="form-label" for="{{ form.name.id_for_label }}">
-                    {% if form.name.label == 'الاسم' or form.name.label == 'الاسم بالكامل' %}Name
-                    {% else %}{{ form.name.label }}{% endif %}
+                    Name
                 </label>
                 {{ form.name }}
                 {% if form.name.errors %}
@@ -122,8 +121,7 @@
             
             <div class="form-group mb-4">
                 <label class="form-label" for="{{ form.slug.id_for_label }}">
-                    {% if form.slug.label == 'الرابط البديل' or form.slug.label == 'الرابط اللطيف' %}Slug
-                    {% else %}{{ form.slug.label }}{% endif %}
+                    Slug
                 </label>
                 {{ form.slug }}
                 {% if form.slug.errors %}
@@ -133,8 +131,7 @@
             
             <div class="form-group mb-6">
                 <label class="form-label" for="{{ form.order.id_for_label }}">
-                    {% if form.order.label == 'الترتيب' or form.order.label == 'الرقم المسلسل' %}Order
-                    {% else %}{{ form.order.label }}{% endif %}
+                    Order
                 </label>
                 <div style="display: flex; gap: var(--space-3); align-items: center;">
                     {{ form.order }}
@@ -171,8 +168,9 @@ modal.addEventListener('click', (e) => {
     if (e.target === modal) modal.style.display = 'none';
 });
 
-{% if show_modal %}
-modal.style.display = 'flex';
-{% endif %}
+const showModal = "{{ show_modal|yesno:'true,false' }}" === "true";
+if (showModal) {
+    modal.style.display = 'flex';
+}
 </script>
 {% endblock %}

@@ -13,6 +13,10 @@ from apps.submissions.exceptions import (
     RevisionLimitExceededError,
 )
 
+def _t(ar_text, en_text):
+    from django.utils import translation
+    return en_text if translation.get_language() == 'en' else ar_text
+
 
 class ReviewDetailView(ReviewerRequiredMixin, DetailView):
     """عرض تفاصيل المخطوطة للمراجع — object-level permission."""
@@ -43,7 +47,7 @@ class ReviewSubmitView(ReviewerRequiredMixin, View):
             raise PermissionDenied
 
         if review.is_submitted:
-            messages.error(request, 'تم إرسال هذه المراجعة مسبقاً.')
+            messages.error(request, _t('تم إرسال هذه المراجعة مسبقاً.', 'This review has already been submitted.'))
             return redirect(reverse('reviews:detail', kwargs={'pk': pk}))
 
         form = ReviewForm(request.POST)
@@ -65,13 +69,13 @@ class ReviewSubmitView(ReviewerRequiredMixin, View):
                 comments=form.cleaned_data.get('comments', ''),
                 actor=request.user,
             )
-            messages.success(request, 'تم إرسال قرار المراجعة بنجاح.')
+            messages.success(request, _t('تم إرسال قرار المراجعة بنجاح.', 'Review decision submitted successfully.'))
         except InvalidStateTransitionError as e:
-            messages.error(request, f'خطأ: {e}')
+            messages.error(request, _t(f'خطأ: {e}', f'Error: {e}'))
         except RevisionLimitExceededError:
             messages.error(
                 request,
-                'وصل المقالة للحد الأقصى من دورات التعديل. يجب اختيار قبول أو رفض.'
+                _t('وصل المقالة للحد الأقصى من دورات التعديل. يجب اختيار قبول أو رفض.', 'The article has reached the maximum number of revision rounds. You must choose accept or reject.')
             )
 
         return redirect(reverse('dashboard:reviewer'))

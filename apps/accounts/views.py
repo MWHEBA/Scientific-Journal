@@ -40,6 +40,10 @@ class LoginView(DjangoLoginView):
 class LogoutView(DjangoLogoutView):
     next_page = '/'
 
+def _t(ar_text, en_text):
+    from django.utils import translation
+    return en_text if translation.get_language() == 'en' else ar_text
+
 
 class ProfileView(LoginRequiredMixin, UpdateView):
     """صفحة حساب المستخدم — تعديل البيانات الشخصية."""
@@ -74,7 +78,7 @@ class ProfileView(LoginRequiredMixin, UpdateView):
             user_form = self.get_form()
             if user_form.is_valid():
                 user_form.save()
-                messages.success(request, 'تم تحديث بيانات حسابك بنجاح.')
+                messages.success(request, _t('تم تحديث بيانات حسابك بنجاح.', 'Account details updated successfully.'))
                 return self.get(request, *args, **kwargs)
             return self.form_invalid(user_form)
         
@@ -84,7 +88,7 @@ class ProfileView(LoginRequiredMixin, UpdateView):
             author_profile_form = AuthorProfileForm(request.POST, instance=author_profile)
             if author_profile_form.is_valid():
                 author_profile_form.save()
-                messages.success(request, 'تم تحديث بيانات المؤلف بنجاح.')
+                messages.success(request, _t('تم تحديث بيانات المؤلف بنجاح.', 'Author details updated successfully.'))
                 return self.get(request, *args, **kwargs)
             return self.form_invalid(author_profile_form)
         
@@ -94,7 +98,7 @@ class ProfileView(LoginRequiredMixin, UpdateView):
             reviewer_profile_form = ReviewerProfileForm(request.POST, instance=reviewer_profile)
             if reviewer_profile_form.is_valid():
                 reviewer_profile_form.save()
-                messages.success(request, 'تم تحديث بيانات المراجع بنجاح.')
+                messages.success(request, _t('تم تحديث بيانات المراجع بنجاح.', 'Reviewer details updated successfully.'))
                 return self.get(request, *args, **kwargs)
             return self.form_invalid(reviewer_profile_form)
         

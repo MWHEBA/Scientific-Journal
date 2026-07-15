@@ -395,6 +395,27 @@
     </div>
   </section>
   {% endif %}
+
+  {% if user.role == 'admin' %}
+  <section class="summary-card" style="border: 1px solid var(--color-danger); margin-top: var(--space-6);">
+    <h3 class="block-title" style="color: var(--color-danger);">منطقة الخطر</h3>
+    <p class="text-muted text-sm">الإجراءات التالية حساسة للغاية وتؤثر على ظهور المقالة وقواعد البيانات والملفات المرفوعة.</p>
+    <div style="display: flex; gap: var(--space-3); flex-wrap: wrap; margin-top: var(--space-4);">
+      {% if submission.status == 'published' %}
+      <form method="post" id="form-retract" style="display: inline;">
+        {% csrf_token %}
+        <input type="hidden" name="action" value="retract_article">
+        <button type="button" class="btn" style="background-color: var(--color-warning); color: var(--color-text-inverse);" id="btn-retract">إلغاء النشر وسحب المقالة</button>
+      </form>
+      {% endif %}
+      <form method="post" id="form-delete-submission" style="display: inline;">
+        {% csrf_token %}
+        <input type="hidden" name="action" value="delete_submission_completely">
+        <button type="button" class="btn btn-danger" id="btn-delete-submission">حذف المقالة والتقديم نهائياً</button>
+      </form>
+    </div>
+  </section>
+  {% endif %}
 </div>
 {% endblock %}
 
@@ -408,7 +429,7 @@ document.getElementById('btn-self-assign')?.addEventListener('click', () => {
     showCancelButton: true,
     confirmButtonText: 'نعم، تعيين',
     cancelButtonText: 'إلغاء',
-    confirmButtonColor: '#3b82f6'
+    confirmButtonColor: 'var(--color-primary)'
   }).then((result) => {
     if (result.isConfirmed) document.getElementById('form-self-assign').submit();
   });
@@ -421,7 +442,7 @@ document.getElementById('btn-pass')?.addEventListener('click', () => {
     showCancelButton: true,
     confirmButtonText: 'نعم، قبول',
     cancelButtonText: 'إلغاء',
-    confirmButtonColor: '#2d9e6b'
+    confirmButtonColor: 'var(--color-success)'
   }).then((result) => {
     if (result.isConfirmed) document.getElementById('form-pass').submit();
   });
@@ -441,9 +462,37 @@ document.getElementById('btn-reject')?.addEventListener('click', () => {
     showCancelButton: true,
     confirmButtonText: 'نعم، رفض',
     cancelButtonText: 'إلغاء',
-    confirmButtonColor: '#e63946'
+    confirmButtonColor: 'var(--color-danger)'
   }).then((result) => {
     if (result.isConfirmed) document.getElementById('form-reject').submit();
+  });
+});
+
+document.getElementById('btn-retract')?.addEventListener('click', () => {
+  Swal.fire({
+    title: 'إلغاء النشر وسحب المقالة؟',
+    text: 'سيتم حذف المقالة من الموقع العام وسيتغير حالتها إلى "تم الدفع" لتتمكن من تعديلها أو حذفها لاحقاً.',
+    icon: 'warning',
+    showCancelButton: true,
+    confirmButtonText: 'نعم، إلغاء النشر',
+    cancelButtonText: 'إلغاء',
+    confirmButtonColor: 'var(--color-warning)'
+  }).then((result) => {
+    if (result.isConfirmed) document.getElementById('form-retract').submit();
+  });
+});
+
+document.getElementById('btn-delete-submission')?.addEventListener('click', () => {
+  Swal.fire({
+    title: 'حذف التقديم والمقالة نهائياً؟',
+    text: 'تحذير: سيتم حذف التقديم، والمقالة المنشورة، وجميع الملفات المرفوعة والمراجعات نهائياً. لا يمكن التراجع عن هذا الإجراء!',
+    icon: 'error',
+    showCancelButton: true,
+    confirmButtonText: 'نعم، احذف نهائياً',
+    cancelButtonText: 'إلغاء',
+    confirmButtonColor: 'var(--color-danger)'
+  }).then((result) => {
+    if (result.isConfirmed) document.getElementById('form-delete-submission').submit();
   });
 });
 </script>

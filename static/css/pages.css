@@ -343,10 +343,11 @@
 
 .ticker__label {
   font-size: var(--text-sm);
-  color: rgba(255, 255, 255, 0.35);
+  color: var(--color-text-inverse);
   font-weight: 700;
   white-space: nowrap;
-  padding: 0 var(--space-4);
+  padding: 0 var(--space-5);
+  background-color: rgba(0, 0, 0, 0.15);
   border-left: 1px solid rgba(255, 255, 255, 0.12);
   flex-shrink: 0;
   align-self: stretch;
@@ -365,7 +366,7 @@
   white-space: nowrap;
   animation: ticker-scroll 40s linear infinite;
   font-size: var(--text-sm);
-  color: rgba(255, 255, 255, 0.65);
+  color: rgba(255, 255, 255, 0.85);
   padding-left: var(--space-4);
 }
 

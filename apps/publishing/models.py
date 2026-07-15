@@ -3,6 +3,9 @@ from django.urls import reverse
 from django.utils.text import slugify
 
 
+from django.utils import translation
+
+
 class Volume(models.Model):
     number = models.PositiveSmallIntegerField(unique=True)
     year = models.PositiveSmallIntegerField()
@@ -12,7 +15,10 @@ class Volume(models.Model):
         ordering = ['-number']
 
     def __str__(self):
-        return f"Volume {self.number} ({self.year})"
+        lang = translation.get_language()
+        if lang == 'en':
+            return f"Volume {self.number} ({self.year})"
+        return f"المجلد {self.number} ({self.year})"
 
 
 class Issue(models.Model):
@@ -35,8 +41,33 @@ class Issue(models.Model):
         unique_together = ('volume', 'number')
         ordering = ['-published_at', '-volume__number', '-number']
 
+    def get_quarter_display(self):
+        quarters_en = {
+            1: 'January',
+            2: 'March',
+            3: 'May',
+            4: 'July',
+            5: 'September',
+            6: 'November',
+        }
+        quarters_ar = {
+            1: 'يناير',
+            2: 'مارس',
+            3: 'مايو',
+            4: 'يوليو',
+            5: 'سبتمبر',
+            6: 'نوفمبر',
+        }
+        lang = translation.get_language()
+        if lang == 'en':
+            return quarters_en.get(self.quarter, '')
+        return quarters_ar.get(self.quarter, '')
+
     def __str__(self):
         year = self.published_at.year if self.published_at else self.volume.year
+        lang = translation.get_language()
+        if lang == 'en':
+            return f"Volume {self.volume.number} - Issue {self.number} ({year}, {self.get_quarter_display()})"
         return f"مجلد {self.volume.number} - عدد {self.number} ({year}، {self.get_quarter_display()})"
 
 

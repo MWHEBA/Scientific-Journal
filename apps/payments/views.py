@@ -20,6 +20,10 @@ from apps.pages.models import SiteSettings
 _default_gateway = MockPaymentGatewayAdapter()
 _payment_service = PaymentService(gateway=_default_gateway)
 
+def _t(ar_text, en_text):
+    from django.utils import translation
+    return en_text if translation.get_language() == 'en' else ar_text
+
 
 class PaymentInitiateView(LoginRequiredMixin, View):
     """بدء عملية الدفع — object-level permission (submission.author == request.user)."""
@@ -53,9 +57,9 @@ class PaymentInitiateView(LoginRequiredMixin, View):
             )
             return redirect(payment_url)
         except PaymentNotAllowedError as e:
-            messages.error(request, f'لا يمكن بدء الدفع: {e}')
+            messages.error(request, _t(f'لا يمكن بدء الدفع: {e}', f'Cannot initiate payment: {e}'))
         except DuplicatePaymentError:
-            messages.error(request, 'تم إتمام الدفع مسبقاً لهذا المقالة.')
+            messages.error(request, _t('تم إتمام الدفع مسبقاً لهذا المقالة.', 'Payment has already been completed for this article.'))
 
         return redirect(reverse('dashboard:author'))
 
@@ -103,9 +107,9 @@ class MockPayView(View):
         # استدعاء الـ webhook handler مباشرة
         try:
             _payment_service.handle_webhook(payload, signature)
-            messages.success(request, 'تمت عملية الدفع بنجاح!' if action == 'success'
-                             else 'فشلت عملية الدفع.')
+            messages.success(request, _t('تمت عملية الدفع بنجاح!', 'Payment completed successfully!') if action == 'success'
+                             else _t('فشلت عملية الدفع.', 'Payment failed.'))
         except Exception as e:
-            messages.error(request, f'خطأ: {e}')
+            messages.error(request, _t(f'خطأ: {e}', f'Error: {e}'))
 
         return redirect(reverse('dashboard:author'))

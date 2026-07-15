@@ -14,6 +14,10 @@ from apps.submissions.models import ArticleSubmission
 from apps.submissions.statuses import SubmissionStatus
 from apps.payments.models import Payment
 
+def _t(ar_text, en_text):
+    from django.utils import translation
+    return en_text if translation.get_language() == 'en' else ar_text
+
 
 class DashboardHomeRedirectView(LoginRequiredMixin, View):
     """مدخل موحّد للوحة التحكم: يوجّه حسب دور المستخدم."""
@@ -525,11 +529,11 @@ class ReviewerSubmissionDetailView(ReviewerRequiredMixin, View):
         if action == 'self_assign':
             # تعيين المراجع نفسه كمراجع للتقديم
             if submission.status == SubmissionStatus.INITIAL_CHECK:
-                messages.error(request, 'لا يمكن تعيين نفسك أثناء قيد الفحص الأولي.')
+                messages.error(request, _t('لا يمكن تعيين نفسك أثناء قيد الفحص الأولي.', 'Cannot assign yourself while the article is under initial check.'))
                 return redirect(reverse('dashboard:reviewer_submissions'))
 
             if submission.assigned_reviewer is not None:
-                messages.error(request, 'هذا التقديم معيّن لمراجع بالفعل.')
+                messages.error(request, _t('هذا التقديم معيّن لمراجع بالفعل.', 'This submission is already assigned to a reviewer.'))
                 return redirect(reverse('dashboard:reviewer_submissions'))
             
             from apps.reviews.models import Review
@@ -543,11 +547,11 @@ class ReviewerSubmissionDetailView(ReviewerRequiredMixin, View):
                 defaults={'revision_round': submission.revision_count + 1},
             )
             
-            messages.success(request, 'تم تعيينك كمراجع لهذا التقديم.')
+            messages.success(request, _t('تم تعيينك كمراجع لهذا التقديم.', 'You have been assigned as a reviewer for this submission.'))
             return redirect(reverse('dashboard:reviewer_submissions'))
         
         # الإجراءات الأخرى (pass/reject) غير مسموحة للمراجع
-        messages.error(request, 'ليس لديك صلاحية لتنفيذ هذا الإجراء.')
+        messages.error(request, _t('ليس لديك صلاحية لتنفيذ هذا الإجراء.', 'You do not have permission to perform this action.'))
         return redirect(reverse('dashboard:reviewer_submissions'))
 
 
@@ -588,7 +592,7 @@ class AssignReviewerView(AdminRequiredMixin, View):
         submission = get_object_or_404(ArticleSubmission, pk=pk)
         reviewer_id = request.POST.get('reviewer_id')
         if not reviewer_id:
-            messages.error(request, 'يرجى اختيار مراجع.')
+            messages.error(request, _t('يرجى اختيار مراجع.', 'Please select a reviewer.'))
             return redirect(reverse('dashboard:assign_reviewer', kwargs={'pk': pk}))
 
         from apps.accounts.models import User
@@ -613,7 +617,7 @@ class AssignReviewerView(AdminRequiredMixin, View):
         from apps.notifications.services import NotificationService
         NotificationService.notify_reviewer_assigned(submission, reviewer)
 
-        messages.success(request, f'تم تعيين {reviewer.get_full_name() or reviewer.username} مراجعاً للمقالة.')
+        messages.success(request, _t(f'تم تعيين {reviewer.get_full_name() or reviewer.username} مراجعاً للمقالة.', f'Assigned {reviewer.get_full_name() or reviewer.username} as a reviewer for the article.'))
         return redirect(reverse('dashboard:admin_submissions'))
 
 
@@ -643,7 +647,11 @@ class SiteSettingsView(AdminRequiredMixin, View):
         form = SiteSettingsForm(request.POST, instance=settings_obj)
         if form.is_valid():
             form.save()
-            messages.success(request, 'تم حفظ إعدادات المجلة بنجاح.')
+            from django.utils import translation
+            if translation.get_language() == 'en':
+                messages.success(request, 'Journal settings saved successfully.')
+            else:
+                messages.success(request, 'تم حفظ إعدادات المجلة بنجاح.')
             return redirect(reverse('dashboard:settings'))
         return render(request, self.template_name, {'form': form, 'settings': settings_obj})
 
@@ -907,36 +915,105 @@ class AdminSubmissionDetailView(AdminRequiredMixin, View):
 
         if action == 'pass':
             if submission.section_id is None:
-                messages.error(request, 'لا يمكن قبول التقديم للمراجعة قبل تحديد القسم.')
+                messages.error(request, _t('لا يمكن قبول التقديم للمراجعة قبل تحديد القسم.', 'The submission cannot be accepted for review before setting the section.'))
                 return redirect(reverse('dashboard:submission_detail', kwargs={'pk': pk}))
             try:
                 SubmissionService.admin_pass_initial_check(submission, actor=request.user)
-                messages.success(request, 'تم قبول التقديم للمراجعة.')
+                messages.success(request, _t('تم قبول التقديم للمراجعة.', 'Submission accepted for review.'))
             except InvalidStateTransitionError as e:
-                messages.error(request, f'خطأ: {e}')
+                messages.error(request, _t(f'خطأ: {e}', f'Error: {e}'))
 
         elif action == 'set_section':
             section_id = (request.POST.get('section_id') or '').strip()
             if not section_id:
-                messages.error(request, 'يرجى اختيار قسم صالح.')
+                messages.error(request, _t('يرجى اختيار قسم صالح.', 'Please select a valid section.'))
                 return redirect(reverse('dashboard:submission_detail', kwargs={'pk': pk}))
             submission.section_id = section_id
             submission.save(update_fields=['section', 'updated_at'])
-            messages.success(request, 'تم تحديث قسم المقالة بنجاح.')
+            messages.success(request, _t('تم تحديث قسم المقالة بنجاح.', 'Article section updated successfully.'))
             return redirect(reverse('dashboard:submission_detail', kwargs={'pk': pk}))
 
         elif action == 'reject':
             reason = request.POST.get('reason', '').strip()
             if not reason:
-                messages.error(request, 'يرجى إدخال سبب الرفض.')
+                messages.error(request, _t('يرجى إدخال سبب الرفض.', 'Please enter the reason for rejection.'))
                 return redirect(reverse('dashboard:submission_detail', kwargs={'pk': pk}))
             try:
                 SubmissionService.admin_reject_initial_check(
                     submission, actor=request.user, reason=reason
                 )
-                messages.success(request, 'تم رفض التقديم.')
+                messages.success(request, _t('تم رفض التقديم.', 'Submission rejected.'))
             except InvalidStateTransitionError as e:
-                messages.error(request, f'خطأ: {e}')
+                messages.error(request, _t(f'خطأ: {e}', f'Error: {e}'))
+
+        elif action == 'retract_article':
+            if request.user.role != 'admin':
+                raise PermissionDenied()
+            try:
+                from django.db import transaction
+                from apps.publishing.models import PublishedArticle
+                from apps.submissions.state_machine import SubmissionStateMachine
+
+                with transaction.atomic():
+                    # 1. Get the published article if exists and delete it (cascades to slug history)
+                    pub_article = PublishedArticle.objects.filter(submission=submission).first()
+                    if pub_article:
+                        pub_article.delete()
+
+                    # 2. Transition status back to PAID
+                    SubmissionStateMachine.transition(
+                        submission,
+                        SubmissionStatus.PAID,
+                        actor=request.user,
+                        notes='Article unpublished/retracted by Admin'
+                    )
+
+                messages.success(request, _t('تم إلغاء نشر المقالة بنجاح وإعادتها لحالة "تم الدفع".', 'Article unpublished successfully and returned to "Paid" status.'))
+            except Exception as e:
+                messages.error(request, _t(f'خطأ أثناء إلغاء النشر: {e}', f'Error unpublishing article: {e}'))
+            return redirect(reverse('dashboard:submission_detail', kwargs={'pk': pk}))
+
+        elif action == 'delete_submission_completely':
+            if request.user.role != 'admin':
+                raise PermissionDenied()
+            try:
+                from django.db import transaction
+                import os
+                
+                title = submission.title
+                # Log to AuditLog first before deleting the object
+                from apps.submissions.models import AuditLog
+                AuditLog.objects.create(
+                    entity_type='ArticleSubmission',
+                    entity_id=pk,
+                    event='deleted_permanently',
+                    old_value=submission.status,
+                    new_value='deleted',
+                    actor=request.user,
+                    notes=f"Permanently deleted submission: '{title}'"
+                )
+
+                # Fetch all files to delete from the filesystem
+                files_to_delete = []
+                for mf in submission.manuscript_files.all():
+                    if mf.file and os.path.exists(mf.file.path):
+                        files_to_delete.append(mf.file.path)
+
+                # Delete the submission (cascades to PublishedArticle, reviews, coauthors, etc.)
+                submission.delete()
+
+                # Clean up the files from the filesystem
+                for filepath in files_to_delete:
+                    try:
+                        os.remove(filepath)
+                    except OSError:
+                        pass
+
+                messages.success(request, _t(f'تم حذف المقالة "{title}" وجميع ملحقاتها نهائياً.', f'Article "{title}" and all its attachments have been permanently deleted.'))
+                return redirect(reverse('dashboard:admin_submissions'))
+            except Exception as e:
+                messages.error(request, _t(f'خطأ أثناء حذف المقالة: {e}', f'Error deleting article: {e}'))
+                return redirect(reverse('dashboard:submission_detail', kwargs={'pk': pk}))
 
         return redirect(reverse('dashboard:admin_submissions'))
 
@@ -956,9 +1033,9 @@ class VolumeCreateView(AdminRequiredMixin, View):
         year   = request.POST.get('year')
         if number and year:
             Volume.objects.get_or_create(number=number, defaults={'year': year})
-            messages.success(request, f'تم إنشاء المجلد {number}.')
+            messages.success(request, _t(f'تم إنشاء المجلد {number}.', f'Volume {number} created successfully.'))
         else:
-            messages.error(request, 'يرجى إدخال رقم المجلد والسنة.')
+            messages.error(request, _t('يرجى إدخال رقم المجلد والسنة.', 'Please enter the volume number and year.'))
         return redirect(reverse('dashboard:volumes'))
 
 
@@ -997,14 +1074,14 @@ class VolumeManagementView(AdminRequiredMixin, View):
             if number < 1 or year < 1900 or year > 2100:
                 raise ValueError
         except ValueError:
-            messages.error(request, 'يرجى إدخال رقم مجلد وسنة صالحين.')
+            messages.error(request, _t('يرجى إدخال رقم مجلد وسنة صالحين.', 'Please enter a valid volume number and year.'))
             return redirect(reverse('dashboard:volumes'))
 
         _, created = Volume.objects.get_or_create(number=number, defaults={'year': year})
         if created:
-            messages.success(request, f'تم إنشاء المجلد {number}.')
+            messages.success(request, _t(f'تم إنشاء المجلد {number}.', f'Volume {number} created successfully.'))
         else:
-            messages.warning(request, f'المجلد {number} موجود مسبقاً.')
+            messages.warning(request, _t(f'المجلد {number} موجود مسبقاً.', f'Volume {number} already exists.'))
         return redirect(reverse('dashboard:volumes'))
 
 
@@ -1024,7 +1101,7 @@ class VolumeUpdateView(AdminRequiredMixin, View):
             if number < 1 or year < 1900 or year > 2100:
                 raise ValueError
         except ValueError:
-            messages.error(request, 'يرجى إدخال رقم مجلد وسنة صالحين.')
+            messages.error(request, _t('يرجى إدخال رقم مجلد وسنة صالحين.', 'Please enter a valid volume number and year.'))
             return redirect(reverse('dashboard:volumes'))
 
         volume.number = number
@@ -1032,10 +1109,10 @@ class VolumeUpdateView(AdminRequiredMixin, View):
         try:
             volume.save(update_fields=['number', 'year'])
         except IntegrityError:
-            messages.error(request, 'رقم المجلد مستخدم بالفعل.')
+            messages.error(request, _t('رقم المجلد مستخدم بالفعل.', 'Volume number is already in use.'))
             return redirect(reverse('dashboard:volumes'))
 
-        messages.success(request, f'تم تحديث المجلد {volume.number}.')
+        messages.success(request, _t(f'تم تحديث المجلد {volume.number}.', f'Volume {volume.number} updated successfully.'))
         return redirect(reverse('dashboard:volumes'))
 
 
@@ -1056,7 +1133,7 @@ class IssueCreateView(AdminRequiredMixin, View):
         quarter   = request.POST.get('quarter')
 
         if not all([volume_id, number, quarter]):
-            messages.error(request, 'يرجى إدخال جميع البيانات المطلوبة.')
+            messages.error(request, _t('يرجى إدخال جميع البيانات المطلوبة.', 'Please enter all required data.'))
             return redirect(reverse('dashboard:issues'))
 
         volume = get_object_or_404(Volume, pk=volume_id)
@@ -1067,7 +1144,7 @@ class IssueCreateView(AdminRequiredMixin, View):
             if number_int < 1 or quarter_int not in (1, 2, 3, 4, 5, 6):
                 raise ValueError
         except ValueError:
-            messages.error(request, 'يرجى إدخال بيانات عدد صحيحة.')
+            messages.error(request, _t('يرجى إدخال بيانات عدد صحيحة.', 'Please enter valid issue details.'))
             return redirect(reverse('dashboard:issues'))
 
         Issue.objects.get_or_create(
@@ -1076,7 +1153,7 @@ class IssueCreateView(AdminRequiredMixin, View):
             defaults={'quarter': quarter_int, 'is_current': False},
         )
         self._recompute_current_issue()
-        messages.success(request, f'تم إنشاء العدد {number}.')
+        messages.success(request, _t(f'تم إنشاء العدد {number}.', f'Issue {number} created successfully.'))
         
         return redirect(reverse('dashboard:issues'))
 
@@ -1107,7 +1184,7 @@ class IssueUpdateView(AdminRequiredMixin, View):
             if number < 1 or quarter not in (1, 2, 3, 4, 5, 6):
                 raise ValueError
         except ValueError:
-            messages.error(request, 'يرجى إدخال بيانات عدد صحيحة.')
+            messages.error(request, _t('يرجى إدخال بيانات عدد صحيحة.', 'Please enter valid issue details.'))
             return redirect(reverse('dashboard:issues'))
 
         volume = get_object_or_404(Volume, pk=volume_id)
@@ -1118,10 +1195,10 @@ class IssueUpdateView(AdminRequiredMixin, View):
         try:
             issue.save(update_fields=['volume', 'number', 'quarter', 'is_current'])
         except IntegrityError:
-            messages.error(request, 'يوجد عدد بنفس الرقم داخل هذا المجلد.')
+            messages.error(request, _t('يوجد عدد بنفس الرقم داخل هذا المجلد.', 'An issue with this number already exists in this volume.'))
             return redirect(reverse('dashboard:issues'))
 
-        messages.success(request, f'تم تحديث العدد {issue.number}.')
+        messages.success(request, _t(f'تم تحديث العدد {issue.number}.', f'Issue {issue.number} updated successfully.'))
         return redirect(reverse('dashboard:issues'))
 
 
@@ -1153,11 +1230,11 @@ class AssignArticleToIssueView(AdminRequiredMixin, View):
             issue = get_object_or_404(Issue, pk=issue_id)
             article.issue = issue
             article.save(update_fields=['issue'])
-            messages.success(request, f'تم تعيين المقال للعدد {issue}.')
+            messages.success(request, _t(f'تم تعيين المقال للعدد {issue}.', f'Article assigned to issue {issue} successfully.'))
         else:
             article.issue = None
             article.save(update_fields=['issue'])
-            messages.success(request, 'تم إلغاء تعيين المقال من العدد.')
+            messages.success(request, _t('تم إلغاء تعيين المقال من العدد.', 'Article assignment removed from issue.'))
 
         return redirect(reverse('dashboard:issues'))
 
@@ -1251,7 +1328,7 @@ class UserManagementView(AdminRequiredMixin, ListView):
             form = AdminCreateUserForm(request.POST)
             if form.is_valid():
                 user = form.save()
-                messages.success(request, f'تم إنشاء حساب {user.get_full_name() or user.username} بنجاح.')
+                messages.success(request, _t(f'تم إنشاء حساب {user.get_full_name() or user.username} بنجاح.', f'Account {user.get_full_name() or user.username} created successfully.'))
                 referer = request.META.get('HTTP_REFERER')
                 if referer:
                     return redirect(referer)
@@ -1268,13 +1345,13 @@ class UserManagementView(AdminRequiredMixin, ListView):
         user    = get_object_or_404(User, pk=user_id)
 
         if user == request.user:
-            messages.error(request, 'لا يمكنك تعديل حسابك من هنا.')
+            messages.error(request, _t('لا يمكنك تعديل حسابك من هنا.', 'You cannot edit your own account from here.'))
             return redirect(reverse('dashboard:users'))
 
         if action == 'set_role':
             # منع تغيير دور الـ superuser
             if user.is_superuser:
-                messages.error(request, 'لا يمكن تغيير دور superuser.')
+                messages.error(request, _t('لا يمكن تغيير دور superuser.', 'Cannot change the superuser role.'))
                 return redirect(reverse('dashboard:users'))
             
             new_role = request.POST.get('role')
@@ -1284,20 +1361,20 @@ class UserManagementView(AdminRequiredMixin, ListView):
                 if new_role == User.ROLE_REVIEWER:
                     from apps.accounts.models import ReviewerProfile
                     ReviewerProfile.objects.get_or_create(user=user)
-                messages.success(request, f'تم تغيير دور {user.get_full_name() or user.username} إلى {user.get_role_display()}.')
+                messages.success(request, _t(f'تم تغيير دور {user.get_full_name() or user.username} إلى {user.get_role_display()}.', f'Changed role of {user.get_full_name() or user.username} to {user.get_role_display()}.'))
             else:
-                messages.error(request, 'دور غير صالح.')
+                messages.error(request, _t('دور غير صالح.', 'Invalid role.'))
 
         elif action == 'toggle_active':
             # منع تعطيل الـ superuser
             if user.is_superuser:
-                messages.error(request, 'لا يمكن تعطيل حساب superuser.')
+                messages.error(request, _t('لا يمكن تعطيل حساب superuser.', 'Cannot deactivate superuser account.'))
                 return redirect(reverse('dashboard:users'))
             
             user.is_active = not user.is_active
             user.save(update_fields=['is_active'])
-            status_text = 'تفعيل' if user.is_active else 'تعطيل'
-            messages.success(request, f'تم {status_text} حساب {user.get_full_name() or user.username}.')
+            status_text = _t('تفعيل', 'activated') if user.is_active else _t('تعطيل', 'deactivated')
+            messages.success(request, _t(f'تم {status_text} حساب {user.get_full_name() or user.username}.', f'Account of {user.get_full_name() or user.username} has been {status_text}.'))
 
         return redirect(reverse('dashboard:users'))
 
@@ -1382,9 +1459,9 @@ class ReviewerManagementView(AdminRequiredMixin, ListView):
             profile.specialties.set(JournalSection.objects.filter(pk__in=section_ids))
             profile.is_available = is_available
             profile.save(update_fields=['is_available'])
-            messages.success(request, f'تم تحديث بيانات {reviewer.get_full_name() or reviewer.username}.')
+            messages.success(request, _t(f'تم تحديث بيانات {reviewer.get_full_name() or reviewer.username}.', f'Details of reviewer {reviewer.get_full_name() or reviewer.username} updated successfully.'))
         except Exception as e:
-            messages.error(request, f'خطأ: {e}')
+            messages.error(request, _t(f'خطأ: {e}', f'Error: {e}'))
 
         # Preserve search and page filters if referrer is available
         referer = request.META.get('HTTP_REFERER')
@@ -1439,13 +1516,13 @@ class AdminAuthorsView(AdminRequiredMixin, ListView):
         user    = get_object_or_404(User, pk=user_id, role=User.ROLE_AUTHOR)
         
         if user == request.user:
-            messages.error(request, 'لا يمكنك تعديل حسابك من هنا.')
+            messages.error(request, _t('لا يمكنك تعديل حسابك من هنا.', 'You cannot edit your own account from here.'))
             return redirect(reverse('dashboard:admin_authors'))
             
         user.is_active = not user.is_active
         user.save(update_fields=['is_active'])
-        status_text = 'تفعيل' if user.is_active else 'تعطيل'
-        messages.success(request, f'تم {status_text} حساب {user.get_full_name() or user.username}.')
+        status_text = _t('تفعيل', 'activated') if user.is_active else _t('تعطيل', 'deactivated')
+        messages.success(request, _t(f'تم {status_text} حساب {user.get_full_name() or user.username}.', f'Account of {user.get_full_name() or user.username} has been {status_text}.'))
         
         return redirect(reverse('dashboard:admin_authors'))
 
@@ -1458,7 +1535,7 @@ class AdminImpersonateStartView(SuperUserRequiredMixin, View):
 
         target_user = get_object_or_404(User, pk=pk)
         if target_user.pk == request.user.pk:
-            messages.error(request, 'لا يمكن تسجيل الدخول بنفس الحساب الحالي.')
+            messages.error(request, _t('لا يمكن تسجيل الدخول بنفس الحساب الحالي.', 'Cannot impersonate the currently logged in user.'))
             return redirect(reverse('dashboard:users'))
 
         # احفظ معرف المشرف الأصلي (superuser)
@@ -1472,7 +1549,7 @@ class AdminImpersonateStartView(SuperUserRequiredMixin, View):
         request.session['impersonator_user_id'] = admin_id
         request.session.save()
         
-        messages.success(request, f'أنت الآن داخل حساب {target_user.get_full_name() or target_user.username}.')
+        messages.success(request, _t(f'أنت الآن داخل حساب {target_user.get_full_name() or target_user.username}.', f'You are now impersonating {target_user.get_full_name() or target_user.username}.'))
         return redirect(reverse('dashboard:home'))
 
 
@@ -1484,7 +1561,7 @@ class AdminImpersonateStopView(LoginRequiredMixin, View):
 
         impersonator_id = request.session.get('impersonator_user_id')
         if not impersonator_id:
-            messages.error(request, 'لا يوجد وضع دخول كمستخدم نشط.')
+            messages.error(request, _t('لا يوجد وضع دخول كمستخدم نشط.', 'No active impersonation session found.'))
             return redirect(reverse('dashboard:home'))
 
         # تحقق من أن المستخدم الأصلي كان superuser
@@ -1502,7 +1579,7 @@ class AdminImpersonateStopView(LoginRequiredMixin, View):
         admin_user.backend = settings.AUTHENTICATION_BACKENDS[0]
         login(request, admin_user)
         
-        messages.success(request, 'تمت العودة إلى حسابك.')
+        messages.success(request, _t('تمت العودة إلى حسابك.', 'Returned to your account successfully.'))
         return redirect(reverse('dashboard:users'))
 
 
@@ -1529,7 +1606,7 @@ class AdminSectionManagementView(AdminRequiredMixin, ListView):
         form = JournalSectionForm(request.POST)
         if form.is_valid():
             form.save()
-            messages.success(request, 'تم إضافة التصنيف الجديد بنجاح.')
+            messages.success(request, _t('تم إضافة التصنيف الجديد بنجاح.', 'New section added successfully.'))
             return redirect(reverse('dashboard:sections'))
         
         self.object_list = self.get_queryset()
@@ -1555,7 +1632,7 @@ class AdminSectionUpdateView(AdminRequiredMixin, View):
         form = JournalSectionForm(request.POST, instance=section)
         if form.is_valid():
             form.save()
-            messages.success(request, 'تم تحديث بيانات التصنيف بنجاح.')
+            messages.success(request, _t('تم تحديث بيانات التصنيف بنجاح.', 'Section details updated successfully.'))
             return redirect(reverse('dashboard:sections'))
         return render(request, 'dashboard/admin/section_form.html', {'form': form, 'section': section})
 
@@ -1566,10 +1643,10 @@ class AdminSectionDeleteView(AdminRequiredMixin, View):
         from apps.submissions.models import JournalSection
         section = get_object_or_404(JournalSection, pk=pk)
         if section.publishedarticle_set.exists() or section.articlesubmission_set.exists():
-            messages.error(request, 'لا يمكن حذف هذا التصنيف لأنه يحتوي على مقالات أو تقديمات مرتبطة به.')
+            messages.error(request, _t('لا يمكن حذف هذا التصنيف لأنه يحتوي على مقالات أو تقديمات مرتبطة به.', 'Cannot delete this section because it has associated articles or submissions.'))
         else:
             section.delete()
-            messages.success(request, 'تم حذف التصنيف بنجاح.')
+            messages.success(request, _t('تم حذف التصنيف بنجاح.', 'Section deleted successfully.'))
         return redirect(reverse('dashboard:sections'))
 
 
@@ -1597,7 +1674,7 @@ class AdminTagManagementView(AdminRequiredMixin, ListView):
         form = TagForm(request.POST)
         if form.is_valid():
             form.save()
-            messages.success(request, 'تم إضافة الوسم الجديد بنجاح.')
+            messages.success(request, _t('تم إضافة الوسم الجديد بنجاح.', 'New tag added successfully.'))
             return redirect(reverse('dashboard:tags'))
         
         self.object_list = self.get_queryset()
@@ -1623,7 +1700,7 @@ class AdminTagUpdateView(AdminRequiredMixin, View):
         form = TagForm(request.POST, instance=tag)
         if form.is_valid():
             form.save()
-            messages.success(request, 'تم تحديث بيانات الوسم بنجاح.')
+            messages.success(request, _t('تم تحديث بيانات الوسم بنجاح.', 'Tag details updated successfully.'))
             return redirect(reverse('dashboard:tags'))
         return render(request, 'dashboard/admin/tag_form.html', {'form': form, 'tag': tag})
 
@@ -1634,6 +1711,6 @@ class AdminTagDeleteView(AdminRequiredMixin, View):
         from taggit.models import Tag
         tag = get_object_or_404(Tag, pk=pk)
         tag.delete()
-        messages.success(request, 'تم حذف الوسم بنجاح.')
+        messages.success(request, _t('تم حذف الوسم بنجاح.', 'Tag deleted successfully.'))
         return redirect(reverse('dashboard:tags'))
 

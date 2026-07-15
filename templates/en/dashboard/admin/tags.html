@@ -131,8 +131,7 @@
 
             <div class="form-group mb-4">
                 <label class="form-label" for="{{ form.name.id_for_label }}">
-                    {% if form.name.label == 'الاسم' or form.name.label == 'الاسم بالكامل' %}Name
-                    {% else %}{{ form.name.label }}{% endif %}
+                    Name
                 </label>
                 {{ form.name }}
                 {% if form.name.errors %}
@@ -142,8 +141,7 @@
             
             <div class="form-group mb-6">
                 <label class="form-label" for="{{ form.slug.id_for_label }}">
-                    {% if form.slug.label == 'الرابط البديل' or form.slug.label == 'الرابط اللطيف' %}Slug
-                    {% else %}{{ form.slug.label }}{% endif %}
+                    Slug
                 </label>
                 {{ form.slug }}
                 {% if form.slug.errors %}

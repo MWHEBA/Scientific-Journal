@@ -1,5 +1,5 @@
 {% extends 'base_public.html' %}
-{% load static %}
+{% load static dashboard_extras %}
 
 {% block title %}Home{% endblock %}
 {% block nav_home %}active{% endblock %}
@@ -73,7 +73,7 @@
                 </div>
                 {% if latest_articles %}
                     {% with article=latest_articles.0 %}
-                        <span class="spotlight-card__section">{{ article.section.name }}</span>
+                        <span class="spotlight-card__section">{{ article.section.name|translate_section_name:article.section.slug }}</span>
                         <h3 class="spotlight-card__title">{{ article.title|truncatechars:90 }}</h3>
                         <div class="spotlight-card__meta">
                             <div class="spotlight-card__meta-item">
@@ -92,7 +92,7 @@
                     {% endwith %}
                 {% else %}
                     <span class="spotlight-card__section">{% if current_issue %}{{ current_issue }}{% else %}Coming Soon{% endif %}</span>
-                    <h3 class="spotlight-card__title">{{ settings.journal_name|default:"IJCMIT Journal" }}</h3>
+                    <h3 class="spotlight-card__title">{{ settings.journal_name|translate_journal_name }}</h3>
                     <div class="spotlight-card__meta">
                         <div class="spotlight-card__meta-item">
                             <svg class="hero-icon text-muted" viewBox="0 0 24 24"><circle cx="12" cy="12" r="10"/><line x1="2" y1="12" x2="22" y2="12"/><path d="M12 2a15.3 15.3 0 0 1 4 10 15.3 15.3 0 0 1-4 10 15.3 15.3 0 0 1-4-10 15.3 15.3 0 0 1 4-10z"/></svg>
@@ -206,7 +206,7 @@
             <li class="pub-widget__list-item">
                 <a href="{% url 'pages:section_articles' section.slug %}">
                     <span class="pub-widget__section-dot" style="background-color:var(--color-primary);"></span>
-                    {{ section.name }}
+                    {{ section.name|translate_section_name:section.slug }}
                 </a>
             </li>
             {% endfor %}
@@ -221,7 +221,7 @@
     <div class="sidebar-cta">
         <p class="sidebar-cta__text">Researcher? Publish your article in our peer-reviewed journal</p>
         <a href="{% url 'accounts:register' %}" class="sidebar-cta__btn">Create Free Account →</a>
-        <a href="{% url 'pages:apc' %}" style="display:block;text-align:center;font-size:var(--text-xs);color:rgba(255,255,255,0.45);margin-top:var(--space-2);text-decoration:none;">Learn about Publishing Fees</a>
+        <a href="{% url 'pages:apc' %}" style="display:block;text-align:center;font-size:var(--text-xs);color:var(--color-text-secondary);margin-top:var(--space-2);text-decoration:none;">Learn about Publishing Fees</a>
     </div>
 </div>
 {% else %}
@@ -305,7 +305,7 @@
     <div class="card card-article {% if forloop.first %}card-article--featured{% endif %} mb-4" style="position:relative;">
         <a href="{% url 'pages:article_detail' article.slug %}" class="card-article__overlay-link" aria-label="{{ article.title }}"></a>
         <div class="article-meta-row">
-            <span class="article-badge-type">{{ article.section.name }}</span>
+            <span class="article-badge-type">{{ article.section.name|translate_section_name:article.section.slug }}</span>
             <span class="article-badge-oa">Open Access</span>
         </div>
         <h2 class="card-article__title">{{ article.title|truncatechars:100 }}</h2>
@@ -343,7 +343,7 @@
 </div>
 <div style="display:flex;flex-wrap:wrap;gap:var(--space-2);">
     {% for section in sections %}
-        <a href="{% url 'pages:section_articles' section.slug %}" class="topic-tag">{{ section.name }}</a>
+        <a href="{% url 'pages:section_articles' section.slug %}" class="topic-tag">{{ section.name|translate_section_name:section.slug }}</a>
     {% endfor %}
 </div>
 {% endif %}

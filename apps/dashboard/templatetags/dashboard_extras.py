@@ -95,3 +95,69 @@ def star_rating(value, max_stars=5):
         return "—"
     score = max(0, min(score, limit))
     return ("★" * score) + ("☆" * (limit - score))
+
+
+@register.filter
+def translate_section_name(value, slug=None):
+    """Translates the section name to English using slug or name mapping."""
+    if not value:
+        return ""
+    
+    mapping = {
+        'computer-science': 'Computer Science',
+        'social-sciences': 'Social Sciences',
+        'humanities': 'Humanities',
+        'business': 'Business & Management',
+        'management': 'Business & Management',
+        'business-administration': 'Business & Management',
+        'economics': 'Economics',
+        'law': 'Law',
+        'engineering': 'Engineering',
+        'medicine': 'Medicine',
+        'education': 'Education',
+        'science': 'Basic Sciences',
+        'general': 'General',
+    }
+    
+    if slug and slug in mapping:
+        return mapping[slug]
+        
+    name_mapping = {
+        'العلوم الاجتماعية': 'Social Sciences',
+        'العلوم الإنسانية': 'Humanities',
+        'علوم الحاسوب': 'Computer Science',
+        'إدارة الأعمال': 'Business & Management',
+        'العلوم الإدارية': 'Business & Management',
+        'الاقتصاد': 'Economics',
+        'القانون': 'Law',
+        'الهندسة': 'Engineering',
+        'الطب': 'Medicine',
+        'التربية': 'Education',
+        'العلوم الأساسية': 'Basic Sciences',
+        'عام': 'General',
+    }
+    
+    val_str = str(value).strip()
+    if val_str in name_mapping:
+        return name_mapping[val_str]
+        
+    if slug:
+        return str(slug).replace('-', ' ').title()
+        
+    return value
+
+
+@register.filter
+def translate_journal_name(value):
+    """Translates the journal name to English for English templates."""
+    if not value:
+        return "International Journal of Contemporary Management and Information Technology (IJCMIT)"
+    
+    # If the value contains Arabic characters, translate it to English
+    import re
+    if re.search(r'[\u0600-\u06FF]', str(value)):
+        return "International Journal of Contemporary Management and Information Technology (IJCMIT)"
+    
+    return value
+
+

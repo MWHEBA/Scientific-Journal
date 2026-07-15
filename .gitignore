@@ -44,10 +44,15 @@ Thumbs.db
 # Private Keys and Deploy Scripts
 id_rsa
 id_rsa.pub
+id_rsa_en
 project.zip
 project_fast.zip
 ssh_*.py
 WordPress.2026-06-25.xml
+*.xml
 deploy_config.json
+deploy_logs/
+.deploy_hashes_*.json
+import_report.json
 
 

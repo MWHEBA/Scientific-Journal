@@ -47,9 +47,9 @@
                     <div class="notif-row__body">
                         <a href="{% if notif.target_url %}{{ notif.target_url }}{% else %}{% url 'notifications:list' %}{% endif %}" style="text-decoration:none;color:inherit;display:block;">
                             <p class="mb-1 {% if not notif.is_read %}notif-title--unread{% endif %}">
-                                {{ notif.title }}
+                                {{ notif.localized_title }}
                             </p>
-                            <p class="text-secondary text-sm mb-2">{{ notif.message }}</p>
+                            <p class="text-secondary text-sm mb-2">{{ notif.localized_message }}</p>
                             <p class="text-muted text-xs mb-0">{{ notif.created_at|date:"Y-m-d H:i" }}</p>
                         </a>
                     </div>

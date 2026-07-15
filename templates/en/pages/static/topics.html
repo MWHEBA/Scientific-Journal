@@ -1,5 +1,5 @@
 {% extends 'base_public.html' %}
-{% load static %}
+{% load static dashboard_extras %}
 
 {% block title %}Journal Topics{% endblock %}
 {% block nav_topics %}active{% endblock %}
@@ -11,7 +11,7 @@
 
 <div class="card mb-4">
     <p>
-        <strong>{{ settings.journal_name }}</strong> welcomes scientific papers in the following areas:
+        <strong>{{ settings.journal_name|translate_journal_name }}</strong> welcomes scientific papers in the following areas:
     </p>
     {% if sections %}
     <div style="display:flex;flex-direction:column;gap:var(--space-3);margin-top:var(--space-4);">
@@ -21,7 +21,7 @@
            onmouseover="this.style.borderColor='var(--color-primary-light)';this.style.backgroundColor='var(--color-surface-alt)'"
            onmouseout="this.style.borderColor='var(--color-border)';this.style.backgroundColor='transparent'">
             <span style="width:10px;height:10px;border-radius:50%;background-color:var(--color-primary);flex-shrink:0;"></span>
-            <span style="font-weight:600;font-size:var(--text-base);">{{ section.name }}</span>
+            <span style="font-weight:600;font-size:var(--text-base);">{{ section.name|translate_section_name:section.slug }}</span>
             <span style="margin-left:auto;font-size:var(--text-sm);color:var(--color-text-muted);">Browse articles →</span>
         </a>
         {% endfor %}

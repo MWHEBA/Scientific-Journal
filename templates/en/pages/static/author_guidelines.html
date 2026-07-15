@@ -1,0 +1,53 @@
+{% extends 'base_public.html' %}
+
+{% block title %}Author Guidelines{% endblock %}
+
+{% block content %}
+<div class="page-header">
+    <h1 class="page-header__title">Author Guidelines</h1>
+</div>
+
+<div class="card mb-4">
+    <h3 class="mb-3" style="font-size:var(--text-md);color:var(--color-primary);">Submission Process</h3>
+    <p class="mb-3">
+        Submitting articles is easy and direct — submissions can be made by creating an account on the journal's website
+        or via email at
+        {% if settings.contact_email %}
+            <a href="mailto:{{ settings.contact_email }}">{{ settings.contact_email }}</a>.
+        {% else %}
+            the journal's email address.
+        {% endif %}
+    </p>
+    <ul style="line-height:var(--leading-loose);padding-left:var(--space-6);margin-bottom:var(--space-4);">
+        <li>The researcher is notified of their submission within <strong>24 hours</strong></li>
+        <li>The decision of acceptance or rejection is issued within <strong>3 working days</strong></li>
+        <li>The article status can be tracked from the researcher's dashboard</li>
+    </ul>
+</div>
+
+<div class="card mb-4">
+    <h3 class="mb-3" style="font-size:var(--text-md);color:var(--color-primary);">Submission Requirements</h3>
+    <ul style="line-height:var(--leading-loose);padding-left:var(--space-6);margin-bottom:var(--space-4);">
+        <li>The file must be in <strong>PDF</strong> format with a maximum size of <strong>20 MB</strong></li>
+        <li>The submission must include: Title, Abstract, Keywords, and Scientific Section</li>
+        <li>Abstract: 150–300 words</li>
+        <li>Keywords: 4–8 words separated by commas</li>
+    </ul>
+</div>
+
+<div class="card mb-4">
+    <h3 class="mb-3" style="font-size:var(--text-md);color:var(--color-primary);">Article Formatting</h3>
+    <ul style="line-height:var(--leading-loose);padding-left:var(--space-6);margin-bottom:var(--space-4);">
+        <li>Font size: 12pt, double-spaced</li>
+        <li>Margins: 2.5 cm on all sides</li>
+        <li>References: According to APA or IEEE system</li>
+    </ul>
+</div>
+
+<div class="card">
+    <h3 class="mb-3" style="font-size:var(--text-md);color:var(--color-primary);">Revision Cycle</h3>
+    <p class="mb-0">
+        A maximum of two revision cycles is allowed. After the second cycle, the reviewer must issue a final decision.
+    </p>
+</div>
+{% endblock %}
