@@ -17,18 +17,19 @@ from apps.notifications.services import NotificationService
 class PublishingService:
 
     @staticmethod
-    def publish(submission: ArticleSubmission, actor=None) -> PublishedArticle:
+    def publish(submission: ArticleSubmission, actor=None, force: bool = False,
+                issue=None, custom_published_at=None, notes: str = '',
+                send_notification: bool = True) -> PublishedArticle:
         """
-        ينشر المقال بعد تأكيد الدفع.
-        يُستدعى صراحةً من PaymentService — لا signals.
-        كل الجلب والتحقق داخل transaction واحدة مع select_for_update.
+        ينشر المقال بعد تأكيد الدفع أو مباشرة من قِبل المشرف (عندما force=True).
+        يُدعم تحديد العدد وتاريخ نشر مخصص (Backdating) وإرسال إشعار اختياري.
         """
         with transaction.atomic():
             # جلب submission بـ lock داخل الـ transaction
             sub = ArticleSubmission.objects.select_for_update().get(pk=submission.pk)
 
-            # Guard 1: الحالة لازم تكون paid
-            if sub.status != SubmissionStatus.PAID:
+            # Guard 1: الحالة لازم تكون paid إلا إذا تم التجاوز بـ force=True بواسطة المشرف
+            if sub.status != SubmissionStatus.PAID and not force:
                 raise PublishNotAllowedError(
                     f"Cannot publish submission with status '{sub.status}'"
                 )
@@ -57,17 +58,24 @@ class PublishingService:
             article = PublishedArticle.objects.create(
                 submission      = sub,
                 manuscript_file = manuscript,
+                issue           = issue,
                 title           = sub.title,
                 abstract        = sub.abstract,
                 keywords        = keywords_str,
                 section         = sub.section,
             )
 
+            if custom_published_at:
+                PublishedArticle.objects.filter(pk=article.pk).update(published_at=custom_published_at)
+                article.refresh_from_db()
+
             # انتقال الحالة إلى published
+            transition_notes = notes or ('Directly published by admin' if force else 'Auto-published after payment confirmation')
             SubmissionStateMachine.transition(
                 sub, SubmissionStatus.PUBLISHED,
                 actor=actor,
-                notes='Auto-published after payment confirmation',
+                notes=transition_notes,
+                force=force,
             )
 
             # تسجيل في AuditLog
@@ -76,15 +84,17 @@ class PublishingService:
                 entity_id=article.id,
                 event='article_published',
                 actor=actor,
+                notes=notes or ('Admin direct publish' if force else ''),
             )
 
-            # إشعار المؤلف
-            NotificationService.notify(
-                user=sub.author,
-                type='article_published',
-                title='تم نشر مقالك',
-                message=f'تهانينا! تم نشر مقالك "{sub.title}" بنجاح وأصبح متاحاً للعموم.',
-                target_url=reverse('dashboard:author'),
-            )
+            # إشعار المؤلف اختياري حسب الخيار المالي
+            if send_notification:
+                NotificationService.notify(
+                    user=sub.author,
+                    type='article_published',
+                    title='تم نشر مقالك',
+                    message=f'تهانينا! تم نشر مقالك "{sub.title}" بنجاح وأصبح متاحاً للعموم.',
+                    target_url=reverse('dashboard:author'),
+                )
 
         return article

@@ -880,11 +880,12 @@ class AdminArticlesView(AdminRequiredMixin, ListView):
 
 
 class AdminSubmissionDetailView(AdminRequiredMixin, View):
-    """عرض تفاصيل تقديم + إجراءات الفحص الأولي."""
+    """عرض تفاصيل تقديم + إجراءات الفحص الأولي والنشر المباشر."""
     template_name = 'dashboard/admin/submission_detail.html'
 
     def get(self, request, pk):
-        from apps.submissions.models import ManuscriptFile
+        from apps.submissions.models import ManuscriptFile, JournalSection
+        from apps.publishing.models import Issue
         submission = get_object_or_404(
             ArticleSubmission.objects.select_related(
                 'author', 'section', 'assigned_reviewer'
@@ -902,12 +903,19 @@ class AdminSubmissionDetailView(AdminRequiredMixin, View):
             payment_record = submission.payment
         except Exception:
             payment_record = None
+
+        sections = JournalSection.objects.order_by('name')
+        issues = Issue.objects.select_related('volume').order_by('-volume__number', '-number')
+
         return render(request, self.template_name, {
             'submission': submission,
+            'sections': sections,
+            'issues': issues,
             'payment_record': payment_record,
         })
 
     def post(self, request, pk):
+        from apps.submissions.models import ManuscriptFile
         submission = get_object_or_404(ArticleSubmission, pk=pk)
         action = request.POST.get('action')
         from apps.submissions.services import SubmissionService
@@ -946,6 +954,72 @@ class AdminSubmissionDetailView(AdminRequiredMixin, View):
             except InvalidStateTransitionError as e:
                 messages.error(request, _t(f'خطأ: {e}', f'Error: {e}'))
 
+        elif action == 'direct_publish':
+            if request.user.role != 'admin':
+                raise PermissionDenied()
+
+            section_id = (request.POST.get('section_id') or '').strip()
+            issue_id = (request.POST.get('issue_id') or '').strip()
+            custom_date = (request.POST.get('published_at') or '').strip()
+            reason = (request.POST.get('reason') or '').strip()
+            send_notification = ('send_notification' in request.POST)
+
+            if section_id:
+                submission.section_id = section_id
+                submission.save(update_fields=['section', 'updated_at'])
+
+            if not submission.section_id:
+                messages.error(request, _t('يرجى اختيار القسم المناسب قبل النشر المباشر.', 'Please select a section before direct publishing.'))
+                return redirect(reverse('dashboard:submission_detail', kwargs={'pk': pk}))
+
+            manuscript_file = request.FILES.get('manuscript')
+            if manuscript_file:
+                if not manuscript_file.name.lower().endswith('.pdf'):
+                    messages.error(request, _t('يجب أن يكون ملف المخطوطة بصيغة PDF.', 'The manuscript file must be in PDF format.'))
+                    return redirect(reverse('dashboard:submission_detail', kwargs={'pk': pk}))
+                submission.manuscript_files.filter(is_current=True).update(is_current=False)
+                ManuscriptFile.objects.create(
+                    submission=submission,
+                    file=manuscript_file,
+                    version=submission.manuscript_files.count() + 1,
+                    is_current=True,
+                )
+
+            if not submission.manuscript_files.filter(is_current=True).exists():
+                messages.error(request, _t('يرجى رفع ملف المخطوطة صيغة PDF قبل النشر المباشر.', 'Please upload a PDF manuscript file before direct publishing.'))
+                return redirect(reverse('dashboard:submission_detail', kwargs={'pk': pk}))
+
+            issue = None
+            if issue_id:
+                from apps.publishing.models import Issue
+                issue = Issue.objects.filter(pk=issue_id).first()
+
+            custom_published_at = None
+            if custom_date:
+                from django.utils.dateparse import parse_date, parse_datetime
+                parsed = parse_datetime(custom_date) or parse_date(custom_date)
+                if parsed:
+                    from django.utils import timezone
+                    if not timezone.is_aware(parsed):
+                        parsed = timezone.make_aware(parsed)
+                    custom_published_at = parsed
+
+            try:
+                from apps.publishing.services import PublishingService
+                PublishingService.publish(
+                    submission,
+                    actor=request.user,
+                    force=True,
+                    issue=issue,
+                    custom_published_at=custom_published_at,
+                    notes=reason or 'Directly published by admin',
+                    send_notification=send_notification,
+                )
+                messages.success(request, _t('تم نشر المقالة مباشرة بنجاح دون مراجعة أو دفع.', 'Article published directly successfully without review or payment.'))
+            except Exception as e:
+                messages.error(request, _t(f'خطأ أثناء النشر المباشر: {e}', f'Error during direct publishing: {e}'))
+            return redirect(reverse('dashboard:submission_detail', kwargs={'pk': pk}))
+
         elif action == 'retract_article':
             if request.user.role != 'admin':
                 raise PermissionDenied()
@@ -953,22 +1027,32 @@ class AdminSubmissionDetailView(AdminRequiredMixin, View):
                 from django.db import transaction
                 from apps.publishing.models import PublishedArticle
                 from apps.submissions.state_machine import SubmissionStateMachine
+                from apps.submissions.models import AuditLog
 
                 with transaction.atomic():
-                    # 1. Get the published article if exists and delete it (cascades to slug history)
+                    # البحث عن الحالة السابقة للمقالة من سجل التدقيق قبل النشر
+                    last_status = AuditLog.objects.filter(
+                        entity_type='ArticleSubmission',
+                        entity_id=submission.id,
+                        event='status_change',
+                        new_value='published'
+                    ).order_by('-created_at').first()
+
+                    target_status = last_status.old_value if (last_status and last_status.old_value) else SubmissionStatus.PAID
+
                     pub_article = PublishedArticle.objects.filter(submission=submission).first()
                     if pub_article:
                         pub_article.delete()
 
-                    # 2. Transition status back to PAID
                     SubmissionStateMachine.transition(
                         submission,
-                        SubmissionStatus.PAID,
+                        target_status,
                         actor=request.user,
-                        notes='Article unpublished/retracted by Admin'
+                        notes='Article unpublished/retracted by Admin',
+                        force=True
                     )
 
-                messages.success(request, _t('تم إلغاء نشر المقالة بنجاح وإعادتها لحالة "تم الدفع".', 'Article unpublished successfully and returned to "Paid" status.'))
+                messages.success(request, _t(f'تم إلغاء نشر المقالة بنجاح وإعادتها لحالة "{submission.get_status_display()}".', f'Article unpublished successfully and returned to "{submission.get_status_display()}" status.'))
             except Exception as e:
                 messages.error(request, _t(f'خطأ أثناء إلغاء النشر: {e}', f'Error unpublishing article: {e}'))
             return redirect(reverse('dashboard:submission_detail', kwargs={'pk': pk}))
@@ -1016,6 +1100,146 @@ class AdminSubmissionDetailView(AdminRequiredMixin, View):
                 return redirect(reverse('dashboard:submission_detail', kwargs={'pk': pk}))
 
         return redirect(reverse('dashboard:admin_submissions'))
+
+
+class AdminDirectPublishCreateView(AdminRequiredMixin, View):
+    """صفحة مستقلة للمشرف لنشر مقالة جديدة أوفلاين/من الإيميل مباشرة من الصفر."""
+    template_name = 'dashboard/admin/publish_direct.html'
+
+    def get(self, request):
+        from apps.submissions.models import JournalSection
+        from apps.publishing.models import Issue
+        from apps.accounts.models import User
+
+        sections = JournalSection.objects.order_by('name')
+        issues = Issue.objects.select_related('volume').order_by('-volume__number', '-number')
+        authors = User.objects.filter(role=User.ROLE_AUTHOR).order_by('username')
+        return render(request, self.template_name, {
+            'sections': sections,
+            'issues': issues,
+            'authors': authors,
+        })
+
+    def post(self, request):
+        from apps.accounts.models import User, AuthorProfile
+        from apps.submissions.models import ArticleSubmission, ManuscriptFile, CoAuthor, JournalSection
+        from apps.publishing.models import Issue
+        from apps.publishing.services import PublishingService
+        from django.db import transaction
+        from django.utils import timezone
+
+        title = (request.POST.get('title') or '').strip()
+        abstract = (request.POST.get('abstract') or '').strip()
+        section_id = (request.POST.get('section_id') or '').strip()
+        issue_id = (request.POST.get('issue_id') or '').strip()
+        keywords_raw = (request.POST.get('keywords') or '').strip()
+        custom_date = (request.POST.get('published_at') or '').strip()
+        reason = (request.POST.get('reason') or '').strip()
+        send_notification = ('send_notification' in request.POST)
+        manuscript_file = request.FILES.get('manuscript')
+
+        if not title or not abstract or not section_id or not manuscript_file:
+            messages.error(request, _t('يرجى ملء جميع الحقول المطلوبة (العنوان، الملخص، القسم، وملف المقالة).', 'Please fill in all required fields (title, abstract, section, and manuscript file).'))
+            return redirect(reverse('dashboard:admin_publish_direct'))
+
+        if not manuscript_file.name.lower().endswith('.pdf'):
+            messages.error(request, _t('يجب أن يكون ملف المخطوطة بصيغة PDF.', 'The manuscript file must be in PDF format.'))
+            return redirect(reverse('dashboard:admin_publish_direct'))
+
+        author_id = (request.POST.get('author_id') or '').strip()
+        author_email = (request.POST.get('author_email') or '').strip()
+        author_name = (request.POST.get('author_name') or '').strip()
+
+        with transaction.atomic():
+            author = None
+            if author_id:
+                author = User.objects.filter(pk=author_id).first()
+
+            if not author and author_email:
+                author = User.objects.filter(email__iexact=author_email).first()
+
+            if not author:
+                email_to_use = author_email or f"author_{int(timezone.now().timestamp())}@journal.local"
+                username_base = author_name or (author_email.split('@')[0] if author_email else 'author')
+                from django.utils.text import slugify
+                username = slugify(username_base, allow_unicode=True)[:140] or 'author'
+                i = 1
+                while User.objects.filter(username=username).exists():
+                    username = f"{username_base}_{i}"
+                    i += 1
+
+                author = User.objects.create(
+                    username=username,
+                    email=email_to_use,
+                    first_name=author_name or '',
+                    role=User.ROLE_AUTHOR,
+                )
+                author.set_unusable_password()
+                author.save()
+                AuthorProfile.objects.get_or_create(user=author)
+
+            if not author:
+                author = request.user
+
+            section = get_object_or_404(JournalSection, pk=section_id)
+
+            submission = ArticleSubmission.objects.create(
+                title=title,
+                abstract=abstract,
+                section=section,
+                author=author,
+                status=ArticleSubmission.STATUS_DRAFT,
+            )
+
+            if keywords_raw:
+                kw_list = [k.strip() for k in keywords_raw.split(',') if k.strip()]
+                submission.keywords.add(*kw_list)
+
+            ManuscriptFile.objects.create(
+                submission=submission,
+                file=manuscript_file,
+                version=1,
+                is_current=True,
+            )
+
+            co_authors_raw = request.POST.getlist('co_author_names[]')
+            co_insts_raw = request.POST.getlist('co_author_institutions[]')
+            for idx, co_name in enumerate(co_authors_raw):
+                c_name = co_name.strip()
+                if c_name:
+                    c_inst = co_insts_raw[idx].strip() if idx < len(co_insts_raw) else ''
+                    CoAuthor.objects.create(
+                        submission=submission,
+                        full_name=c_name,
+                        institution=c_inst,
+                        order=idx + 1,
+                    )
+
+            issue = None
+            if issue_id:
+                issue = Issue.objects.filter(pk=issue_id).first()
+
+            custom_published_at = None
+            if custom_date:
+                from django.utils.dateparse import parse_date, parse_datetime
+                parsed = parse_datetime(custom_date) or parse_date(custom_date)
+                if parsed:
+                    if not timezone.is_aware(parsed):
+                        parsed = timezone.make_aware(parsed)
+                    custom_published_at = parsed
+
+            article = PublishingService.publish(
+                submission,
+                actor=request.user,
+                force=True,
+                issue=issue,
+                custom_published_at=custom_published_at,
+                notes=reason or 'Directly created and published by admin',
+                send_notification=send_notification,
+            )
+
+            messages.success(request, _t(f'تم إنشاء ونشر المقالة "{article.title}" بنجاح.', f'Article "{article.title}" created and published successfully.'))
+            return redirect(reverse('dashboard:admin_articles'))
 
 
 class VolumeCreateView(AdminRequiredMixin, View):
@@ -1377,6 +1601,53 @@ class UserManagementView(AdminRequiredMixin, ListView):
             messages.success(request, _t(f'تم {status_text} حساب {user.get_full_name() or user.username}.', f'Account of {user.get_full_name() or user.username} has been {status_text}.'))
 
         return redirect(reverse('dashboard:users'))
+
+
+class AdminUserEditView(AdminRequiredMixin, View):
+    """تعديل بيانات المستخدم وكلمة مروره من قبل المشرف."""
+
+    def post(self, request, pk):
+        from apps.accounts.models import User
+        from apps.accounts.forms import AdminEditUserForm
+        
+        user = get_object_or_404(User, pk=pk)
+        
+        # منع تعديل حسابك الشخصي من هنا
+        if user == request.user:
+            messages.error(request, _t('لا يمكنك تعديل حسابك من هنا.', 'You cannot edit your own account from here.'))
+            referer = request.META.get('HTTP_REFERER')
+            if referer:
+                return redirect(referer)
+            return redirect(reverse('dashboard:users'))
+
+        # منع تعديل دور superuser
+        if user.is_superuser and not request.user.is_superuser:
+            messages.error(request, _t('غير مسموح بتعديل حساب المسؤول الرئيسي.', 'Not allowed to edit the superuser account.'))
+            referer = request.META.get('HTTP_REFERER')
+            if referer:
+                return redirect(referer)
+            return redirect(reverse('dashboard:users'))
+
+        form = AdminEditUserForm(request.POST, instance=user)
+        if form.is_valid():
+            form.save()
+            messages.success(request, _t(
+                f'تم تحديث بيانات العضو {user.get_full_name() or user.username} بنجاح.',
+                f'Member {user.get_full_name() or user.username} details updated successfully.'
+            ))
+        else:
+            # دمج أخطاء التحقق وعرضها في رسالة خطأ
+            error_msg = " | ".join([f"{k}: {v[0]}" for k, v in form.errors.items()])
+            messages.error(request, _t(
+                f'فشل تحديث البيانات. الأخطاء: {error_msg}',
+                f'Failed to update member details. Errors: {error_msg}'
+            ))
+
+        referer = request.META.get('HTTP_REFERER')
+        if referer:
+            return redirect(referer)
+        return redirect(reverse('dashboard:users'))
+
 
 
 class ReviewerManagementView(AdminRequiredMixin, ListView):

@@ -27,10 +27,14 @@
 
             {% if messages %}
                 {% for message in messages %}
-                <div class="inline-alert inline-alert--{% if message.tags == 'error' %}danger{% else %}info{% endif %} mb-4">
+                <div class="inline-alert inline-alert--{% if message.tags == 'error' or message.tags == 'danger' %}danger{% elif message.tags == 'success' %}success{% elif message.tags == 'warning' %}warning{% else %}info{% endif %} mb-4">
                     <span class="inline-alert__icon">
-                        {% if message.tags == 'error' %}
+                        {% if message.tags == 'error' or message.tags == 'danger' %}
                             <svg class="icon icon-md" style="color:var(--color-danger)"><use href="#icon-warning"/></svg>
+                        {% elif message.tags == 'success' %}
+                            <svg class="icon icon-md" style="color:var(--color-success)"><use href="#icon-check"/></svg>
+                        {% elif message.tags == 'warning' %}
+                            <svg class="icon icon-md" style="color:var(--color-warning)"><use href="#icon-warning"/></svg>
                         {% else %}
                             <svg class="icon icon-md" style="color:var(--color-info)"><use href="#icon-info"/></svg>
                         {% endif %}
@@ -40,6 +44,22 @@
                     </div>
                 </div>
                 {% endfor %}
+            {% elif form.errors %}
+                <div class="inline-alert inline-alert--danger mb-4">
+                    <span class="inline-alert__icon">
+                        <svg class="icon icon-md" style="color:var(--color-danger)"><use href="#icon-warning"/></svg>
+                    </span>
+                    <div class="inline-alert__content">
+                        {% for error in form.non_field_errors %}
+                            <p class="inline-alert__message">{{ error }}</p>
+                        {% endfor %}
+                        {% for field in form %}
+                            {% for error in field.errors %}
+                                <p class="inline-alert__message">{{ error }}</p>
+                            {% endfor %}
+                        {% endfor %}
+                    </div>
+                </div>
             {% endif %}
 
             <form method="post" novalidate class="auth-form">

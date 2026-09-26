@@ -17,6 +17,7 @@ from apps.dashboard.views import (
     AdminSubmissionsView,
     AdminArticlesView,
     AdminSubmissionDetailView,
+    AdminDirectPublishCreateView,
     AdminPaymentsView,
     VolumeCreateView,
     VolumeManagementView,
@@ -36,6 +37,7 @@ from apps.dashboard.views import (
     AdminTagUpdateView,
     AdminTagDeleteView,
     AdminAuthorsView,
+    AdminUserEditView,
 )
 
 app_name = 'dashboard'
@@ -59,8 +61,9 @@ urlpatterns = [
     # المشرف — الرئيسية
     path('admin/',                          AdminDashboardView.as_view(),         name='admin'),
 
-    # المشرف — التقديمات
+    # المشرف — التقديمات والنشر المباشر
     path('admin/submissions/',              AdminSubmissionsView.as_view(),       name='admin_submissions'),
+    path('admin/publish-direct/',           AdminDirectPublishCreateView.as_view(), name='admin_publish_direct'),
     path('admin/articles/',                 AdminArticlesView.as_view(),          name='admin_articles'),
     path('admin/submissions/<int:pk>/',     AdminSubmissionDetailView.as_view(),  name='submission_detail'),
 
@@ -86,6 +89,7 @@ urlpatterns = [
 
     # المشرف — المستخدمون
     path('admin/users/',                    UserManagementView.as_view(),         name='users'),
+    path('admin/users/<int:pk>/edit/',      AdminUserEditView.as_view(),          name='user_edit'),
     path('admin/users/<int:pk>/impersonate/', AdminImpersonateStartView.as_view(), name='impersonate_start'),
     path('admin/users/impersonate/stop/',   AdminImpersonateStopView.as_view(),   name='impersonate_stop'),
 

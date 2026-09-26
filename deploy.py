@@ -665,7 +665,7 @@ class DeploymentManager:
             self.run_post_deploy_commands(first_deploy=False)
         return success
 
-    def deploy_modified(self):
+    def deploy_modified(self, choice=None):
         """طريقة النشر التفاعلية مع خيارات متعددة"""
         if not self.test_connection():
             return False
@@ -673,19 +673,23 @@ class DeploymentManager:
         all_files = self.get_all_files()
         print(f"📊 تم إحصاء {len(all_files)} ملف محلي مؤهل للنشر.")
         
-        print("\n📋 اختر طريقة النشر المفضلة:")
-        print("1️⃣  رفع كامل مع استبدال (يرفع كل شيء - بطيء)")
-        print("2️⃣  رفع كامل ذكي مع تخطي المطابق (يقارن الأحجام بالسيرفر - متوسط)")
-        print("3️⃣  رفع الملفات المعدلة محلياً فقط (يقارن hashes محلياً - سريع جداً ⚡)")
-        print("❌ أي رقم آخر للإلغاء")
-        
-        choice = input("\n❓ اختيارك (1/2/3): ").strip()
-        
+        choice_preselected = choice is not None
+        if not choice_preselected:
+            print("\n📋 اختر طريقة النشر المفضلة:")
+            print("1️⃣  رفع كامل مع استبدال (يرفع كل شيء - بطيء)")
+            print("2️⃣  رفع كامل ذكي مع تخطي المطابق (يقارن الأحجام بالسيرفر - متوسط)")
+            print("3️⃣  رفع الملفات المعدلة محلياً فقط (يقارن hashes محلياً - سريع جداً ⚡)")
+            print("❌ أي رقم آخر للإلغاء")
+            choice = input("\n❓ اختيارك (1/2/3): ").strip()
+            
         success = False
         method_name = ""
         
         if choice == "1":
-            confirm = input(f"❓ هل أنت متأكد من رفع واستبدال {len(all_files)} ملف بالكامل؟ (y/N): ").lower()
+            if not choice_preselected:
+                confirm = input(f"❓ هل أنت متأكد من رفع واستبدال {len(all_files)} ملف بالكامل؟ (y/N): ").lower()
+            else:
+                confirm = 'y'
             if confirm == 'y':
                 success = self.upload_all_files(all_files)
                 method_name = "رفع كامل واستبدال"
@@ -762,7 +766,7 @@ class DeploymentManager:
 
 def main():
     parser = argparse.ArgumentParser(description="سكريبت النشر التفاعلي للمجلة العلمية")
-    parser.add_argument('--site', choices=['ar', 'en'], help='الموقع المراد النشر إليه (ar أو en)')
+    parser.add_argument('--site', choices=['ar', 'en', 'both'], help='الموقع المراد النشر إليه (ar أو en أو both)')
     parser.add_argument('--mode', choices=['all', 'modified', 'file', 'sync', 'test'], help='وضع النشر')
     parser.add_argument('--file', type=str, help='اسم ملف محدد لرفعه بشكل منفرد')
     args = parser.parse_args()
@@ -773,55 +777,79 @@ def main():
         print("\n📋 اختر الموقع المراد النشر إليه:")
         print("1️⃣  الموقع العربي (ar)")
         print("2️⃣  الموقع الإنجليزي (en)")
+        print("3️⃣  رفع لكلاهما (both)")
         
-        while site not in ["ar", "en"]:
+        while site not in ["ar", "en", "both"]:
             try:
-                choice = input("\n❓ اختيارك (1/2): ").strip()
+                choice = input("\n❓ اختيارك (1/2/3): ").strip()
                 if choice == "1":
                     site = "ar"
                 elif choice == "2":
                     site = "en"
-                elif choice.lower() in ["ar", "en"]:
+                elif choice == "3":
+                    site = "both"
+                elif choice.lower() in ["ar", "en", "both"]:
                     site = choice.lower()
                 else:
-                    print("⚠️  اختيار غير صحيح. يرجى كتابة 1 أو 2.")
+                    print("⚠️  اختيار غير صحيح. يرجى كتابة 1 أو 2 أو 3.")
             except KeyboardInterrupt:
                 print("\n❌ تم الإلغاء.")
                 sys.exit(0)
                 
-    try:
-        manager = DeploymentManager(site)
-        
-        # 2. تحديد الوضع وتشغيل العملية المناسبة
-        mode = args.mode
-        if not mode:
-            if args.file:
-                mode = 'file'
-            else:
-                mode = 'modified' # الافتراضي التفاعلي
-                
-        if mode == 'test':
-            manager.test_connection()
-        elif mode == 'file':
-            if not args.file:
-                filename = input("❓ اكتب مسار واسم الملف المراد رفعه (مثال: apps/publishing/models.py): ").strip()
-            else:
-                filename = args.file
-            manager.deploy_single_file(filename)
-        elif mode == 'sync':
-            manager.sync_all()
-        elif mode == 'all':
-            files = manager.get_all_files()
-            manager.upload_all_files(files)
-        elif mode == 'modified':
-            manager.deploy_modified()
+    sites = ['ar', 'en'] if site == 'both' else [site]
+    
+    # 2. تحديد الوضع وتشغيل العملية المناسبة
+    mode = args.mode
+    if not mode:
+        if args.file:
+            mode = 'file'
+        else:
+            mode = 'modified' # الافتراضي التفاعلي
             
-    except KeyboardInterrupt:
-        print("\n❌ تم إيقاف العملية.")
-        sys.exit(1)
-    except Exception as e:
-        print(f"❌ خطأ غير متوقع: {e}")
-        sys.exit(1)
+    # إذا تم اختيار كلاهما ووضع النشر التفاعلي (modified)، نسأل عن طريقة النشر مرة واحدة فقط
+    deploy_choice = None
+    if len(sites) > 1 and mode == 'modified':
+        print("\n📋 اختر طريقة النشر المفضلة لكلا الموقعين:")
+        print("1️⃣  رفع كامل مع استبدال (يرفع كل شيء - بطيء)")
+        print("2️⃣  رفع كامل ذكي مع تخطي المطابق (يقارن الأحجام بالسيرفر - متوسط)")
+        print("3️⃣  رفع الملفات المعدلة محلياً فقط (يقارن hashes محلياً - سريع جداً ⚡)")
+        print("❌ أي رقم آخر للإلغاء")
+        
+        deploy_choice = input("\n❓ اختيارك (1/2/3): ").strip()
+        if deploy_choice not in ["1", "2", "3"]:
+            print("❌ تم إلغاء العملية.")
+            sys.exit(0)
+
+    for current_site in sites:
+        print(f"\n============================================================")
+        print(f"🌟 البدء في النشر للموقع: {current_site.upper()}")
+        print(f"============================================================")
+        
+        try:
+            manager = DeploymentManager(current_site)
+            
+            if mode == 'test':
+                manager.test_connection()
+            elif mode == 'file':
+                if not args.file:
+                    filename = input("❓ اكتب مسار واسم الملف المراد رفعه (مثال: apps/publishing/models.py): ").strip()
+                else:
+                    filename = args.file
+                manager.deploy_single_file(filename)
+            elif mode == 'sync':
+                manager.sync_all()
+            elif mode == 'all':
+                files = manager.get_all_files()
+                manager.upload_all_files(files)
+            elif mode == 'modified':
+                manager.deploy_modified(choice=deploy_choice)
+                
+        except KeyboardInterrupt:
+            print("\n❌ تم إيقاف العملية.")
+            sys.exit(1)
+        except Exception as e:
+            print(f"❌ خطأ غير متوقع للموقع {current_site.upper()}: {e}")
+            sys.exit(1)
 
 
 if __name__ == "__main__":

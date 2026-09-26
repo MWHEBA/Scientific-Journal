@@ -111,6 +111,15 @@
                 <td>
                     <div style="display: flex; gap: var(--space-2); justify-content: center;">
                     {% if u != request.user %}
+                        <button type="button" class="btn btn-sm btn-ghost btn-edit-member" style="color: var(--color-warning);"
+                                data-user-id="{{ u.pk }}"
+                                data-username="{{ u.username|escapejs }}"
+                                data-first-name="{{ u.first_name|escapejs }}"
+                                data-last-name="{{ u.last_name|escapejs }}"
+                                data-email="{{ u.email|escapejs }}"
+                                data-role="{{ u.role }}">
+                            تعديل
+                        </button>
                         {% if request.user.is_superuser %}
                         <form method="post" action="{% url 'dashboard:impersonate_start' u.pk %}" style="display:inline;">
                             {% csrf_token %}
@@ -125,12 +134,25 @@
                             {% csrf_token %}
                             <input type="hidden" name="user_id" value="{{ u.pk }}">
                             <input type="hidden" name="action" value="toggle_active">
-                            <button type="button"
-                                    class="btn btn-sm btn-ghost"
-                                    style="{% if u.is_active %}color: var(--color-danger);{% else %}color: var(--color-success);{% endif %}"
-                                    onclick="confirmToggle({{ u.pk }}, '{{ u.get_full_name|default:u.username }}', {{ u.is_active|yesno:'true,false' }})">
-                                {% if u.is_active %}تعطيل{% else %}تفعيل{% endif %}
-                            </button>
+                            {% if u.is_active %}
+                                <button type="button"
+                                        class="btn btn-sm btn-ghost btn-confirm-toggle"
+                                        style="color: var(--color-danger);"
+                                        data-user-id="{{ u.pk }}"
+                                        data-name="{{ u.get_full_name|default:u.username|escapejs }}"
+                                        data-active="true">
+                                    تعطيل
+                                </button>
+                            {% else %}
+                                <button type="button"
+                                        class="btn btn-sm btn-ghost btn-confirm-toggle"
+                                        style="color: var(--color-success);"
+                                        data-user-id="{{ u.pk }}"
+                                        data-name="{{ u.get_full_name|default:u.username|escapejs }}"
+                                        data-active="false">
+                                    تفعيل
+                                </button>
+                            {% endif %}
                         </form>
                         {% endif %}
                     {% else %}
@@ -173,19 +195,28 @@
 
 {% block extra_js %}
 <script>
-function confirmToggle(userId, name, isActive) {
-    const action = isActive ? 'تعطيل' : 'تفعيل';
-    const icon   = isActive ? 'warning' : 'question';
-    Swal.fire({
-        title: `${action} حساب ${name}؟`,
-        icon: icon,
-        showCancelButton: true,
-        confirmButtonText: `نعم، ${action}`,
-        cancelButtonText: 'إلغاء',
-        confirmButtonColor: isActive ? '#b01116' : '#2d9e6b'
-    }).then(r => {
-        if (r.isConfirmed) document.getElementById(`toggle-form-${userId}`).submit();
+document.addEventListener('DOMContentLoaded', function() {
+    document.addEventListener('click', function(e) {
+        const btn = e.target.closest('.btn-confirm-toggle');
+        if (btn) {
+            const userId = btn.getAttribute('data-user-id');
+            const name = btn.getAttribute('data-name');
+            const isActive = btn.getAttribute('data-active') === 'true';
+            
+            const action = isActive ? 'تعطيل' : 'تفعيل';
+            const icon   = isActive ? 'warning' : 'question';
+            Swal.fire({
+                title: `${action} حساب ${name}؟`,
+                icon: icon,
+                showCancelButton: true,
+                confirmButtonText: `نعم، ${action}`,
+                cancelButtonText: 'إلغاء',
+                confirmButtonColor: isActive ? '#b01116' : '#2d9e6b'
+            }).then(r => {
+                if (r.isConfirmed) document.getElementById(`toggle-form-${userId}`).submit();
+            });
+        }
     });
-}
+});
 </script>
 {% endblock %}

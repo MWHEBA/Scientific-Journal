@@ -351,6 +351,111 @@ document.addEventListener('DOMContentLoaded', function() {
 </script>
 {% endif %}
 
+{% if user.role == 'admin' %}
+<!-- ===== Modal Edit User ===== -->
+<div id="modal-edit-user" style="
+    display:none; position:fixed; inset:0; z-index:1000;
+    background:var(--color-backdrop); align-items:center; justify-content:center;">
+    <div style="background:var(--color-surface); width:100%; max-width:520px;
+                border-radius:var(--radius-md); padding:var(--space-8);
+                margin:var(--space-4); max-height:90vh; overflow-y:auto;">
+        <div style="display:flex; justify-content:space-between; align-items:center; margin-bottom:var(--space-6);">
+            <h2 style="font-size:var(--text-xl); margin:0;">Edit Member Details</h2>
+            <button id="btn-close-edit-modal" style="background:none;border:none;cursor:pointer;font-size:1.5rem;color:var(--color-text-muted);">×</button>
+        </div>
+        <form method="post" action="" id="form-edit-user">
+            {% csrf_token %}
+
+            <div style="display:grid; grid-template-columns:1fr 1fr; gap:var(--space-4);">
+                <div class="form-group">
+                    <label class="form-label">First Name <span style="color:var(--color-danger)">*</span></label>
+                    <input type="text" name="first_name" id="edit_first_name" class="form-input" required>
+                </div>
+                <div class="form-group">
+                    <label class="form-label">Last Name <span style="color:var(--color-danger)">*</span></label>
+                    <input type="text" name="last_name" id="edit_last_name" class="form-input" required>
+                </div>
+            </div>
+
+            <div class="form-group">
+                <label class="form-label">Username <span style="color:var(--color-danger)">*</span></label>
+                <input type="text" name="username" id="edit_username" class="form-input" required>
+            </div>
+
+            <div class="form-group">
+                <label class="form-label">Email Address <span style="color:var(--color-danger)">*</span></label>
+                <input type="email" name="email" id="edit_email" class="form-input" required>
+            </div>
+
+            <div class="form-group">
+                <label class="form-label">Role <span style="color:var(--color-danger)">*</span></label>
+                <select name="role" id="edit_role" class="form-select" required>
+                    <option value="author">Author</option>
+                    <option value="reviewer">Reviewer</option>
+                    <option value="admin">Admin</option>
+                </select>
+            </div>
+
+            <div class="form-group">
+                <label class="form-label">New Password (optional)</label>
+                <input type="password" name="password" id="edit_password" class="form-input" placeholder="Leave blank to keep current password">
+            </div>
+
+            <div style="display:flex; gap:var(--space-3); margin-top:var(--space-4);">
+                <button type="submit" class="btn btn-primary">Save Changes</button>
+                <button type="button" class="btn btn-ghost" id="btn-cancel-edit-modal">Cancel</button>
+            </div>
+        </form>
+    </div>
+</div>
+
+<script>
+document.addEventListener('DOMContentLoaded', function() {
+    const editModal = document.getElementById('modal-edit-user');
+    if (editModal) {
+        document.getElementById('btn-close-edit-modal').addEventListener('click', () => {
+            editModal.style.display = 'none';
+        });
+        document.getElementById('btn-cancel-edit-modal').addEventListener('click', () => {
+            editModal.style.display = 'none';
+        });
+        editModal.addEventListener('click', (e) => {
+            if (e.target === editModal) editModal.style.display = 'none';
+        });
+
+        // Event delegation for opening the edit modal
+        document.addEventListener('click', function(e) {
+            const btn = e.target.closest('.btn-edit-member');
+            if (btn) {
+                const userId = btn.getAttribute('data-user-id');
+                const username = btn.getAttribute('data-username');
+                const firstName = btn.getAttribute('data-first-name');
+                const lastName = btn.getAttribute('data-last-name');
+                const email = btn.getAttribute('data-email');
+                const role = btn.getAttribute('data-role');
+                openEditModal(userId, username, firstName, lastName, email, role);
+            }
+        });
+    }
+});
+
+function openEditModal(userId, username, firstName, lastName, email, role) {
+    const editModal = document.getElementById('modal-edit-user');
+    const form = document.getElementById('form-edit-user');
+    if (editModal && form) {
+        form.action = `/dashboard/admin/users/${userId}/edit/`;
+        document.getElementById('edit_username').value = username;
+        document.getElementById('edit_first_name').value = firstName;
+        document.getElementById('edit_last_name').value = lastName;
+        document.getElementById('edit_email').value = email;
+        document.getElementById('edit_role').value = role;
+        document.getElementById('edit_password').value = '';
+        editModal.style.display = 'flex';
+    }
+}
+</script>
+{% endif %}
+
 {% block extra_js %}{% endblock %}
 </body>
 </html>

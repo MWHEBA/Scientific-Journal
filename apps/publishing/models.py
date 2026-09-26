@@ -114,7 +114,7 @@ class PublishedArticle(models.Model):
 
     @classmethod
     def generate_unique_slug(cls, source_text: str, exclude_pk=None) -> str:
-        base = slugify((source_text or '').strip())[:200] or 'article'
+        base = slugify((source_text or '').strip(), allow_unicode=True)[:200] or 'article'
         if base in cls._reserved_slugs():
             base = f'article-{base}'
         candidate = base

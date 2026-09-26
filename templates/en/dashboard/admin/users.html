@@ -121,6 +121,15 @@
                 <td>
                     <div style="display: flex; gap: var(--space-2); justify-content: center;">
                     {% if u != request.user %}
+                        <button type="button" class="btn btn-sm btn-ghost btn-edit-member" style="color: var(--color-warning);"
+                                data-user-id="{{ u.pk }}"
+                                data-username="{{ u.username|escapejs }}"
+                                data-first-name="{{ u.first_name|escapejs }}"
+                                data-last-name="{{ u.last_name|escapejs }}"
+                                data-email="{{ u.email|escapejs }}"
+                                data-role="{{ u.role }}">
+                            Edit
+                        </button>
                         {% if request.user.is_superuser %}
                         <form method="post" action="{% url 'dashboard:impersonate_start' u.pk %}" style="display:inline;">
                             {% csrf_token %}
@@ -137,16 +146,20 @@
                             <input type="hidden" name="action" value="toggle_active">
                             {% if u.is_active %}
                                 <button type="button"
-                                        class="btn btn-sm btn-ghost"
+                                        class="btn btn-sm btn-ghost btn-confirm-toggle"
                                         style="color: var(--color-danger);"
-                                        onclick="confirmToggle('{{ u.pk }}', '{{ u.get_full_name|default:u.username|escapejs }}', true)">
+                                        data-user-id="{{ u.pk }}"
+                                        data-name="{{ u.get_full_name|default:u.username|escapejs }}"
+                                        data-active="true">
                                     Disable
                                 </button>
                             {% else %}
                                 <button type="button"
-                                        class="btn btn-sm btn-ghost"
+                                        class="btn btn-sm btn-ghost btn-confirm-toggle"
                                         style="color: var(--color-success);"
-                                        onclick="confirmToggle('{{ u.pk }}', '{{ u.get_full_name|default:u.username|escapejs }}', false)">
+                                        data-user-id="{{ u.pk }}"
+                                        data-name="{{ u.get_full_name|default:u.username|escapejs }}"
+                                        data-active="false">
                                     Enable
                                 </button>
                             {% endif %}
@@ -192,19 +205,28 @@
 
 {% block extra_js %}
 <script>
-function confirmToggle(userId, name, isActive) {
-    const action = isActive ? 'Disable' : 'Enable';
-    const icon   = isActive ? 'warning' : 'question';
-    Swal.fire({
-        title: `${action} account for ${name}?`,
-        icon: icon,
-        showCancelButton: true,
-        confirmButtonText: `Yes, ${action}`,
-        cancelButtonText: 'Cancel',
-        confirmButtonColor: isActive ? '#b01116' : '#2d9e6b'
-    }).then(r => {
-        if (r.isConfirmed) document.getElementById(`toggle-form-${userId}`).submit();
+document.addEventListener('DOMContentLoaded', function() {
+    document.addEventListener('click', function(e) {
+        const btn = e.target.closest('.btn-confirm-toggle');
+        if (btn) {
+            const userId = btn.getAttribute('data-user-id');
+            const name = btn.getAttribute('data-name');
+            const isActive = btn.getAttribute('data-active') === 'true';
+            
+            const action = isActive ? 'Disable' : 'Enable';
+            const icon   = isActive ? 'warning' : 'question';
+            Swal.fire({
+                title: `${action} account for ${name}?`,
+                icon: icon,
+                showCancelButton: true,
+                confirmButtonText: `Yes, ${action}`,
+                cancelButtonText: 'Cancel',
+                confirmButtonColor: isActive ? '#b01116' : '#2d9e6b'
+            }).then(r => {
+                if (r.isConfirmed) document.getElementById(`toggle-form-${userId}`).submit();
+            });
+        }
     });
-}
+});
 </script>
 {% endblock %}

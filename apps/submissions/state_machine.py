@@ -33,14 +33,15 @@ class SubmissionStateMachine:
 
     @classmethod
     def transition(cls, submission, to_status: str,
-                   actor=None, notes: str = '') -> None:
+                   actor=None, notes: str = '', force: bool = False) -> None:
         """
         الطريقة الوحيدة لتغيير حالة التقديم.
         تتحقق من صحة الانتقال وتسجّل في AuditLog.
+        إذا كان force=True يُسمح بالنشر المباشر من الأدمن والتجاوز الاستثنائي.
         يجب استدعاؤها داخل transaction.atomic() من الـ service.
         """
         allowed = cls.ALLOWED_TRANSITIONS.get(submission.status, [])
-        if to_status not in allowed:
+        if to_status not in allowed and not force:
             raise InvalidStateTransitionError(
                 f"Cannot transition from '{submission.status}' to '{to_status}'"
             )

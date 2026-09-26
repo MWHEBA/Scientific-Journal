@@ -1,0 +1,227 @@
+{% extends 'base_dashboard.html' %}
+{% load dashboard_extras %}
+
+{% block title %}نشر مقالة جديدة مباشرة{% endblock %}
+{% block nav_admin_submissions %}active{% endblock %}
+{% block breadcrumb %}
+  <span class="dash-breadcrumb__sep">/</span>
+  <a href="{% url 'dashboard:admin_submissions' %}">التقديمات</a>
+  <span class="dash-breadcrumb__sep">/</span>
+  <span class="dash-breadcrumb__current">نشر مقالة جديدة مباشرة</span>
+{% endblock %}
+
+{% block extra_css %}
+<link rel="stylesheet" href="https://cdn.jsdelivr.net/npm/select2@4.1.0-rc.0/dist/css/select2.min.css">
+<style>
+  .publish-shell { display: grid; gap: var(--space-5); max-width: 900px; margin: 0 auto; }
+  .form-card {
+    border: 1px solid var(--color-border);
+    background: var(--color-surface);
+    padding: var(--space-6);
+  }
+  .form-card-title {
+    margin: 0 0 var(--space-4);
+    font-size: var(--text-lg);
+    font-weight: 700;
+    color: var(--color-primary);
+    border-bottom: 1px solid var(--color-border-light);
+    padding-bottom: var(--space-3);
+  }
+  .coauthor-row {
+    display: grid;
+    grid-template-columns: 1fr 1fr auto;
+    gap: var(--space-3);
+    align-items: center;
+    margin-bottom: var(--space-3);
+  }
+  .select2-container--default .select2-selection--single {
+    height: 42px;
+    background-color: var(--color-surface);
+    border: 1px solid var(--color-border);
+    border-radius: var(--radius-md, 6px);
+    display: flex;
+    align-items: center;
+  }
+  .select2-container--default .select2-selection--single .select2-selection__rendered {
+    color: var(--color-text);
+    line-height: 40px;
+    padding-left: var(--space-3);
+    padding-right: var(--space-3);
+  }
+  .select2-container--default .select2-selection--single .select2-selection__arrow {
+    height: 40px;
+  }
+  .select2-dropdown {
+    background-color: var(--color-surface);
+    border: 1px solid var(--color-border);
+    box-shadow: var(--shadow-md, 0 4px 6px -1px rgba(0,0,0,0.1));
+  }
+  .select2-container--default .select2-search--dropdown .select2-search__field {
+    border: 1px solid var(--color-border);
+    background-color: var(--color-surface-alt, var(--color-surface));
+    color: var(--color-text);
+    border-radius: 4px;
+  }
+  .select2-container--default .select2-results__option--highlighted[aria-selected] {
+    background-color: var(--color-primary);
+    color: var(--color-text-inverse, #ffffff);
+  }
+  .select2-container--default .select2-results__option[aria-selected=true] {
+    background-color: color-mix(in oklab, var(--color-primary) 15%, var(--color-surface));
+    color: var(--color-text);
+  }
+  @media (max-width: 640px) {
+    .coauthor-row { grid-template-columns: 1fr; }
+  }
+</style>
+{% endblock %}
+
+{% block content %}
+<div class="page-header">
+  <h1 class="page-header__title">نشر مقالة جديدة مباشرة (أوفلاين / إيميل / أرشيف)</h1>
+  <div class="page-header__actions">
+    <a href="{% url 'dashboard:admin_submissions' %}" class="btn btn-ghost btn-sm">إلغاء ورجوع</a>
+  </div>
+</div>
+
+<div class="publish-shell">
+  <form method="post" enctype="multipart/form-data" class="form-card">
+    {% csrf_token %}
+
+    <h2 class="form-card-title">1. بيانات المقالة الأساسية</h2>
+
+    <div class="form-group mb-4">
+      <label class="form-label">عنوان المقالة <span style="color:var(--color-danger);">*</span></label>
+      <input type="text" name="title" class="form-input" placeholder="أدخل عنوان البحث كاملاً..." required>
+    </div>
+
+    <div class="form-group mb-4">
+      <label class="form-label">الملخص (Abstract) <span style="color:var(--color-danger);">*</span></label>
+      <textarea name="abstract" class="form-input" rows="5" placeholder="أدخل نص ملخص المقالة..." required></textarea>
+    </div>
+
+    <div class="form-group mb-4">
+      <label class="form-label">الكلمات المفتاحية (تفصل بينها بفواصل)</label>
+      <input type="text" name="keywords" class="form-input" placeholder="مثال: ذكاء اصطناعي, معالجة لغة, تعلم آلي">
+    </div>
+
+    <div class="form-group mb-4">
+      <label class="form-label">القسم الأكاديمي <span style="color:var(--color-danger);">*</span></label>
+      <select name="section_id" class="form-select" required>
+        <option value="">اختر القسم المناسب...</option>
+        {% for sec in sections %}
+          <option value="{{ sec.pk }}">{{ sec.name }}</option>
+        {% endfor %}
+      </select>
+    </div>
+
+    <h2 class="form-card-title" style="margin-top:var(--space-6);">2. بيانات المؤلف والتخصص</h2>
+
+    <div class="form-group mb-4">
+      <label class="form-label">اختيار مؤلف مسجل بالنظام (اختياري)</label>
+      <select name="author_id" id="author_select" class="form-select">
+        <option value="">-- كاتب جديد / غير مسجل --</option>
+        {% for auth in authors %}
+          <option value="{{ auth.pk }}">{{ auth.get_full_name|default:auth.username }} ({{ auth.email }})</option>
+        {% endfor %}
+      </select>
+    </div>
+
+    <div id="new-author-fields" style="border: 1px dashed var(--color-border); padding: var(--space-4); margin-bottom: var(--space-4); background: var(--color-surface-alt);">
+      <p class="text-sm font-semibold mb-3">بيانات المؤلف الخارجي (في حال عدم اختياره من القائمة):</p>
+      <div style="display:grid; grid-template-columns: 1fr 1fr; gap:var(--space-3);">
+        <div class="form-group mb-0">
+          <label class="form-label">الاسم الكامل للمؤلف الرئيسي</label>
+          <input type="text" name="author_name" class="form-input" placeholder="د. أحمد محمود">
+        </div>
+        <div class="form-group mb-0">
+          <label class="form-label">البريد الإلكتروني للمؤلف</label>
+          <input type="email" name="author_email" class="form-input" placeholder="author@university.edu">
+        </div>
+      </div>
+    </div>
+
+    <div class="form-group mb-4">
+      <label class="form-label">المؤلفون المشاركون (Co-Authors)</label>
+      <div id="coauthors-container">
+        <!-- Dynamic Co-author Rows -->
+      </div>
+      <button type="button" class="btn btn-ghost btn-sm" id="btn-add-coauthor">+ إضافة مؤلف مشارك</button>
+    </div>
+
+    <h2 class="form-card-title" style="margin-top:var(--space-6);">3. بيانات النشر والملفات المرفقة</h2>
+
+    <div class="form-group mb-4">
+      <label class="form-label">ملف المقالة النهائي (PDF) <span style="color:var(--color-danger);">*</span></label>
+      <input type="file" name="manuscript" accept=".pdf" class="form-input" required>
+    </div>
+
+    <div class="form-group mb-4">
+      <label class="form-label">العدد (Issue - اختياري)</label>
+      <select name="issue_id" class="form-select">
+        <option value="">غير محدد لعدد حالياً</option>
+        {% for iss in issues %}
+          <option value="{{ iss.pk }}">{{ iss }}</option>
+        {% endfor %}
+      </select>
+    </div>
+
+    <div class="form-group mb-4">
+      <label class="form-label">تاريخ النشر المخصص (Backdating للأرشيف)</label>
+      <input type="datetime-local" name="published_at" class="form-input">
+      <small class="text-muted">اتركه فارغاً للنشر بتاريخ اللحظة الحالية.</small>
+    </div>
+
+    <div class="form-group mb-4">
+      <label class="form-label">سبب النشر المباشر <span style="color:var(--color-danger);">*</span></label>
+      <textarea name="reason" class="form-input" rows="2" placeholder="مثال: مقالة مدعوة / دفع خارجي أوفلاين / قرار رئيس التحرير..." required></textarea>
+    </div>
+
+    <div class="form-group mb-5" style="display:flex; align-items:center; gap:var(--space-2);">
+      <input type="checkbox" name="send_notification" id="chk_send_notif_page" checked style="width:18px; height:18px; cursor:pointer;">
+      <label for="chk_send_notif_page" style="cursor:pointer; margin:0;" class="text-sm">إرسال إشعار للمؤلف عبر البريد الإلكتروني والنظام</label>
+    </div>
+
+    <div style="display:flex; justify-content:flex-end; gap:var(--space-3);">
+      <a href="{% url 'dashboard:admin_submissions' %}" class="btn btn-ghost">إلغاء</a>
+      <button type="submit" class="btn btn-primary btn-lg">نشر المقالة الآن</button>
+    </div>
+  </form>
+</div>
+{% endblock %}
+
+{% block extra_js %}
+<script src="https://code.jquery.com/jquery-3.7.1.min.js"></script>
+<script src="https://cdn.jsdelivr.net/npm/select2@4.1.0-rc.0/dist/js/select2.min.js"></script>
+<script>
+$(document).ready(function() {
+  $('#author_select').select2({
+    placeholder: "-- كاتب جديد / غير مسجل --",
+    allowClear: true,
+    width: '100%'
+  });
+});
+
+(() => {
+  const container = document.getElementById('coauthors-container');
+  const addBtn = document.getElementById('btn-add-coauthor');
+
+  addBtn?.addEventListener('click', () => {
+    const row = document.createElement('div');
+    row.className = 'coauthor-row';
+    row.innerHTML = `
+      <input type="text" name="co_author_names[]" class="form-input" placeholder="اسم الكاتب المشارك...">
+      <input type="text" name="co_author_institutions[]" class="form-input" placeholder="الجامعة / المؤسسة...">
+      <button type="button" class="btn btn-ghost btn-sm text-danger js-remove-coauthor">حذف</button>
+    `;
+    container.appendChild(row);
+  });
+
+  container?.addEventListener('click', (e) => {
+    if (e.target.classList.contains('js-remove-coauthor')) {
+      e.target.closest('.coauthor-row').remove();
+    }
+  });
+})();
+</script>
+{% endblock %}

@@ -90,6 +90,16 @@
                 </td>
                 <td>
                     <div style="display: flex; gap: var(--space-2); justify-content: center;">
+                        <button type="button" class="btn btn-sm btn-ghost btn-edit-member" style="color: var(--color-warning);"
+                                data-user-id="{{ author.pk }}"
+                                data-username="{{ author.username|escapejs }}"
+                                data-first-name="{{ author.first_name|escapejs }}"
+                                data-last-name="{{ author.last_name|escapejs }}"
+                                data-email="{{ author.email|escapejs }}"
+                                data-role="{{ author.role }}">
+                            Edit
+                        </button>
+
                         <!-- Impersonation -->
                         <a href="{% url 'dashboard:impersonate_start' author.pk %}" class="btn btn-sm btn-ghost" style="color: var(--color-info);">
                             Impersonate

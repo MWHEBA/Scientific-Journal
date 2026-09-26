@@ -121,6 +121,11 @@
 {% block content %}
 <div class="page-header">
   <h1 class="page-header__title">Manage Submissions</h1>
+  {% if user.role == 'admin' %}
+  <div class="page-header__actions">
+    <a href="{% url 'dashboard:admin_publish_direct' %}" class="btn btn-primary btn-sm">Publish New Article Directly</a>
+  </div>
+  {% endif %}
 </div>
 
 <div class="submissions-shell">

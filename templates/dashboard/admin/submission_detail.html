@@ -39,7 +39,7 @@
     align-items: start;
     margin-bottom: var(--space-4);
   }
-  .summary-title { margin: 0; font-size: var(--text-2xl); color: var(--color-primary); }
+  .summary-title { margin: 0; font-size: var(--text-xl); color: var(--color-primary); }
   .meta-grid { display: grid; grid-template-columns: 1fr; gap: var(--space-3); }
   .meta-item { font-size: var(--text-sm); min-width: 0; }
   .meta-label { color: var(--color-text-muted); margin-left: var(--space-1); }
@@ -396,6 +396,92 @@
   </section>
   {% endif %}
 
+  {% if user.role == 'admin' and submission.status != 'published' %}
+  <section class="summary-card" style="border: 1px solid var(--color-primary); background: color-mix(in oklab, var(--color-primary) 3%, var(--color-surface));">
+    <h3 class="block-title" style="color: var(--color-primary);">النشر المباشر (تجاوز المراجعة والدفع)</h3>
+    <p class="text-muted text-sm" style="margin-bottom: var(--space-4);">يمكنك نشر هذه المقالة فوراً في المجلة وتحديد العدد وتاريخ النشر دون الحاجة لدورة مراجعة أو دفع رسوم.</p>
+
+    <button type="button" class="btn btn-primary" id="btn-open-direct-publish-modal">
+      نشر المقالة فوراً...
+    </button>
+  </section>
+
+  <!-- Modal for Direct Publishing -->
+  <div id="direct-publish-modal" class="modal-backdrop" aria-hidden="true">
+    <div class="modal-card" role="dialog" aria-modal="true" aria-labelledby="direct-publish-title">
+      <div class="modal-head">
+        <h3 id="direct-publish-title" class="modal-title">تأكيد النشر المباشر للمقالة</h3>
+        <button type="button" class="modal-close js-close-direct-modal" aria-label="إغلاق">×</button>
+      </div>
+      <div class="modal-body">
+        <form method="post" enctype="multipart/form-data" id="form-direct-publish">
+          {% csrf_token %}
+          <input type="hidden" name="action" value="direct_publish">
+
+          <div class="form-group mb-3">
+            <label class="form-label">عنوان المقالة</label>
+            <input type="text" class="form-input" value="{{ submission.title }}" readonly disabled>
+          </div>
+
+          <div class="form-group mb-3">
+            <label class="form-label">القسم المعيّن <span style="color:var(--color-danger);">*</span></label>
+            <select name="section_id" class="form-select" required>
+              <option value="">اختر القسم</option>
+              {% for sec in sections %}
+                <option value="{{ sec.pk }}" {% if submission.section_id == sec.pk %}selected{% endif %}>{{ sec.name }}</option>
+              {% endfor %}
+            </select>
+          </div>
+
+          <div class="form-group mb-3">
+            <label class="form-label">العدد (اختياري)</label>
+            <select name="issue_id" class="form-select">
+              <option value="">غير محدد لعدد حالياً</option>
+              {% for iss in issues %}
+                <option value="{{ iss.pk }}">{{ iss }}</option>
+              {% endfor %}
+            </select>
+          </div>
+
+          <div class="form-group mb-3">
+            <label class="form-label">تاريخ النشر المخصص (Backdating اختياري)</label>
+            <input type="datetime-local" name="published_at" class="form-input" placeholder="اتركه فارغاً للنشر بتاريخ اليوم">
+            <small class="text-muted">اتركه فارغاً للنشر بتاريخ اليوم، أو حدد تاريخاً سابقاً للأرشيف.</small>
+          </div>
+
+          {% if not submission.manuscript_files.all %}
+          <div class="form-group mb-3">
+            <label class="form-label">رفع ملف المخطوطة (PDF) <span style="color:var(--color-danger);">*</span></label>
+            <input type="file" name="manuscript" accept=".pdf" class="form-input" required>
+          </div>
+          {% else %}
+          <div class="form-group mb-3">
+            <label class="form-label">تحديث ملف المخطوطة (PDF اختياري)</label>
+            <input type="file" name="manuscript" accept=".pdf" class="form-input">
+            <small class="text-muted">الملف الحالي مرفوع بالفعل. يمكنك رفع ملف جديد إذا كنت تريد استبداله.</small>
+          </div>
+          {% endif %}
+
+          <div class="form-group mb-3">
+            <label class="form-label">سبب النشر المباشر <span style="color:var(--color-danger);">*</span></label>
+            <textarea name="reason" class="form-input" rows="3" placeholder="مثال: مقالة مدعوة / دفع خارجي أوفلاين / قرار رئيس التحرير..." required></textarea>
+          </div>
+
+          <div class="form-group mb-4" style="display:flex; align-items:center; gap:var(--space-2);">
+            <input type="checkbox" name="send_notification" id="chk_send_notif" checked style="width:18px; height:18px; cursor:pointer;">
+            <label for="chk_send_notif" style="cursor:pointer; margin:0;" class="text-sm">إرسال إشعار للمؤلف عبر البريد الإلكتروني والنظام</label>
+          </div>
+
+          <div class="modal-actions">
+            <button type="button" class="btn btn-ghost js-close-direct-modal">إلغاء</button>
+            <button type="submit" class="btn btn-primary">تأكيد النشر المباشر</button>
+          </div>
+        </form>
+      </div>
+    </div>
+  </div>
+  {% endif %}
+
   {% if user.role == 'admin' %}
   <section class="summary-card" style="border: 1px solid var(--color-danger); margin-top: var(--space-6);">
     <h3 class="block-title" style="color: var(--color-danger);">منطقة الخطر</h3>
@@ -495,5 +581,25 @@ document.getElementById('btn-delete-submission')?.addEventListener('click', () =
     if (result.isConfirmed) document.getElementById('form-delete-submission').submit();
   });
 });
+
+(() => {
+  const directModal = document.getElementById('direct-publish-modal');
+  const openBtn = document.getElementById('btn-open-direct-publish-modal');
+  const closeBtns = document.querySelectorAll('.js-close-direct-modal');
+  if (!directModal) return;
+
+  openBtn?.addEventListener('click', () => {
+    directModal.classList.add('show');
+    directModal.setAttribute('aria-hidden', 'false');
+  });
+
+  const close = () => {
+    directModal.classList.remove('show');
+    directModal.setAttribute('aria-hidden', 'true');
+  };
+
+  closeBtns.forEach((b) => b.addEventListener('click', close));
+  directModal.addEventListener('click', (e) => { if (e.target === directModal) close(); });
+})();
 </script>
 {% endblock %}

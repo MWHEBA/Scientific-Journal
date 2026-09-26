@@ -156,3 +156,44 @@ class UserProfileForm(forms.ModelForm):
         if User.objects.filter(email=email).exclude(pk=self.instance.pk).exists():
             raise forms.ValidationError('هذا البريد الإلكتروني مستخدم مسبقاً.')
         return email
+
+
+class AdminEditUserForm(forms.ModelForm):
+    """فورم تعديل بيانات مستخدم وتغيير كلمة مروره من لوحة تحكم المشرف."""
+    first_name = forms.CharField(max_length=150, required=True, label='الاسم الأول')
+    last_name  = forms.CharField(max_length=150, required=True, label='اسم العائلة')
+    email      = forms.EmailField(required=True, label='البريد الإلكتروني')
+    role       = forms.ChoiceField(choices=User.ROLE_CHOICES, label='الدور')
+    password   = forms.CharField(max_length=128, required=False, label='كلمة المرور الجديدة', widget=forms.PasswordInput(attrs={'placeholder': 'اتركها فارغة لعدم التغيير'}))
+
+    class Meta:
+        model = User
+        fields = ('username', 'first_name', 'last_name', 'email', 'role')
+
+    def clean_email(self):
+        email = self.cleaned_data.get('email')
+        if User.objects.filter(email=email).exclude(pk=self.instance.pk).exists():
+            raise forms.ValidationError('هذا البريد الإلكتروني مستخدم مسبقاً لدى عضو آخر.')
+        return email
+
+    def clean_username(self):
+        username = self.cleaned_data.get('username')
+        if User.objects.filter(username=username).exclude(pk=self.instance.pk).exists():
+            raise forms.ValidationError('اسم المستخدم هذا مستخدم مسبقاً لدى عضو آخر.')
+        return username
+
+    def save(self, commit=True):
+        user = super().save(commit=False)
+        password = self.cleaned_data.get('password')
+        if password:
+            user.set_password(password)
+        if commit:
+            user.save()
+            # التأكد من وجود الـ profile المناسب
+            if user.role == User.ROLE_AUTHOR:
+                from apps.accounts.models import AuthorProfile
+                AuthorProfile.objects.get_or_create(user=user)
+            elif user.role == User.ROLE_REVIEWER:
+                from apps.accounts.models import ReviewerProfile
+                ReviewerProfile.objects.get_or_create(user=user)
+        return user

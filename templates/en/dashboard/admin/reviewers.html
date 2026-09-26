@@ -126,7 +126,21 @@
                     {% endif %}
                 </td>
                 <td style="text-align: center;">
-                    <button class="btn btn-sm btn-ghost" onclick="toggleEdit({{ reviewer.pk }})">Edit</button>
+                    <div style="display: flex; gap: var(--space-1); justify-content: center;">
+                        <button type="button" class="btn btn-sm btn-ghost btn-edit-member" style="color: var(--color-warning);"
+                                data-user-id="{{ reviewer.pk }}"
+                                data-username="{{ reviewer.username|escapejs }}"
+                                data-first-name="{{ reviewer.first_name|escapejs }}"
+                                data-last-name="{{ reviewer.last_name|escapejs }}"
+                                data-email="{{ reviewer.email|escapejs }}"
+                                data-role="{{ reviewer.role }}">
+                            Edit
+                        </button>
+                        <button type="button" class="btn btn-sm btn-ghost btn-toggle-specialties" style="color: var(--color-info);"
+                                data-reviewer-id="{{ reviewer.pk }}">
+                            Specialties
+                        </button>
+                    </div>
                 </td>
             </tr>
             <!-- Inline Edit Form -->
@@ -161,7 +175,7 @@
                                 
                                 <div style="display: flex; gap: var(--space-2);">
                                     <button type="submit" class="btn btn-primary btn-sm">Save Changes</button>
-                                    <button type="button" class="btn btn-ghost btn-sm" onclick="toggleEdit({{ reviewer.pk }})">Cancel</button>
+                                    <button type="button" class="btn btn-ghost btn-sm btn-toggle-specialties" data-reviewer-id="{{ reviewer.pk }}">Cancel</button>
                                 </div>
                             </div>
                         </div>
@@ -202,9 +216,17 @@
 
 {% block extra_js %}
 <script>
-function toggleEdit(pk) {
-    const el = document.getElementById('edit-' + pk);
-    el.style.display = el.style.display === 'none' ? 'table-row' : 'none';
-}
+document.addEventListener('DOMContentLoaded', function() {
+    document.addEventListener('click', function(e) {
+        const btn = e.target.closest('.btn-toggle-specialties');
+        if (btn) {
+            const reviewerId = btn.getAttribute('data-reviewer-id');
+            const el = document.getElementById('edit-' + reviewerId);
+            if (el) {
+                el.style.display = el.style.display === 'none' ? 'table-row' : 'none';
+            }
+        }
+    });
+});
 </script>
 {% endblock %}

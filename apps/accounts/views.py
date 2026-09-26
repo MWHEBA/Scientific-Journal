@@ -22,6 +22,10 @@ class RegisterView(CreateView):
 
     def form_valid(self, form):
         response = super().form_valid(form)
+        messages.success(self.request, _t(
+            'تم إنشاء حسابك بنجاح! يمكنك الآن تسجيل الدخول.',
+            'Your account has been created successfully! You can now log in.'
+        ))
         return response
 
 
@@ -32,6 +36,21 @@ class LoginView(DjangoLoginView):
         if request.user.is_authenticated:
             return redirect(_dashboard_url(request.user))
         return super().dispatch(request, *args, **kwargs)
+
+    def form_valid(self, form):
+        response = super().form_valid(form)
+        messages.success(self.request, _t(
+            'تم تسجيل الدخول بنجاح. مرحباً بك مجدداً!',
+            'Logged in successfully. Welcome back!'
+        ))
+        return response
+
+    def form_invalid(self, form):
+        messages.error(self.request, _t(
+            'اسم المستخدم أو كلمة المرور غير صحيحة. يرجى المحاولة مرة أخرى.',
+            'Incorrect username or password. Please try again.'
+        ))
+        return super().form_invalid(form)
 
     def get_success_url(self):
         return _dashboard_url(self.request.user)
