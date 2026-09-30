@@ -47,11 +47,11 @@
                 <svg class="icon icon-md"><use href="#icon-location"/></svg>
             </div>
             <div class="contact-info-row__body">
-                <span class="contact-info-row__label">Address</span>
+                <span class="contact-info-row__label">Head Office</span>
                 {% if settings.contact_address %}
-                <span class="contact-info-row__value">{{ settings.contact_address }}</span>
+                <span class="contact-info-row__value"><a href="https://www.sciencesgates.com/" target="_blank" rel="noopener" title="Sciences Gates SDN BHD" style="color:var(--color-primary);text-decoration:underline;">Sciences Gates SDN BHD</a> — {{ settings.contact_address }}</span>
                 {% else %}
-                <span class="contact-info-row__value">B, 408, Cemara Apartment, Kajang Utama, Kajang, Selangor, Malaysia</span>
+                <span class="contact-info-row__value"><a href="https://www.sciencesgates.com/" target="_blank" rel="noopener" title="Sciences Gates SDN BHD" style="color:var(--color-primary);text-decoration:underline;">Sciences Gates SDN BHD</a> — B, 408, Cemara Apartment, Kajang Utama, Kajang, Selangor, Malaysia</span>
                 {% endif %}
             </div>
         </div>

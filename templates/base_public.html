@@ -14,6 +14,8 @@
     <link rel="stylesheet" href="{% static 'css/components.css' %}">
     <link rel="stylesheet" href="{% static 'css/layout-public.css' %}">
     {% block extra_css %}{% endblock %}
+    <link rel="publisher" href="https://www.sciencesgates.com/">
+    {% block extra_head %}{% endblock %}
 </head>
 <body>
 {% include "icons.svg" %}
@@ -222,7 +224,7 @@
     <div class="pub-footer__main">
         <div>
             <img src="{% static 'img/Logo.png' %}" alt="Marcil" style="height:60px;filter:brightness(0) invert(1);opacity:.65;margin-bottom:var(--space-3);display:block;">
-            <p class="pub-footer__desc">مجلة Marcil هي مجلة علمية متخصصة في نشر الأبحاث المحكمة مع عملية مراجعة واضحة وجودة تحريرية عالية.</p>
+            <p class="pub-footer__desc">مجلة Marcil هي مجلة علمية متخصصة في نشر الأبحاث المحكمة تصدر عن <a href="https://www.sciencesgates.com/" target="_blank" rel="noopener" title="شركة بوابات العلوم — Sciences Gates" style="color:inherit;text-decoration:underline;">شركة بوابات العلوم (Sciences Gates SDN BHD)</a> مع عملية مراجعة واضحة وجودة تحريرية عالية.</p>
             <span class="pub-footer__issn">E-ISSN: 2785-8294</span>
             <div class="pub-footer__social">
                 <a href="#" class="pub-footer__social-link" title="Instagram">ig</a>
@@ -262,15 +264,17 @@
                 <li><a href="#">ماليزيا — سلانجور</a></li>
             </ul>
             <div class="pub-footer__license" style="margin-top:var(--space-4);">
-                <a href="http://creativecommons.org/licenses/by-nc/4.0/" rel="license" target="_blank">
+                <a href="https://creativecommons.org/licenses/by-nc/4.0/" rel="license" target="_blank">
                     <img src="https://i.creativecommons.org/l/by-nc/4.0/88x31.png" alt="Creative Commons Licence" style="border:0;margin:0 0 var(--space-2);display:block;">
                 </a>
-                <em>Licensed Under CC BY-NC 4.0</em>
+                <p style="font-size:11px;color:rgba(255,255,255,0.7);margin:0;line-height:1.4;">
+                    مرخّص بموجب رخصة المشاع الإبداعي بواسطة <a href="https://www.sciencesgates.com/" target="_blank" rel="noopener" title="شركة بوابات العلوم" style="color:inherit;text-decoration:underline;">شركة بوابات العلوم (Sciences Gates)</a>
+                </p>
             </div>
         </div>
     </div>
     <div class="pub-footer__bottom">
-        <p class="pub-footer__copy">جميع الحقوق محفوظة &copy; {% now "Y" %} — Marcil المجلة العلمية</p>
+        <p class="pub-footer__copy">جميع الحقوق محفوظة &copy; {% now "Y" %} — Marcil المجلة العلمية | تصدر عن <a href="https://www.sciencesgates.com/" target="_blank" rel="noopener" title="شركة بوابات العلوم" style="color:inherit;text-decoration:underline;">شركة بوابات العلوم (Sciences Gates)</a></p>
     </div>
 </footer>
 

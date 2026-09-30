@@ -8,6 +8,39 @@
 <link rel="stylesheet" href="{% static 'css/pages.css' %}">
 {% endblock %}
 
+{% block extra_head %}
+<meta name="citation_title" content="{{ object.title|escapejs }}">
+<meta name="citation_author" content="{{ object.submission.author.get_full_name|default:object.submission.author.username }}">
+{% for co in co_authors %}
+    {% if co.full_name %}
+<meta name="citation_author" content="{{ co.full_name }}">
+    {% endif %}
+{% endfor %}
+<meta name="citation_publication_date" content="{{ object.published_at|date:'Y/m/d' }}">
+<meta name="citation_journal_title" content="International Journal of Contemporary Management and Information Technology">
+<meta name="citation_publisher" content="Sciences Gates SDN BHD">
+<meta name="DC.Publisher" content="Sciences Gates SDN BHD">
+{% if object.manuscript_file %}
+<meta name="citation_pdf_url" content="{{ request.scheme }}://{{ request.get_host }}{{ object.manuscript_file.file.url }}">
+{% endif %}
+<meta property="og:site_name" content="IJCMIT — Sciences Gates SDN BHD">
+<script type="application/ld+json">
+{
+  "@context": "https://schema.org",
+  "@type": "ScholarlyArticle",
+  "headline": "{{ object.title|escapejs }}",
+  "description": "{{ object.abstract|truncatechars:200|escapejs }}",
+  "datePublished": "{{ object.published_at|date:'c' }}",
+  "inLanguage": "en",
+  "publisher": {
+    "@type": "Organization",
+    "name": "Sciences Gates SDN BHD",
+    "url": "https://www.sciencesgates.com/"
+  }
+}
+</script>
+{% endblock %}
+
 {% block sidebar_right %}{% endblock %}
 {% block sidebar_left %}{% endblock %}
 {% block content %}{% endblock %}
@@ -149,6 +182,12 @@
                             <span class="article-info-list__value article-views-count" id="views-count" data-url="{% url 'pages:article_views' object.slug %}">
                                 <span class="article-views-num">{{ object.views_count }}</span>
                                 <svg class="icon icon-xs icon-muted" style="margin-left:2px"><use href="#icon-review"/></svg>
+                            </span>
+                        </li>
+                        <li class="article-info-list__item">
+                            <span class="article-info-list__label">Publisher</span>
+                            <span class="article-info-list__value">
+                                <a href="https://www.sciencesgates.com/" target="_blank" rel="noopener" title="Sciences Gates SDN BHD" style="color:var(--color-primary);text-decoration:underline;">Sciences Gates SDN BHD</a>
                             </span>
                         </li>
                         <li class="article-info-list__item">

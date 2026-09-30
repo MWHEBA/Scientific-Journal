@@ -47,11 +47,11 @@
                 <svg class="icon icon-md"><use href="#icon-location"/></svg>
             </div>
             <div class="contact-info-row__body">
-                <span class="contact-info-row__label">العنوان</span>
+                <span class="contact-info-row__label">المقر الرئيسي</span>
                 {% if settings.contact_address %}
-                <span class="contact-info-row__value">{{ settings.contact_address }}</span>
+                <span class="contact-info-row__value"><a href="https://www.sciencesgates.com/" target="_blank" rel="noopener" title="شركة بوابات العلوم" style="color:var(--color-primary);text-decoration:underline;">شركة بوابات العلوم (Sciences Gates SDN BHD)</a> — {{ settings.contact_address }}</span>
                 {% else %}
-                <span class="contact-info-row__value">ماليزيا — سلنجور — كاجنغ — كاجنغ أوتاما — بناء شيمار — البلوك باء — رقم ٤٠٨</span>
+                <span class="contact-info-row__value"><a href="https://www.sciencesgates.com/" target="_blank" rel="noopener" title="شركة بوابات العلوم" style="color:var(--color-primary);text-decoration:underline;">شركة بوابات العلوم (Sciences Gates SDN BHD)</a> — ماليزيا — سلنجور — كاجنغ — كاجنغ أوتاما</span>
                 {% endif %}
             </div>
         </div>
