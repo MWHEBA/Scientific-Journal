@@ -380,6 +380,15 @@
    DATA TABLE
    ======================================== */
 
+.table-responsive,
+.data-table-wrap {
+  width: 100%;
+  max-width: 100%;
+  overflow-x: auto;
+  -webkit-overflow-scrolling: touch;
+  margin-bottom: var(--space-4);
+}
+
 .data-table {
   width: 100%;
   border-collapse: collapse;
@@ -682,7 +691,16 @@
     grid-template-columns: 1fr;
   }
   
-  .data-table {
+  .table-responsive,
+.data-table-wrap {
+  width: 100%;
+  max-width: 100%;
+  overflow-x: auto;
+  -webkit-overflow-scrolling: touch;
+  margin-bottom: var(--space-4);
+}
+
+.data-table {
     display: block;
     overflow-x: auto;
   }

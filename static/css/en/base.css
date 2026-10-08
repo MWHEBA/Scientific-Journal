@@ -29,6 +29,7 @@ html {
   -webkit-font-smoothing: antialiased;
   -moz-osx-font-smoothing: grayscale;
   text-rendering: optimizeLegibility;
+  overflow-x: hidden;
 }
 
 body {
@@ -39,6 +40,23 @@ body {
   background-color: var(--color-bg);
   direction: ltr;
   text-align: left;
+  overflow-x: hidden;
+  width: 100%;
+  min-height: 100vh;
+}
+
+img,
+svg,
+video,
+canvas,
+iframe {
+  max-width: 100%;
+  height: auto;
+}
+
+p, h1, h2, h3, h4, h5, h6, span, a {
+  overflow-wrap: break-word;
+  word-break: break-word;
 }
 
 /* ========================================
